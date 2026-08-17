@@ -6,7 +6,7 @@ const authLimiter = (req, res, next) => {
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: Number.MAX_SAFE_INTEGER,
   message: {
     error: 'Too many requests. Please slow down.'
   },
@@ -16,7 +16,7 @@ const apiLimiter = rateLimit({
 
 const postLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: Number.MAX_SAFE_INTEGER,
   message: {
     error: 'Too many posts. Please slow down.'
   }
@@ -24,7 +24,7 @@ const postLimiter = rateLimit({
 
 const messageLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: Number.MAX_SAFE_INTEGER,
   message: {
     error: 'Too many messages. Please slow down.'
   }
@@ -32,7 +32,7 @@ const messageLimiter = rateLimit({
 
 const followLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: Number.MAX_SAFE_INTEGER,
   message: {
     error: 'Too many follow actions. Please slow down.'
   }
