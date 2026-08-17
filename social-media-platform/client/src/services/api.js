@@ -1,59 +1,66 @@
 import axios from 'axios';
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  'https://vibepulse-backend-boxi.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://vibepulse-backend-boxi.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true
+  withCredentials: true,
+  timeout: 20000
 });
+
+let refreshPromise = null;
+
+const clearAuth = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+};
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 api.interceptors.response.use(
-  (res) => res,
+  (response) => response,
+  async (error) => {
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
+    const original = error.config;
 
-  async (err) => {
-    if (
-      err.response?.status === 401 &&
-      err.response?.data?.code === 'TOKEN_EXPIRED'
-    ) {
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-
-        if (!refreshToken) {
-          localStorage.clear();
-          window.location.href = '/login';
-          return Promise.reject(err);
-        }
-
-        const res = await api.post('/auth/refresh', {
-          refreshToken
-        });
-
-        localStorage.setItem('token', res.data.token);
-        localStorage.setItem('refreshToken', res.data.refreshToken);
-
-        err.config.headers.Authorization = `Bearer ${res.data.token}`;
-
-        return api(err.config);
-      } catch (refreshError) {
-        localStorage.clear();
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+    if (status !== 401 || original?._retry || original?.url?.includes('/auth/refresh')) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(err);
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      clearAuth();
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') window.location.href = '/login';
+      return Promise.reject(error);
+    }
+
+    try {
+      if (!refreshPromise) {
+        refreshPromise = axios.post(`${API_URL}/auth/refresh`, { refreshToken }, { withCredentials: true })
+          .then((res) => {
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('refreshToken', res.data.refreshToken);
+            return res.data.token;
+          })
+          .finally(() => { refreshPromise = null; });
+      }
+
+      const token = await refreshPromise;
+      original._retry = true;
+      original.headers = original.headers || {};
+      original.headers.Authorization = `Bearer ${token}`;
+      return api(original);
+    } catch (refreshError) {
+      clearAuth();
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') window.location.href = '/login';
+      return Promise.reject(refreshError);
+    }
   }
 );
 

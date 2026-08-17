@@ -66,7 +66,7 @@ export default function AdminDashboard() {
             <tbody>
               {users.map(u => (
                 <tr key={u.id} className="border-t border-gray-100 dark:border-gray-700">
-                  <td className="p-3"><Link to={`/profile/${u.username}`} className="flex items-center gap-2"><img src={u.profile_picture || '/default-avatar.png'} alt="" className="w-8 h-8 rounded-full" /><div><p className="font-medium">{u.full_name}</p><p className="text-xs text-gray-500">@{u.username}</p></div></Link></td>
+                  <td className="p-3"><Link to={`/profile/${u.username}`} className="flex items-center gap-2"><img src={u.profile_picture || '/default-avatar.svg'} alt="" className="w-8 h-8 rounded-full" /><div><p className="font-medium">{u.full_name}</p><p className="text-xs text-gray-500">@{u.username}</p></div></Link></td>
                   <td className="p-3 capitalize">{u.role}</td>
                   <td className="p-3">{u.is_suspended ? <span className="text-red-600 text-xs bg-red-50 px-2 py-1 rounded-full">Suspended</span> : <span className="text-green-600 text-xs bg-green-50 px-2 py-1 rounded-full">Active</span>}</td>
                   <td className="p-3">

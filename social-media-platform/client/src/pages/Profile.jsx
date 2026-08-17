@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MapPin, Link as LinkIcon, Calendar, Users, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../services/api';
 import PostCard from '../components/PostCard';
+import { mediaUrl } from '../services/media';
 
 export default function Profile() {
   const { username } = useParams();
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState('posts');
   const [loading, setLoading] = useState(true);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => { fetchProfile(); }, [username]);
 
@@ -25,7 +28,7 @@ export default function Profile() {
       ]);
       setProfile(profileRes.data);
       setPosts(postsRes.data);
-    } catch {} finally { setLoading(false); }
+    } catch (err) { if (err.response?.status === 404) setProfile(null); } finally { setLoading(false); }
   };
 
   const handleFollow = async () => {
@@ -40,6 +43,17 @@ export default function Profile() {
     } catch {}
   };
 
+  const handleMessage = async () => {
+    if (startingChat || !profile?.id) return;
+    setStartingChat(true);
+    try {
+      const res = await api.post('/messages/conversations', { participantId: profile.id });
+      navigate(`/messages/${res.data.id}`);
+    } catch {} finally {
+      setStartingChat(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-8">Loading...</div>;
   if (!profile) return <div className="text-center py-8">User not found</div>;
 
@@ -48,18 +62,20 @@ export default function Profile() {
   return (
     <div>
       <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-xl">
-        {profile.cover_photo && <img src={profile.cover_photo} alt="" className="w-full h-full object-cover rounded-t-xl" />}
+        {profile.cover_photo && <img src={mediaUrl(profile.cover_photo)} alt="" className="w-full h-full object-cover rounded-t-xl" />}
       </div>
       <div className="card -mt-16 mx-4 p-6 relative">
         <div className="flex items-end justify-between mb-4">
-          <img src={profile.profile_picture || '/default-avatar.png'} alt="" className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 object-cover" />
+          <img src={mediaUrl(profile.profile_picture) || '/default-avatar.svg'} alt="" className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 object-cover" />
           <div className="flex gap-2">
             {!isOwnProfile && (
               <>
                 <button onClick={handleFollow} className="btn-primary">
                   {profile.is_following ? 'Unfollow' : profile.follow_status === 'pending' ? 'Requested' : 'Follow'}
                 </button>
-                <Link to={`/messages`} className="btn-secondary"><MessageCircle size={18} /></Link>
+                <button type="button" onClick={handleMessage} disabled={startingChat} className="btn-secondary disabled:opacity-50" title="Message">
+                  <MessageCircle size={18} />
+                </button>
               </>
             )}
             {isOwnProfile && <Link to="/settings" className="btn-secondary">Edit Profile</Link>}
@@ -89,7 +105,7 @@ export default function Profile() {
           ))}
         </div>
         <div className="mt-4">
-          {activeTab === 'posts' && posts.map(post => <PostCard key={post.id} post={post} />)}
+          {activeTab === 'posts' && posts.map(post => <PostCard key={post.id} post={post} onUpdate={updated => setPosts(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p))} onDelete={id => setPosts(prev => prev.filter(p => p.id !== id))} />)}
           {activeTab === 'posts' && posts.length === 0 && <div className="text-center py-8 text-gray-500">No posts yet</div>}
         </div>
       </div>

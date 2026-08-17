@@ -8,6 +8,10 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
+// Render sits behind a reverse proxy. This lets express-rate-limit and req.ip
+// correctly use the forwarded client IP without throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
 app.use(morgan('dev'));

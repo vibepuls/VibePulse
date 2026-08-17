@@ -3,30 +3,56 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 const { upload, setUploadType } = require('../middleware/upload');
 const { messageLimiter } = require('../middleware/rateLimiter');
+const { getIO } = require('../websocket/socket');
+const { query } = require('../config/database');
+
+router.get('/unread-count', authenticate, async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT COALESCE(SUM(unread_count), 0) AS count
+       FROM conversation_participants
+       WHERE user_id = $1 AND (left_at IS NULL OR left_at > NOW())`,
+      [req.user.id]
+    );
+    res.json({ count: Number(result.rows[0].count || 0) });
+  } catch (err) { next(err); }
+});
 
 router.get('/conversations', authenticate, async (req, res, next) => {
-  try { const conversations = await Conversation.getByUser(req.user.id); res.json(conversations); }
+  try { res.json(await Conversation.getByUser(req.user.id)); }
   catch (err) { next(err); }
 });
 
 router.post('/conversations', authenticate, async (req, res, next) => {
   try {
     const { participantId } = req.body;
+    if (!participantId) return res.status(400).json({ error: 'participantId is required.' });
+    if (String(participantId) === String(req.user.id)) return res.status(400).json({ error: 'You cannot message yourself.' });
+
+    const target = await User.findById(participantId);
+    if (!target) return res.status(404).json({ error: 'User not found.' });
+
     let conversation = await Conversation.findByParticipants(req.user.id, participantId);
     if (!conversation) {
       conversation = await Conversation.create({ created_by: req.user.id });
       await Conversation.addParticipant(conversation.id, req.user.id, true);
       await Conversation.addParticipant(conversation.id, participantId);
     }
+
     const fullConv = await Conversation.getById(conversation.id, req.user.id);
-    res.json(fullConv);
+    res.status(201).json(fullConv);
   } catch (err) { next(err); }
 });
 
 router.get('/conversations/:id', authenticate, async (req, res, next) => {
   try {
+    if (!(await Conversation.isParticipant(req.params.id, req.user.id))) {
+      return res.status(403).json({ error: 'You are not a participant in this conversation.' });
+    }
     const messages = await Message.getByConversation(req.params.id);
     await Conversation.resetUnread(req.params.id, req.user.id);
     res.json(messages);
@@ -35,15 +61,54 @@ router.get('/conversations/:id', authenticate, async (req, res, next) => {
 
 router.post('/conversations/:id', authenticate, messageLimiter, setUploadType('messages'), upload.single('media'), async (req, res, next) => {
   try {
+    const conversationId = req.params.id;
+    if (!(await Conversation.isParticipant(conversationId, req.user.id))) {
+      return res.status(403).json({ error: 'You are not a participant in this conversation.' });
+    }
+
     const { content, message_type = 'text', reply_to_id } = req.body;
     const media_url = req.file ? `/uploads/messages/${req.file.filename}` : null;
+    const cleanContent = content?.trim() || null;
+    if (!cleanContent && !media_url) return res.status(400).json({ error: 'Message content or media is required.' });
+
     const message = await Message.create({
-      conversation_id: req.params.id, sender_id: req.user.id, content,
+      conversation_id: conversationId,
+      sender_id: req.user.id,
+      content: cleanContent,
       message_type: req.file ? (req.file.mimetype.startsWith('video/') ? 'video' : 'image') : message_type,
-      media_url, reply_to_id
+      media_url,
+      reply_to_id
     });
-    await Conversation.incrementUnread(req.params.id, req.user.id);
-    res.status(201).json(message);
+
+    await Conversation.incrementUnread(conversationId, req.user.id);
+
+    const sender = await User.findById(req.user.id);
+    const messageWithSender = {
+      ...message,
+      username: sender?.username,
+      full_name: sender?.full_name,
+      profile_picture: sender?.profile_picture
+    };
+
+    const participantIds = await Conversation.getParticipantIds(conversationId);
+    for (const userId of participantIds) {
+      if (String(userId) === String(req.user.id)) continue;
+      try {
+        getIO().to(`user_${userId}`).emit('new_message', messageWithSender);
+        getIO().to(`user_${userId}`).emit('conversation_updated', { conversationId, message: messageWithSender });
+      } catch (_) {}
+
+      await Notification.create({
+        recipient_id: userId,
+        sender_id: req.user.id,
+        type: 'message',
+        reference_id: conversationId,
+        reference_type: 'conversation',
+        message: `${req.user.username} sent you a message`
+      });
+    }
+
+    res.status(201).json(messageWithSender);
   } catch (err) { next(err); }
 });
 

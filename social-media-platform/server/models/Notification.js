@@ -7,7 +7,16 @@ class Notification {
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [recipient_id, sender_id, type, reference_id, reference_type, message]
     );
-    return result.rows[0];
+    const notification = result.rows[0];
+    try {
+      const sender = sender_id ? (await query('SELECT username, full_name, profile_picture FROM users WHERE id = $1', [sender_id])).rows[0] : null;
+      const payload = { ...notification, sender_username: sender?.username, sender_name: sender?.full_name, sender_picture: sender?.profile_picture };
+      const { getIO } = require('../websocket/socket');
+      getIO().to(`user_${recipient_id}`).emit('new_notification', payload);
+    } catch (err) {
+      // Socket is optional for persistence; do not fail notification creation if it is unavailable.
+    }
+    return notification;
   }
 
   static async getByUser(userId, limit = 50, offset = 0) {

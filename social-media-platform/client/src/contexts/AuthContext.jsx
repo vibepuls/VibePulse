@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { createContext, useContext, useEffect, useState } from 'react';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -9,33 +9,46 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else { setLoading(false); }
-  }, []);
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-  const fetchUser = async () => {
-    try { const res = await axios.get('/api/auth/me'); setUser(res.data); }
-    catch { logout(); }
-    finally { setLoading(false); }
-  };
+    api.get('/auth/me')
+      .then((res) => {
+        setUser(res.data);
+        localStorage.setItem('user', JSON.stringify(res.data));
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const login = (data) => {
     localStorage.setItem('token', data.token);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    localStorage.setItem('refreshToken', data.refreshToken || '');
+    localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
   };
 
   const logout = () => {
-    localStorage.removeItem('token'); localStorage.removeItem('refreshToken');
-    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     setUser(null);
   };
 
+  const updateUser = (nextUser) => {
+    setUser(nextUser);
+    localStorage.setItem('user', JSON.stringify(nextUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, loading, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, setUser: updateUser, login, logout, loading, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

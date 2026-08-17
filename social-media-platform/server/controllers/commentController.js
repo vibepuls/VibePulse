@@ -43,8 +43,8 @@ exports.createComment = async (req, res, next) => {
         recipient_id: post.user_id,
         sender_id: req.user.id,
         type: 'comment',
-        reference_id: comment.id,
-        reference_type: 'comment',
+        reference_id: postId,
+        reference_type: 'post',
         message: `${req.user.username} commented on your post`
       });
     }
@@ -57,8 +57,8 @@ exports.createComment = async (req, res, next) => {
           recipient_id: parentComment.rows[0].user_id,
           sender_id: req.user.id,
           type: 'reply',
-          reference_id: comment.id,
-          reference_type: 'comment',
+          reference_id: postId,
+          reference_type: 'post',
           message: `${req.user.username} replied to your comment`
         });
       }
@@ -74,15 +74,15 @@ exports.createComment = async (req, res, next) => {
           recipient_id: mentionedUser.id,
           sender_id: req.user.id,
           type: 'mention',
-          reference_id: comment.id,
-          reference_type: 'comment',
+          reference_id: postId,
+          reference_type: 'post',
           message: `${req.user.username} mentioned you in a comment`
         });
       }
     }
 
-    const fullComment = await Comment.findByPostId(postId, req.user.id, 1, 0);
-    res.status(201).json(fullComment[0]);
+    const fullComment = await Comment.findById(comment.id, req.user.id);
+    res.status(201).json(fullComment);
   } catch (err) {
     next(err);
   }
@@ -106,7 +106,8 @@ exports.updateComment = async (req, res, next) => {
 exports.deleteComment = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await Comment.delete(id, req.user.id);
+    const deleted = await Comment.delete(id, req.user.id);
+    if (!deleted) return res.status(404).json({ error: 'Comment not found or unauthorized.' });
     res.json({ message: 'Comment deleted.' });
   } catch (err) {
     next(err);

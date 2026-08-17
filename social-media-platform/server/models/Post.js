@@ -154,7 +154,8 @@ class Post {
   }
 
   static async delete(id, userId) {
-    await query('UPDATE posts SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2', [id, userId]);
+    const result = await query('UPDATE posts SET is_deleted = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 AND is_deleted = false RETURNING id', [id, userId]);
+    return result.rows.length > 0;
   }
 
   static async addMedia(postId, mediaUrl, mediaType, thumbnailUrl = null) {

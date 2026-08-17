@@ -1,4 +1,5 @@
 const Bookmark = require('../models/Bookmark');
+const Post = require('../models/Post');
 
 exports.getBookmarks = async (req, res, next) => {
   try {
@@ -13,6 +14,9 @@ exports.getBookmarks = async (req, res, next) => {
 exports.toggleBookmark = async (req, res, next) => {
   try {
     const { postId } = req.params;
+    const post = await Post.findById(postId, req.user.id);
+    if (!post) return res.status(404).json({ error: 'Post not found.' });
+
     const existing = await Bookmark.find(req.user.id, postId);
 
     if (existing) {

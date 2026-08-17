@@ -12,6 +12,7 @@ exports.createPost = async (req, res, next) => {
       return res.status(400).json({ error: 'Post must have content or media.' });
     }
 
+    if (!['public', 'followers', 'private'].includes(privacy)) return res.status(400).json({ error: 'Invalid privacy setting.' });
     const post = await Post.create({
       user_id: req.user.id,
       content: content || '',
@@ -126,7 +127,8 @@ exports.updatePost = async (req, res, next) => {
 exports.deletePost = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await Post.delete(id, req.user.id);
+    const deleted = await Post.delete(id, req.user.id);
+    if (!deleted) return res.status(404).json({ error: 'Post not found or unauthorized.' });
     res.json({ message: 'Post deleted.' });
   } catch (err) {
     next(err);

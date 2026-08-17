@@ -40,7 +40,7 @@ export default function Home() {
       <CreatePost onPostCreated={(post) => setPosts(prev => [post, ...prev])} />
       {posts.map((post, i) => (
         <div key={post.id} ref={i === posts.length - 1 ? lastPostRef : null}>
-          <PostCard post={post} onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))} />
+          <PostCard post={post} onUpdate={(updated) => setPosts(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p))} onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))} />
         </div>
       ))}
       {loading && <div className="text-center py-4 text-gray-500">Loading...</div>}
