@@ -1,13 +1,13 @@
 {
-  "name": "social-media-platform",
+  "name": "vibepulse",
   "version": "1.0.0",
-  "description": "Complete full-stack social media platform",
+  "description": "VibePulse - Social Media Platform",
   "scripts": {
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",
-    "dev": "concurrently "npm run server" "npm run client"",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm run dev",
-    "build": "cd client && npm run build",
+    "build": "cd client && npm install && npm run build",
     "start": "cd server && npm start",
     "migrate": "cd server && npm run migrate",
     "migrate:up": "cd server && npm run migrate:up",
