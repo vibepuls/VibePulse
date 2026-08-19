@@ -1,41 +1,36 @@
-# Render deployment
+# Render deployment for VibePulse
 
-## PostgreSQL
-1. Create a Render PostgreSQL database.
-2. Copy its Internal Database URL.
-3. Run the migration against that database using the server service shell or a one-off job:
-   `npm run migrate:up`
-
-## Backend Web Service
+## Backend
 - Root Directory: `server`
 - Build Command: `npm install`
 - Start Command: `npm start`
 - Environment:
   - `NODE_ENV=production`
-  - `DATABASE_URL=<Render internal database URL>`
+  - `DATABASE_URL=<Render PostgreSQL URL>`
   - `JWT_SECRET=<long random secret>`
   - `JWT_REFRESH_SECRET=<different long random secret>`
-  - `CLIENT_URL=<your frontend URL>`
-  - Optional SMTP variables for password reset emails
+  - `CLIENT_URL=<frontend URL>`
+
+After deployment, run the migration once:
+
+```bash
+npm run migrate:up
+```
 
 Health check: `/health`
 
-## Frontend Static Site
+## Frontend
 - Root Directory: `client`
 - Build Command: `npm install && npm run build`
 - Publish Directory: `dist`
 - Environment:
   - `VITE_API_URL=https://YOUR-BACKEND.onrender.com/api`
+  - `VITE_CLOUDINARY_CLOUD_NAME=<cloud name>`
+  - `VITE_CLOUDINARY_UPLOAD_PRESET=<unsigned preset>`
 
-If the frontend URL changes, update `CLIENT_URL` on the backend.
+## Zero-storage media behavior
+Feed posts no longer accept multipart media uploads. The feed stores only remote media URLs and embed metadata in PostgreSQL. YouTube/Facebook/Instagram media is displayed with iframe embeds; direct image/video URLs are loaded by the browser from the original host.
 
-## Media warning
-The current app stores uploaded media under `server/uploads`. This is fine for testing, but Render's ephemeral filesystem should not be treated as permanent storage. Add Cloudflare R2, S3, Cloudinary, or another object-storage provider later for durable media.
+Profile/cover uploads go directly from the browser to Cloudinary and only the returned URL is stored in PostgreSQL.
 
-## React Router rewrite
-In the Render Static Site, add a rewrite:
-- Source: `/*`
-- Destination: `/index.html`
-- Action: `Rewrite`
-
-This keeps direct links such as `/profile/name`, `/post/id`, and `/reset-password` working after refresh.
+Legacy story/message uploads remain in the repository for compatibility. They are unrelated to the new feed pipeline.

@@ -295,6 +295,13 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+-- VibePulse zero-storage remote media upgrade.
+-- Only URLs/metadata are stored in PostgreSQL; media bytes are never stored by this app.
+ALTER TABLE post_media ADD COLUMN IF NOT EXISTS provider VARCHAR(30) DEFAULT 'direct';
+ALTER TABLE post_media ADD COLUMN IF NOT EXISTS embed_url VARCHAR(2000);
+UPDATE post_media SET embed_url = media_url WHERE embed_url IS NULL;
+
 -- Compatibility / upgrade statements for existing databases
 ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(128);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMP;

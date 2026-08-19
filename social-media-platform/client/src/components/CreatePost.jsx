@@ -1,55 +1,97 @@
-import { useState, useRef } from 'react';
-import { Image, X } from 'lucide-react';
+
+import { useMemo, useState } from 'react';
+import { Link2, Sparkles, X } from 'lucide-react';
 import api from '../services/api';
+import { detectEmbed } from './MediaEmbed';
 
 export default function CreatePost({ onPostCreated }) {
   const [content, setContent] = useState('');
-  const [files, setFiles] = useState([]);
+  const [mediaUrl, setMediaUrl] = useState('');
   const [privacy, setPrivacy] = useState('public');
   const [loading, setLoading] = useState(false);
-  const fileInput = useRef();
+
+  const preview = useMemo(() => detectEmbed(mediaUrl), [mediaUrl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim() && files.length === 0) return;
+    if (!content.trim() && !mediaUrl.trim()) return;
+
     setLoading(true);
-    const formData = new FormData();
-    formData.append('content', content);
-    formData.append('privacy', privacy);
-    files.forEach(f => formData.append('media', f));
     try {
-      const res = await api.post('/posts', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setContent(''); setFiles([]); setPrivacy('public');
-      onPostCreated(res.data);
-    } catch (err) { alert(err.response?.data?.error || 'Failed to create post'); }
-    finally { setLoading(false); }
+      const res = await api.post('/posts', {
+        content: content.trim(),
+        media_url: mediaUrl.trim() || undefined,
+        privacy,
+        type: mediaUrl.trim() ? 'link' : 'text'
+      });
+      setContent('');
+      setMediaUrl('');
+      setPrivacy('public');
+      onPostCreated?.(res.data);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to create post');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="card p-4 mb-4">
+      <div className="flex items-center gap-2 mb-3 text-sm font-semibold">
+        <Sparkles size={17} className="text-blue-600" />
+        Create a Vibe
+      </div>
+
       <form onSubmit={handleSubmit}>
-        <textarea placeholder="What's on your mind?" className="input resize-none h-24 mb-3" value={content} onChange={e => setContent(e.target.value)} />
-        {files.length > 0 && (
-          <div className="flex gap-2 mb-3 overflow-x-auto">
-            {files.map((f, i) => (
-              <div key={i} className="relative">
-                <img src={URL.createObjectURL(f)} alt="" className="w-20 h-20 object-cover rounded-lg" />
-                <button type="button" onClick={() => setFiles(files.filter((_, idx) => idx !== i))} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"><X size={12} /></button>
-              </div>
-            ))}
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          maxLength={5000}
+          placeholder="What's on your mind? Add #hashtags or @mentions..."
+          className="input resize-none min-h-28 mb-3"
+        />
+
+        <div className="relative mb-3">
+          <Link2 size={18} className="absolute left-3 top-3 text-gray-400" />
+          <input
+            value={mediaUrl}
+            onChange={(e) => setMediaUrl(e.target.value)}
+            placeholder="Paste a YouTube, Facebook, Instagram, image or video URL"
+            className="input pl-10 pr-10"
+            inputMode="url"
+            type="url"
+          />
+          {mediaUrl && (
+            <button type="button" onClick={() => setMediaUrl('')} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-700" aria-label="Clear media URL">
+              <X size={18} />
+            </button>
+          )}
+        </div>
+
+        {mediaUrl && (
+          <div className={`mb-3 rounded-xl border p-3 ${preview ? 'border-blue-100 bg-blue-50/40 dark:bg-blue-950/20 dark:border-blue-900' : 'border-red-200 bg-red-50 dark:bg-red-950/20'}`}>
+            {preview ? (
+              <div className="text-sm text-blue-700 dark:text-blue-300">Detected: <strong className="capitalize">{preview.provider}</strong> {preview.type} — media bytes stay on the original host.</div>
+            ) : (
+              <div className="text-sm text-red-600">Unsupported URL. Use YouTube, Facebook, Instagram, or a direct image/video URL.</div>
+            )}
           </div>
         )}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => fileInput.current.click()} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"><Image size={20} /></button>
-            <input ref={fileInput} type="file" multiple accept="image/*,video/*" className="hidden" onChange={e => setFiles([...files, ...Array.from(e.target.files)])} />
-            <select value={privacy} onChange={e => setPrivacy(e.target.value)} className="text-sm border rounded-lg px-2 py-1 bg-transparent">
-              <option value="public">Public</option>
-              <option value="followers">Followers</option>
-              <option value="private">Private</option>
-            </select>
-          </div>
-          <button type="submit" disabled={loading || (!content.trim() && files.length === 0)} className="btn-primary disabled:opacity-50">{loading ? 'Posting...' : 'Post'}</button>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <select value={privacy} onChange={(e) => setPrivacy(e.target.value)} className="text-sm border rounded-lg px-3 py-2 bg-transparent">
+            <option value="public">Public</option>
+            <option value="followers">Followers</option>
+            <option value="private">Private</option>
+          </select>
+
+          <button
+            type="submit"
+            disabled={loading || (!content.trim() && !mediaUrl.trim()) || (mediaUrl.trim() && !preview)}
+            className="btn-primary disabled:opacity-50"
+          >
+            {loading ? 'Posting...' : 'Post'}
+          </button>
         </div>
       </form>
     </div>

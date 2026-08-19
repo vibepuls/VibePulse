@@ -3,8 +3,6 @@ const Follow = require('../models/Follow');
 const Block = require('../models/Block');
 const Mute = require('../models/Mute');
 const PrivacySettings = require('../models/PrivacySettings');
-const path = require('path');
-const fs = require('fs');
 
 exports.getProfile = async (req, res, next) => {
   try {
@@ -54,32 +52,36 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
+function validateRemoteImageUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    if (!['http:', 'https:'].includes(url.protocol)) return false;
+    return url.toString().length <= 2000;
+  } catch {
+    return false;
+  }
+}
+
 exports.uploadProfilePicture = async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded.' });
+    const imageUrl = req.body?.url;
+    if (!validateRemoteImageUrl(imageUrl)) {
+      return res.status(400).json({ error: 'Provide a valid remote image URL.' });
     }
-
-    const fileUrl = `/uploads/profiles/${req.file.filename}`;
-    const user = await User.update(req.user.id, { profile_picture: fileUrl });
-    res.json({ profile_picture: fileUrl });
-  } catch (err) {
-    next(err);
-  }
+    const user = await User.update(req.user.id, { profile_picture: imageUrl });
+    res.json({ profile_picture: user.profile_picture });
+  } catch (err) { next(err); }
 };
 
 exports.uploadCoverPhoto = async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded.' });
+    const imageUrl = req.body?.url;
+    if (!validateRemoteImageUrl(imageUrl)) {
+      return res.status(400).json({ error: 'Provide a valid remote image URL.' });
     }
-
-    const fileUrl = `/uploads/covers/${req.file.filename}`;
-    const user = await User.update(req.user.id, { cover_photo: fileUrl });
-    res.json({ cover_photo: fileUrl });
-  } catch (err) {
-    next(err);
-  }
+    const user = await User.update(req.user.id, { cover_photo: imageUrl });
+    res.json({ cover_photo: user.cover_photo });
+  } catch (err) { next(err); }
 };
 
 exports.deleteAccount = async (req, res, next) => {
