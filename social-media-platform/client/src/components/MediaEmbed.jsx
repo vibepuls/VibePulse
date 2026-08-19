@@ -232,8 +232,6 @@ export default function MediaEmbed({ media, preview = false }) {
           allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
-          // Keep the player interactive. The sandbox prevents the embedded
-          // document from taking over the top-level VibePulse page.
           sandbox="allow-scripts allow-same-origin allow-presentation"
           className="media-iframe"
         />
