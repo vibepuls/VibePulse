@@ -5,9 +5,10 @@ import { Send, Image, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import api from '../services/api';
 import io from 'socket.io-client';
-import { mediaUrl } from '../services/media';
+import { mediaUrl, avatarUrl } from '../services/media';
 
-const SOCKET_URL = (import.meta.env.VITE_API_URL || 'https://vibepulse-backend-boxi.onrender.com/api').replace(/\/api\/?$/, '');
+const SOCKET_CONFIG = (import.meta.env.VITE_API_URL || 'https://vibepulse-backend-boxi.onrender.com/api').trim().replace(/\/+$/, '');
+const SOCKET_URL = SOCKET_CONFIG.replace(/\/api\/?$/, '');
 
 export default function Messages() {
   const { conversationId } = useParams();
@@ -147,7 +148,7 @@ export default function Messages() {
             to={`/messages/${conv.id}`}
             className={`flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 ${String(conversationId) === String(conv.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
           >
-            <img src={conv.participants?.find(p => p.id !== user?.id)?.profile_picture || '/default-avatar.svg'} alt="" className="w-10 h-10 rounded-full object-cover" />
+            <img src={avatarUrl(conv.participants?.find(p => p.id !== user?.id)?.profile_picture)} alt="" className="w-10 h-10 rounded-full object-cover" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{conv.title || conv.participants?.find(p => p.id !== user?.id)?.full_name}</p>
               <p className="text-xs text-gray-500 truncate">{conv.last_message || 'No messages yet'}</p>

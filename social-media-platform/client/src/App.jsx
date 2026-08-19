@@ -20,8 +20,10 @@ import PostDetail from './pages/PostDetail';
 import Search from './pages/Search';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import { avatarUrl } from './services/media';
 
-const SOCKET_URL = (import.meta.env.VITE_API_URL || 'https://vibepulse-backend-boxi.onrender.com/api').replace(/\/api\/?$/, '');
+const SOCKET_CONFIG = (import.meta.env.VITE_API_URL || 'https://vibepulse-backend-boxi.onrender.com/api').trim().replace(/\/+$/, '');
+const SOCKET_URL = SOCKET_CONFIG.replace(/\/api\/?$/, '');
 
 function MessageToast({ message, onClose, onOpen }) {
   if (!message) return null;
@@ -33,7 +35,7 @@ function MessageToast({ message, onClose, onOpen }) {
         <X size={18} />
       </button>
       <button onClick={onOpen} className="w-full text-left p-4 pr-10 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-750">
-        <img src={message.profile_picture || '/default-avatar.svg'} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+        <img src={avatarUrl(message.profile_picture)} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
         <div className="min-w-0">
           <div className="flex items-center gap-2 font-semibold"><MessageCircle size={17} className="text-blue-600" /> New message</div>
           <p className="mt-1 font-medium truncate">{senderName}</p>

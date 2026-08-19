@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { avatarUrl } from '../services/media';
 
 export default function RightSidebar() {
   const [trending, setTrending] = useState([]);
@@ -33,7 +34,7 @@ export default function RightSidebar() {
           <div className="space-y-3">
             {suggested.map(u => (
               <Link key={u.id} to={`/profile/${u.username}`} className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
-                <img src={u.profile_picture || '/default-avatar.svg'} alt="" className="w-10 h-10 rounded-full object-cover" />
+                <img src={avatarUrl(u.profile_picture)} alt="" className="w-10 h-10 rounded-full object-cover" />
                 <div>
                   <p className="font-medium text-sm">{u.full_name}</p>
                   <p className="text-xs text-gray-500">@{u.username}</p>
