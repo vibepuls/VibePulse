@@ -8,6 +8,50 @@ const providerNames = {
   direct: 'Video'
 };
 
+
+const DIRECT_IMAGE_EXTENSIONS = /\.(?:jpe?g|png|gif|webp|avif)(?:[?#].*)?$/i;
+const DIRECT_VIDEO_EXTENSIONS = /\.(?:mp4|webm|mov|m4v|ogv)(?:[?#].*)?$/i;
+
+// Browser-side validation used by CreatePost for an immediate preview.
+// The server remains the source of truth and validates the URL again.
+export function detectEmbed(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  try {
+    const url = new URL(raw);
+    if (!['http:', 'https:'].includes(url.protocol)) return null;
+
+    const host = url.hostname.toLowerCase().replace(/^www\./, '');
+
+    if (host === 'youtu.be' || host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      let id = null;
+      if (host === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0];
+      else if (url.pathname === '/watch') id = url.searchParams.get('v');
+      else if (/^\/(?:shorts|embed|live)\//.test(url.pathname)) id = url.pathname.split('/')[2];
+      if (!id || !/^[A-Za-z0-9_-]{6,20}$/.test(id)) return null;
+      return { provider: 'youtube', type: 'video', embed_url: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&playsinline=1&enablejsapi=1&rel=0` };
+    }
+
+    if (host === 'instagram.com') {
+      const match = url.pathname.match(/^\/(p|reel|tv)\/([A-Za-z0-9_-]+)/i);
+      if (!match) return null;
+      return { provider: 'instagram', type: 'video', embed_url: `https://www.instagram.com/${match[1]}/${match[2]}/embed` };
+    }
+
+    if (host === 'facebook.com' || host === 'fb.watch' || host.endsWith('.facebook.com')) {
+      return { provider: 'facebook', type: 'video', embed_url: `https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(url.toString())}&show_text=false` };
+    }
+
+    if (DIRECT_IMAGE_EXTENSIONS.test(url.toString())) return { provider: 'direct', type: 'image', embed_url: url.toString() };
+    if (DIRECT_VIDEO_EXTENSIONS.test(url.toString())) return { provider: 'direct', type: 'video', embed_url: url.toString() };
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function postYouTubeCommand(iframe, func) {
   if (!iframe?.contentWindow) return;
   iframe.contentWindow.postMessage(
