@@ -27,7 +27,11 @@ const fileFilter = (req, file, cb) => {
   const allowedFiles = [...allowedImages, ...allowedVideos, '.pdf', '.doc', '.docx'];
 
   const ext = path.extname(file.originalname).toLowerCase();
+  const baseName = path.basename(file.originalname);
   const mimetype = file.mimetype;
+  if (baseName.includes('\0') || /\.(php|phtml|exe|sh|bat|cmd|js)$/i.test(baseName)) {
+    return cb(new Error('Unsafe file name.'), false);
+  }
 
   if (allowedFiles.includes(ext) && (
     mimetype.startsWith('image/') || 
@@ -46,8 +50,9 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024,
-    files: 10
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 50 * 1024 * 1024,
+    files: 10,
+    fields: 30
   }
 });
 

@@ -8,6 +8,8 @@ import { mediaUrl } from '../services/media';
 export default function PostCard({ post, onUpdate, onDelete }) {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const [liked, setLiked] = useState(Boolean(post.is_liked));
+  const [reaction, setReaction] = useState(post.user_reaction || (post.is_liked ? 'like' : null));
+  const [reactionOpen, setReactionOpen] = useState(false);
   const [saved, setSaved] = useState(Boolean(post.is_saved));
   const [likesCount, setLikesCount] = useState(Number(post.likes_count || 0));
   const [sharesCount, setSharesCount] = useState(Number(post.shares_count || 0));
@@ -19,13 +21,18 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
   const isOwner = String(post.user_id) === String(currentUser.id);
 
-  const handleLike = async () => {
+  const handleReaction = async (type = 'like') => {
     try {
-      const res = await api.post(`/reactions/${post.id}`, { type: 'like' });
-      setLiked(res.data.action !== 'removed');
-      setLikesCount(prev => Math.max(0, res.data.action === 'removed' ? prev - 1 : prev + 1));
-    } catch (err) { alert(err.response?.data?.error || 'Could not update like'); }
+      const res = await api.post(`/reactions/${post.id}`, { type });
+      const removed = res.data.action === 'removed';
+      setLiked(!removed);
+      setReaction(removed ? null : type);
+      setLikesCount(prev => Math.max(0, prev + (removed ? -1 : res.data.action === 'added' ? 1 : 0)));
+      setReactionOpen(false);
+    } catch (err) { alert(err.response?.data?.error || 'Could not update reaction'); }
   };
+
+  const handleLike = () => handleReaction('like');
 
   const handleSave = async () => {
     try {
@@ -109,7 +116,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
 
       <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-6">
-          <button onClick={handleLike} className={`flex items-center gap-1.5 ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}><Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likesCount}</button>
+          <div className="relative"><button onClick={handleLike} onContextMenu={e => { e.preventDefault(); setReactionOpen(v => !v); }} className={`flex items-center gap-1.5 ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`} title="Right-click for reactions"><Heart size={18} fill={liked ? 'currentColor' : 'none'} /> {likesCount}</button>{reactionOpen && <div className="absolute bottom-8 left-0 z-30 flex gap-1 rounded-full bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 p-2">{[['like','👍'],['love','❤️'],['haha','😂'],['wow','😮'],['sad','😢'],['angry','😡']].map(([type,emoji]) => <button key={type} onClick={() => handleReaction(type)} className="w-8 h-8 hover:scale-125 transition" title={type}>{emoji}</button>)}</div>}</div>
           <Link to={`/post/${post.id}`} className="flex items-center gap-1.5 text-gray-500 hover:text-blue-500"><MessageCircle size={18} /> {post.comments_count || 0}</Link>
           <button onClick={handleShare} className="flex items-center gap-1.5 text-gray-500 hover:text-green-500"><Share2 size={18} /> {sharesCount}</button>
         </div>

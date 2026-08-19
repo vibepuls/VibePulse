@@ -10,6 +10,12 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({ error: 'Referenced resource not found.' });
   }
 
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ error: 'File is too large.' });
+    if (err.code === 'LIMIT_FILE_COUNT') return res.status(400).json({ error: 'Too many files.' });
+    return res.status(400).json({ error: err.message || 'Upload failed.' });
+  }
+
   if (err.name === 'ValidationError') {
     return res.status(400).json({ error: err.message });
   }

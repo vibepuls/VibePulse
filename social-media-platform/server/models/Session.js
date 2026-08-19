@@ -15,6 +15,11 @@ class Session {
     return result.rows[0];
   }
 
+  static async getByRefreshToken(refreshToken) {
+    const result = await query('SELECT * FROM sessions WHERE refresh_token = $1 AND expires_at > NOW()', [refreshToken]);
+    return result.rows[0];
+  }
+
   static async getByUser(userId) {
     const result = await query(
       `SELECT id, ip_address, user_agent, created_at, last_active, expires_at

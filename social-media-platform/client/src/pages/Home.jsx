@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import CreatePost from '../components/CreatePost';
 import PostCard from '../components/PostCard';
+import StoriesBar from '../components/StoriesBar';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
+  const [mode, setMode] = useState('following');
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
@@ -15,7 +17,7 @@ export default function Home() {
     setLoading(true);
     const currentOffset = reset ? 0 : offset;
     try {
-      const res = await api.get(`/posts/feed?limit=10&offset=${currentOffset}`);
+      const res = await api.get(`/posts/feed?mode=${mode}&limit=10&offset=${currentOffset}`);
       const newPosts = res.data;
       if (reset) { setPosts(newPosts); setOffset(10); }
       else { setPosts(prev => [...prev, ...newPosts]); setOffset(currentOffset + 10); }
@@ -23,7 +25,7 @@ export default function Home() {
     } catch {} finally { setLoading(false); }
   };
 
-  useEffect(() => { loadPosts(true); }, []);
+  useEffect(() => { loadPosts(true); }, [mode]);
 
   const lastPostRef = useCallback(node => {
     if (loading) return;
@@ -36,7 +38,8 @@ export default function Home() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Home</h1>
+      <div className="flex items-center justify-between mb-4"><h1 className="text-2xl font-bold">Home</h1><div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">{[['following','Following'],['for-you','For You']].map(([value,label]) => <button key={value} onClick={() => { setMode(value); setOffset(0); setHasMore(true); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === value ? 'bg-white dark:bg-gray-700 shadow' : 'text-gray-500'}`}>{label}</button>)}</div></div>
+      <StoriesBar />
       <CreatePost onPostCreated={(post) => setPosts(prev => [post, ...prev])} />
       {posts.map((post, i) => (
         <div key={post.id} ref={i === posts.length - 1 ? lastPostRef : null}>

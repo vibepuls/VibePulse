@@ -30,8 +30,8 @@ exports.register = async (req, res, next) => {
       return res.status(400).json({ error: 'Username must be 3-30 characters, alphanumeric and underscores only.' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     }
 
     const existingEmail = await User.findByEmail(email);
@@ -53,7 +53,7 @@ exports.register = async (req, res, next) => {
       refresh_token: tokens.refreshToken,
       ip_address: req.ip,
       user_agent: req.headers['user-agent'],
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
 
     res.status(201).json({
@@ -95,7 +95,7 @@ exports.login = async (req, res, next) => {
       refresh_token: tokens.refreshToken,
       ip_address: req.ip,
       user_agent: req.headers['user-agent'],
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
 
     await require('../config/database').query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
@@ -132,7 +132,7 @@ exports.logout = async (req, res, next) => {
 exports.logoutAll = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    await Session.deleteByUser(req.user.id, token);
+    await Session.deleteByUser(req.user.id);
     res.json({ message: 'Logged out from all devices.' });
   } catch (err) {
     next(err);
@@ -147,20 +147,27 @@ exports.refreshToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const session = await Session.getByToken(refreshToken);
+    const session = await Session.getByRefreshToken(refreshToken);
 
-    if (!session) {
-      return res.status(401).json({ error: 'Invalid refresh token.' });
+    if (!session || String(session.user_id) !== String(decoded.userId)) {
+      return res.status(401).json({ error: 'Invalid or expired refresh token.' });
+    }
+
+    const user = await User.findById(decoded.userId);
+    if (!user || !user.is_active || user.is_suspended) {
+      await require('../config/database').query('DELETE FROM sessions WHERE refresh_token = $1', [refreshToken]);
+      return res.status(401).json({ error: 'Account is not available.' });
     }
 
     const tokens = generateTokens(decoded.userId);
+    await require('../config/database').query('DELETE FROM sessions WHERE refresh_token = $1', [refreshToken]);
     await Session.create({
       user_id: decoded.userId,
       token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
       ip_address: req.ip,
       user_agent: req.headers['user-agent'],
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
 
     res.json({ token: tokens.accessToken, refreshToken: tokens.refreshToken });
@@ -188,7 +195,7 @@ exports.changePassword = async (req, res, next) => {
       return res.status(400).json({ error: 'Current password is incorrect.' });
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       return res.status(400).json({ error: 'New password must be at least 6 characters.' });
     }
 
@@ -234,7 +241,11 @@ exports.forgotPassword = async (req, res, next) => {
       });
     }
 
-    res.json({ message: 'If an account exists, a reset email has been sent.' });
+    const response = { message: 'If an account exists, a reset email has been sent.' };
+    if (process.env.NODE_ENV !== 'production') {
+      response.resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    }
+    res.json(response);
   } catch (err) {
     next(err);
   }
@@ -243,6 +254,9 @@ exports.forgotPassword = async (req, res, next) => {
 exports.resetPassword = async (req, res, next) => {
   try {
     const { token, newPassword } = req.body;
+    if (!token || !newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: 'A valid token and password of at least 8 characters are required.' });
+    }
 
     const result = await require('../config/database').query(
       'SELECT * FROM users WHERE reset_token = $1 AND reset_expires > NOW()',
@@ -258,6 +272,7 @@ exports.resetPassword = async (req, res, next) => {
       'UPDATE users SET reset_token = NULL, reset_expires = NULL WHERE id = $1',
       [result.rows[0].id]
     );
+    await Session.deleteByUser(result.rows[0].id);
 
     res.json({ message: 'Password reset successfully.' });
   } catch (err) {

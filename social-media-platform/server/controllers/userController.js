@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Follow = require('../models/Follow');
 const Block = require('../models/Block');
+const Mute = require('../models/Mute');
 const PrivacySettings = require('../models/PrivacySettings');
 const path = require('path');
 const fs = require('fs');
@@ -26,6 +27,7 @@ exports.getProfile = async (req, res, next) => {
       user.is_following = followStatus?.status === 'accepted';
       user.follow_status = followStatus?.status || null;
       user.is_followed_by = !!(await Follow.find(user.id, req.user.id));
+      user.is_muted = await Mute.exists(req.user.id, user.id);
     }
 
     res.json(user);
@@ -123,6 +125,8 @@ exports.follow = async (req, res, next) => {
       recipient_id: userId,
       sender_id: req.user.id,
       type: follow.status === 'pending' ? 'follow_request' : 'follow',
+      reference_id: userId,
+      reference_type: 'user',
       message: follow.status === 'pending' ? `${req.user.username} requested to follow you` : `${req.user.username} started following you`
     });
 
@@ -258,4 +262,23 @@ exports.unblockUser = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+
+exports.muteUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    if (String(userId) === String(req.user.id)) return res.status(400).json({ error: 'Cannot mute yourself.' });
+    const target = await User.findById(userId);
+    if (!target) return res.status(404).json({ error: 'User not found.' });
+    await Mute.create(req.user.id, userId);
+    res.json({ muted: true, message: 'User muted.' });
+  } catch (err) { next(err); }
+};
+
+exports.unmuteUser = async (req, res, next) => {
+  try {
+    await Mute.delete(req.user.id, req.params.userId);
+    res.json({ muted: false, message: 'User unmuted.' });
+  } catch (err) { next(err); }
 };

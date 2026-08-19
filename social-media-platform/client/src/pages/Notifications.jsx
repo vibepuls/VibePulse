@@ -22,7 +22,7 @@ export default function Notifications() {
     <div className="flex items-center justify-between mb-4"><h1 className="text-2xl font-bold">Notifications</h1><button onClick={markAll} className="text-sm text-blue-600 hover:underline">Mark all as read</button></div>
     {notifications.length === 0 ? <div className="text-center py-8 text-gray-500">No notifications yet</div> : <div className="space-y-2">{notifications.map(n => {
       const Icon = icons[n.type] || Bell;
-      const target = n.type === 'message' ? `/messages/${n.reference_id}` : n.reference_type === 'comment' ? `/post/${n.reference_id}` : n.reference_id ? `/post/${n.reference_id}` : `/profile/${n.sender_username}`;
+      const target = n.type === 'message' ? `/messages/${n.reference_id}` : n.reference_type === 'user' ? `/profile/${n.reference_id || n.sender_username}` : n.reference_id ? `/post/${n.reference_id}` : `/profile/${n.sender_username}`;
       return <Link key={n.id} to={target} onClick={() => markRead(n.id)} className={`card p-4 flex items-center gap-3 ${!n.is_read ? 'border-l-4 border-l-blue-600' : ''}`}>
         <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-full"><Icon size={18} className="text-blue-600"/></div>
         <img src={mediaUrl(n.sender_picture) || '/default-avatar.svg'} className="w-10 h-10 rounded-full object-cover" alt=""/>

@@ -9,6 +9,8 @@ const { upload, setUploadType } = require('../middleware/upload');
 const { messageLimiter } = require('../middleware/rateLimiter');
 const { getIO } = require('../websocket/socket');
 const { query } = require('../config/database');
+const PrivacySettings = require('../models/PrivacySettings');
+const Block = require('../models/Block');
 
 router.get('/unread-count', authenticate, async (req, res, next) => {
   try {
@@ -35,6 +37,14 @@ router.post('/conversations', authenticate, async (req, res, next) => {
 
     const target = await User.findById(participantId);
     if (!target) return res.status(404).json({ error: 'User not found.' });
+    if (await Block.exists(req.user.id, participantId) || await Block.exists(participantId, req.user.id)) {
+      return res.status(403).json({ error: 'Messaging is unavailable between these users.' });
+    }
+    const privacy = await PrivacySettings.getByUserId(participantId);
+    const follow = await require('../models/Follow').find(req.user.id, participantId);
+    if (privacy.who_can_message === 'nobody' || (privacy.who_can_message === 'followers' && follow?.status !== 'accepted')) {
+      return res.status(403).json({ error: 'This user does not accept messages from you.' });
+    }
 
     let conversation = await Conversation.findByParticipants(req.user.id, participantId);
     if (!conversation) {
@@ -109,6 +119,46 @@ router.post('/conversations/:id', authenticate, messageLimiter, setUploadType('m
     }
 
     res.status(201).json(messageWithSender);
+  } catch (err) { next(err); }
+});
+
+
+
+router.post('/messages/:messageId/read', authenticate, async (req, res, next) => {
+  try {
+    const message = await query('SELECT conversation_id, sender_id FROM messages WHERE id = $1 AND is_deleted = false', [req.params.messageId]);
+    if (!message.rows.length) return res.status(404).json({ error: 'Message not found.' });
+    if (!(await Conversation.isParticipant(message.rows[0].conversation_id, req.user.id))) return res.status(403).json({ error: 'Not allowed.' });
+    await Message.markAsRead(req.params.messageId, req.user.id);
+    res.json({ read: true });
+  } catch (err) { next(err); }
+});
+
+router.post('/messages/:messageId/reaction', authenticate, async (req, res, next) => {
+  try {
+    const { reaction = 'like' } = req.body;
+    const result = await query('SELECT conversation_id FROM messages WHERE id = $1 AND is_deleted = false', [req.params.messageId]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Message not found.' });
+    if (!(await Conversation.isParticipant(result.rows[0].conversation_id, req.user.id))) return res.status(403).json({ error: 'Not allowed.' });
+    const changed = await Message.addReaction(req.params.messageId, req.user.id, reaction);
+    res.json({ reaction, changed });
+  } catch (err) { next(err); }
+});
+
+router.patch('/messages/:messageId', authenticate, async (req, res, next) => {
+  try {
+    const content = String(req.body.content || '').trim();
+    if (!content) return res.status(400).json({ error: 'Message cannot be empty.' });
+    const result = await query('UPDATE messages SET content = $1, is_edited = true, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND sender_id = $3 AND is_deleted = false RETURNING *', [content, req.params.messageId, req.user.id]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Message not found or unauthorized.' });
+    res.json(result.rows[0]);
+  } catch (err) { next(err); }
+});
+
+router.delete('/messages/:messageId', authenticate, async (req, res, next) => {
+  try {
+    await Message.delete(req.params.messageId, req.user.id);
+    res.json({ message: 'Message deleted.' });
   } catch (err) { next(err); }
 });
 

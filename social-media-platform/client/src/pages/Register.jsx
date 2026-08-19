@@ -95,14 +95,14 @@ export default function Register() {
 
           <input
             type="password"
-            placeholder="Password (min 6 chars)"
+            placeholder="Password (min 8 chars)"
             className="input"
             value={form.password}
             onChange={(e) =>
               setForm({ ...form, password: e.target.value })
             }
             required
-            minLength={6}
+            minLength={8}
           />
 
           <button

@@ -31,6 +31,7 @@ export default function Login() {
           <input type="password" placeholder="Password" className="input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
           <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>
+        <p className="text-center mt-3 text-sm"><Link to="/forgot-password" className="text-blue-600 hover:underline">Forgot password?</Link></p>
         <p className="text-center mt-4 text-sm text-gray-600">Don't have an account? <Link to="/register" className="text-blue-600 hover:underline">Sign up</Link></p>
       </div>
     </div>

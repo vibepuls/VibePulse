@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { MapPin, Link as LinkIcon, Calendar, Users, MessageCircle } from 'lucide-react';
+import { MapPin, Link as LinkIcon, Calendar, Users, MessageCircle, VolumeX } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../services/api';
 import PostCard from '../components/PostCard';
@@ -43,6 +43,13 @@ export default function Profile() {
     } catch {}
   };
 
+  const handleMute = async () => {
+    try {
+      if (profile.is_muted) { await api.post(`/users/unmute/${profile.id}`); setProfile({ ...profile, is_muted: false }); }
+      else { await api.post(`/users/mute/${profile.id}`); setProfile({ ...profile, is_muted: true }); }
+    } catch (err) { alert(err.response?.data?.error || 'Could not update mute setting'); }
+  };
+
   const handleMessage = async () => {
     if (startingChat || !profile?.id) return;
     setStartingChat(true);
@@ -73,6 +80,7 @@ export default function Profile() {
                 <button onClick={handleFollow} className="btn-primary">
                   {profile.is_following ? 'Unfollow' : profile.follow_status === 'pending' ? 'Requested' : 'Follow'}
                 </button>
+                <button type="button" onClick={handleMute} className="btn-secondary flex items-center gap-1" title={profile.is_muted ? 'Unmute' : 'Mute'}><VolumeX size={18} /> {profile.is_muted ? 'Unmute' : 'Mute'}</button>
                 <button type="button" onClick={handleMessage} disabled={startingChat} className="btn-secondary disabled:opacity-50" title="Message">
                   <MessageCircle size={18} />
                 </button>

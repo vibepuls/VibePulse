@@ -8,11 +8,15 @@ exports.createPost = async (req, res, next) => {
   try {
     const { content, privacy = 'public', type = 'text', original_post_id, repost_comment } = req.body;
 
+    if (content !== undefined && typeof content !== 'string') return res.status(400).json({ error: 'Invalid post content.' });
+    if (typeof content === 'string' && content.length > 5000) return res.status(400).json({ error: 'Post is too long (maximum 5000 characters).' });
     if (!content && (!req.files || req.files.length === 0)) {
       return res.status(400).json({ error: 'Post must have content or media.' });
     }
 
     if (!['public', 'followers', 'private'].includes(privacy)) return res.status(400).json({ error: 'Invalid privacy setting.' });
+    const allowedTypes = ['text', 'image', 'video', 'link', 'repost'];
+    if (!allowedTypes.includes(type)) return res.status(400).json({ error: 'Invalid post type.' });
     const post = await Post.create({
       user_id: req.user.id,
       content: content || '',
@@ -68,8 +72,12 @@ exports.createPost = async (req, res, next) => {
 
 exports.getFeed = async (req, res, next) => {
   try {
-    const { limit = 10, offset = 0 } = req.query;
-    const posts = await Post.getFeed(req.user.id, parseInt(limit), parseInt(offset));
+    const { limit = 10, offset = 0, mode = 'following' } = req.query;
+    const safeLimit = Math.min(Math.max(parseInt(limit) || 10, 1), 30);
+    const safeOffset = Math.max(parseInt(offset) || 0, 0);
+    const posts = mode === 'for-you'
+      ? await Post.getForYou(req.user.id, safeLimit, safeOffset)
+      : await Post.getFeed(req.user.id, safeLimit, safeOffset);
     res.json(posts);
   } catch (err) {
     next(err);
@@ -112,6 +120,8 @@ exports.updatePost = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { content, privacy } = req.body;
+    if (content !== undefined && (typeof content !== 'string' || content.length > 5000)) return res.status(400).json({ error: 'Post content must be a string up to 5000 characters.' });
+    if (privacy !== undefined && !['public', 'followers', 'private'].includes(privacy)) return res.status(400).json({ error: 'Invalid privacy setting.' });
 
     const post = await Post.update(id, req.user.id, { content, privacy });
     if (!post) {

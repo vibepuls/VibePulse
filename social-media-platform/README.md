@@ -1,6 +1,6 @@
 # Social Media Platform
 
-A complete, production-ready full-stack social media platform built with React, Node.js/Express, PostgreSQL, and Socket.IO.
+A full-stack social media platform foundation built with React, Node.js/Express, PostgreSQL, and Socket.IO.
 
 ## Features
 
@@ -8,14 +8,14 @@ A complete, production-ready full-stack social media platform built with React, 
 - **User Profiles**: Profile/cover photos, bio, location, website, follower/following counts
 - **Follow System**: Follow/unfollow, private accounts with follow requests
 - **Posts**: Text, image, video posts with privacy settings (public/followers/private)
-- **Interactions**: Like/unlike, comments with replies, share/repost, bookmarks
-- **Stories**: 24-hour disappearing image/video/text stories
+- **Interactions**: Reactions, comments with replies, share/repost, bookmarks
+- **Stories**: 24-hour image/video/text stories with a simple viewer and text-story composer
 - **Real-time Messaging**: WebSocket-powered direct messaging with typing indicators
 - **Notifications**: Real-time notifications for all interactions
 - **Search**: Search users, posts, and hashtags
 - **Explore**: Trending posts and hashtags
 - **Admin Panel**: User management, content moderation, reports, analytics
-- **Privacy**: Granular privacy settings, block/mute users
+- **Privacy**: Granular privacy settings, block/mute users, messaging restrictions
 - **Responsive Design**: Works on desktop, tablet, and mobile
 - **Dark Mode**: Light/dark/system theme support
 
@@ -218,6 +218,10 @@ social-media-platform/
 └── README.md
 ```
 
+## Important deployment note
+
+This version intentionally keeps media files on the backend filesystem so the project can be deployed without an external storage provider. On Render, the local filesystem is not a durable long-term media store. Add an object-storage provider later before relying on permanent image/video uploads.
+
 ## Security Features
 
 - Password hashing with bcrypt (12 rounds)
@@ -226,6 +230,8 @@ social-media-platform/
 - SQL injection prevention via parameterized queries
 - XSS protection through output encoding
 - File upload validation (type and size)
+- Authentication and API rate limiting
+- Refresh-token rotation and session invalidation on password reset
 - CORS configuration
 - Helmet security headers
 

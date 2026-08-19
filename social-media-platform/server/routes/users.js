@@ -22,6 +22,8 @@ router.patch('/privacy', authenticate, userController.updatePrivacySettings);
 router.get('/blocked', authenticate, userController.getBlockedUsers);
 router.post('/block/:userId', authenticate, userController.blockUser);
 router.post('/unblock/:userId', authenticate, userController.unblockUser);
+router.post('/mute/:userId', authenticate, userController.muteUser);
+router.post('/unmute/:userId', authenticate, userController.unmuteUser);
 router.delete('/account', authenticate, userController.deleteAccount);
 
 module.exports = router;

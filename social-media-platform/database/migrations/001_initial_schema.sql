@@ -24,7 +24,9 @@ CREATE TABLE IF NOT EXISTS users (
     last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP
+    deleted_at TIMESTAMP,
+    reset_token VARCHAR(128),
+    reset_expires TIMESTAMP
 );
 
 -- Sessions table
@@ -140,8 +142,8 @@ CREATE TABLE IF NOT EXISTS post_hashtags (
 CREATE TABLE IF NOT EXISTS stories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    media_url VARCHAR(500) NOT NULL,
-    media_type VARCHAR(20) NOT NULL CHECK (media_type IN ('image', 'video', 'text')),
+    media_url VARCHAR(500),
+    media_type VARCHAR(20) NOT NULL DEFAULT 'text' CHECK (media_type IN ('image', 'video', 'text')),
     text_content TEXT,
     background_color VARCHAR(20) DEFAULT '#000000',
     text_color VARCHAR(20) DEFAULT '#FFFFFF',
@@ -292,6 +294,12 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     details JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Compatibility / upgrade statements for existing databases
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(128);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_expires TIMESTAMP;
+ALTER TABLE stories ALTER COLUMN media_url DROP NOT NULL;
+ALTER TABLE stories ALTER COLUMN media_type SET DEFAULT 'text';
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);

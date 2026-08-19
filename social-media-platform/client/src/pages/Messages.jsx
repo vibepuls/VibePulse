@@ -62,12 +62,13 @@ export default function Messages() {
     socket.emit('join_conversation', conversationId);
 
     api.get(`/messages/conversations/${conversationId}`)
-      .then(res => { if (!cancelled) setMessages(res.data); })
+      .then(res => { if (!cancelled) { setMessages(res.data); res.data.filter(m => String(m.sender_id) !== String(user?.id)).forEach(m => api.post(`/messages/messages/${m.id}/read`).catch(() => {})); } })
       .catch(() => { if (!cancelled) setMessages([]); });
 
     const handleNewMessage = (msg) => {
       if (String(msg.conversation_id) === String(conversationId)) {
         addMessageIfNew(msg);
+        if (String(msg.sender_id) !== String(user?.id)) api.post(`/messages/messages/${msg.id}/read`).catch(() => {});
       }
       loadConversations().catch(() => {});
     };
@@ -91,7 +92,7 @@ export default function Messages() {
       socket.off('typing', handleTyping);
       socket.off('conversation_updated', handleConversationUpdated);
     };
-  }, [conversationId, socket, addMessageIfNew, loadConversations]);
+  }, [conversationId, socket, addMessageIfNew, loadConversations, user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -175,7 +176,7 @@ export default function Messages() {
                   {msg.media_url && msg.message_type === 'video' && <video src={mediaUrl(msg.media_url)} controls className="rounded-lg mb-2 max-w-full" />}
                   {msg.content && <p>{msg.content}</p>}
                   <p className={`text-xs mt-1 ${String(msg.sender_id) === String(user?.id) ? 'text-blue-200' : 'text-gray-500'}`}>
-                    {formatDistanceToNow(new Date(msg.created_at))} ago
+                    {formatDistanceToNow(new Date(msg.created_at))} ago {msg.is_edited ? '· edited' : ''}
                   </p>
                 </div>
               </div>

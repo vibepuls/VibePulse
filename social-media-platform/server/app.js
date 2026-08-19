@@ -17,9 +17,11 @@ app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', creden
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1h', immutable: false }));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+app.use('/api', apiLimiter);
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));

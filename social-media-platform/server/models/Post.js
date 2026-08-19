@@ -31,6 +31,13 @@ class Post {
        LEFT JOIN posts op ON p.original_post_id = op.id
        LEFT JOIN users ou ON op.user_id = ou.id
        WHERE p.id = $1 AND p.is_deleted = false AND u.deleted_at IS NULL
+       AND (
+         p.user_id = $2
+         OR (COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'everyone') = 'everyone' AND (p.privacy = 'public' OR (p.privacy = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = p.user_id AND status = 'accepted'))))
+         OR (COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'followers') = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = p.user_id AND status = 'accepted') AND p.privacy <> 'private')
+       )
+       AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = p.user_id AND blocked_id = $2)
+       AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = $2 AND blocked_id = p.user_id)
        GROUP BY p.id, u.id, op.id, ou.id`,
       [id, currentUserId]
     );
@@ -50,9 +57,9 @@ class Post {
        LEFT JOIN post_media pm ON p.id = pm.post_id
        WHERE p.is_deleted = false AND u.deleted_at IS NULL AND u.is_active = true
        AND (
-         p.privacy = 'public'
-         OR p.user_id = $1
-         OR (p.privacy = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = p.user_id AND status = 'accepted'))
+         p.user_id = $1
+         OR (COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'everyone') = 'everyone' AND (p.privacy = 'public' OR (p.privacy = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = p.user_id AND status = 'accepted'))))
+         OR (COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'followers') = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = p.user_id AND status = 'accepted') AND p.privacy <> 'private')
        )
        AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = p.user_id AND blocked_id = $1)
        AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = $1 AND blocked_id = p.user_id)
@@ -77,14 +84,47 @@ class Post {
        LEFT JOIN post_media pm ON p.id = pm.post_id
        WHERE p.user_id = $1 AND p.is_deleted = false AND u.deleted_at IS NULL
        AND (
-         p.privacy = 'public'
-         OR p.user_id = $2
-         OR (p.privacy = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = p.user_id AND status = 'accepted'))
+         p.user_id = $2
+         OR (COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'everyone') = 'everyone' AND (p.privacy = 'public' OR (p.privacy = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = p.user_id AND status = 'accepted'))))
+         OR (COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'followers') = 'followers' AND EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = p.user_id AND status = 'accepted') AND p.privacy <> 'private')
        )
+       AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = p.user_id AND blocked_id = $2)
+       AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = $2 AND blocked_id = p.user_id)
        GROUP BY p.id, u.id
        ORDER BY p.created_at DESC
        LIMIT $3 OFFSET $4`,
       [userId, currentUserId, limit, offset]
+    );
+    return result.rows;
+  }
+
+
+  static async getForYou(userId, limit = 10, offset = 0) {
+    const result = await query(
+      `SELECT p.*, 
+        u.username, u.full_name, u.profile_picture, u.is_verified,
+        (SELECT EXISTS(SELECT 1 FROM reactions WHERE post_id = p.id AND user_id = $1)) as is_liked,
+        (SELECT EXISTS(SELECT 1 FROM bookmarks WHERE post_id = p.id AND user_id = $1)) as is_saved,
+        (SELECT reaction_type FROM reactions WHERE post_id = p.id AND user_id = $1) as user_reaction,
+        json_agg(DISTINCT jsonb_build_object('id', pm.id, 'url', pm.media_url, 'type', pm.media_type, 'thumbnail', pm.thumbnail_url)) FILTER (WHERE pm.id IS NOT NULL) as media,
+        (
+          p.likes_count + (p.comments_count * 2) + (p.shares_count * 3) +
+          CASE WHEN p.created_at > NOW() - INTERVAL '24 hours' THEN 5 ELSE 0 END
+        ) AS score
+       FROM posts p
+       JOIN users u ON p.user_id = u.id
+       LEFT JOIN post_media pm ON p.id = pm.post_id
+       WHERE p.is_deleted = false AND p.privacy = 'public' AND u.deleted_at IS NULL AND u.is_active = true
+       AND COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'everyone') <> 'nobody'
+       AND (COALESCE((SELECT who_can_see_posts FROM privacy_settings WHERE user_id = p.user_id), 'everyone') = 'everyone' OR EXISTS(SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = p.user_id AND status = 'accepted'))
+       AND p.user_id <> $1
+       AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = p.user_id AND blocked_id = $1)
+       AND NOT EXISTS(SELECT 1 FROM blocks WHERE blocker_id = $1 AND blocked_id = p.user_id)
+       AND NOT EXISTS(SELECT 1 FROM mutes WHERE user_id = $1 AND muted_user_id = p.user_id)
+       GROUP BY p.id, u.id
+       ORDER BY score DESC, p.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
     );
     return result.rows;
   }

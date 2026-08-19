@@ -18,6 +18,8 @@ import Settings from './pages/Settings';
 import AdminDashboard from './admin/AdminDashboard';
 import PostDetail from './pages/PostDetail';
 import Search from './pages/Search';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const SOCKET_URL = (import.meta.env.VITE_API_URL || 'https://vibepulse-backend-boxi.onrender.com/api').replace(/\/api\/?$/, '');
 
@@ -59,7 +61,7 @@ function GlobalNotificationListener({ user }) {
     const handler = n => { setNotification(n); window.dispatchEvent(new Event('vibepulse:counts-refresh')); if (timerRef.current) clearTimeout(timerRef.current); timerRef.current = setTimeout(() => setNotification(null), 7000); };
     socket.on('new_notification', handler); return () => { socket.off('new_notification', handler); socket.disconnect(); if (timerRef.current) clearTimeout(timerRef.current); };
   }, [user]);
-  return <NotificationToast notification={notification} onClose={() => setNotification(null)} onOpen={() => { if (!notification) return; const id = notification.reference_id; setNotification(null); navigate(id ? `/post/${id}` : '/notifications'); }} />;
+  return <NotificationToast notification={notification} onClose={() => setNotification(null)} onOpen={() => { if (!notification) return; const id = notification.reference_id; setNotification(null); navigate(notification.reference_type === 'user' && id ? `/profile/${id}` : id ? `/post/${id}` : '/notifications'); }} />;
 }
 
 function GlobalMessageListener({ user }) {
@@ -116,6 +118,8 @@ function App() {
             <Route path="/" element={isAuthenticated ? <Home /> : <Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile/:username" element={<Profile />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/search" element={<Search />} />

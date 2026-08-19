@@ -2,6 +2,9 @@ const Comment = require('../models/Comment');
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const PrivacySettings = require('../models/PrivacySettings');
+const Follow = require('../models/Follow');
+const Block = require('../models/Block');
 
 exports.getComments = async (req, res, next) => {
   try {
@@ -21,6 +24,7 @@ exports.createComment = async (req, res, next) => {
     const { postId } = req.params;
     const { content, parent_id } = req.body;
 
+    if (typeof content !== 'string' || content.length > 2000) return res.status(400).json({ error: 'Comment must be a string up to 2000 characters.' });
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ error: 'Comment cannot be empty.' });
     }
@@ -29,6 +33,10 @@ exports.createComment = async (req, res, next) => {
     if (!post) {
       return res.status(404).json({ error: 'Post not found.' });
     }
+    if (await Block.exists(req.user.id, post.user_id) || await Block.exists(post.user_id, req.user.id)) return res.status(403).json({ error: 'You cannot comment on this post.' });
+    const privacy = await PrivacySettings.getByUserId(post.user_id);
+    const following = await Follow.find(req.user.id, post.user_id);
+    if (privacy.who_can_comment === 'nobody' || (privacy.who_can_comment === 'followers' && following?.status !== 'accepted')) return res.status(403).json({ error: 'Comments are restricted on this post.' });
 
     const comment = await Comment.create({
       post_id: postId,
