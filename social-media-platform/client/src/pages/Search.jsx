@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Search as SearchIcon } from 'lucide-react';
 import api from '../services/api';
 import PostCard from '../components/PostCard';
-import { mediaUrl } from '../services/media';
+import { mediaUrl, avatarUrl, handleAvatarError } from '../services/media';
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -47,7 +47,12 @@ export default function Search() {
           <div className="space-y-3">
             {results.users.map(u => (
               <Link key={u.id} to={`/profile/${u.username}`} className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
-                <img src={mediaUrl(u.profile_picture) || '/default-avatar.svg'} alt="" className="w-10 h-10 rounded-full object-cover" />
+                <img
+                  src={avatarUrl(u.profile_picture, u.full_name || u.username)}
+                  onError={(event) => handleAvatarError(event, u.full_name || u.username)}
+                  alt={`${u.full_name || u.username || 'User'} avatar`}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
                 <div><p className="font-medium">{u.full_name}</p><p className="text-sm text-gray-500">@{u.username}</p></div>
               </Link>
             ))}

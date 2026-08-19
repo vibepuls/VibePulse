@@ -36,4 +36,15 @@ export const mediaUrl = (value) => {
   return `${API_ORIGIN}/${raw.replace(/^\/+/, '')}`;
 };
 
-export const avatarUrl = (value) => mediaUrl(value) || '/default-avatar.svg';
+export const avatarUrl = (value, name = 'User') => {
+  const resolved = mediaUrl(value);
+  if (resolved) return resolved;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=random&color=fff&size=128`;
+};
+
+export const handleAvatarError = (event, name = 'User') => {
+  const img = event.currentTarget;
+  if (img.dataset.avatarFallback === '1') return;
+  img.dataset.avatarFallback = '1';
+  img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=random&color=fff&size=128`;
+};

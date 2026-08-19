@@ -1,77 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX, Play, Pause, ShieldCheck } from 'lucide-react';
+import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 
 const providerNames = {
   youtube: 'YouTube',
   facebook: 'Facebook',
   instagram: 'Instagram',
-  direct: 'Media'
+  direct: 'Video'
 };
-
-export function detectEmbed(value) {
-  const raw = String(value || '').trim();
-  if (!raw) return null;
-  try {
-    const url = new URL(raw);
-    if (!['http:', 'https:'].includes(url.protocol)) return null;
-
-    if (url.hostname === 'youtu.be' || /(^|\.)youtube(-nocookie)?\.com$/i.test(url.hostname)) {
-      const id = url.hostname === 'youtu.be'
-        ? url.pathname.split('/').filter(Boolean)[0]
-        : url.searchParams.get('v') || url.pathname.match(/^\/(?:shorts|embed|live)\/([^/]+)/)?.[1];
-      if (id) {
-        const params = new URLSearchParams({
-          enablejsapi: '1',
-          origin: window.location.origin,
-          rel: '0',
-          autoplay: '0',
-          mute: '1',
-          playsinline: '1',
-          modestbranding: '1'
-        });
-        return { provider: 'youtube', type: 'video', embed_url: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?${params}` };
-      }
-    }
-
-    if (/(^|\.)instagram\.com$/i.test(url.hostname)) {
-      const match = url.pathname.match(/^\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/i);
-      if (match) return { provider: 'instagram', type: 'video', embed_url: `https://www.instagram.com/${url.pathname.split('/')[1]}/${match[1]}/embed` };
-    }
-
-    if (/(^|\.)facebook\.com$/i.test(url.hostname) || url.hostname === 'fb.watch') {
-      return {
-        provider: 'facebook',
-        type: 'video',
-        embed_url: `https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(raw)}&show_text=false`
-      };
-    }
-
-    if (/\.(jpe?g|png|gif|webp|avif)(?:[?#].*)?$/i.test(raw)) {
-      return { provider: 'direct', type: 'image', embed_url: raw };
-    }
-    if (/\.(mp4|webm|mov|m4v|ogv)(?:[?#].*)?$/i.test(raw)) {
-      return { provider: 'direct', type: 'video', embed_url: raw };
-    }
-  } catch {}
-  return null;
-}
 
 function postYouTubeCommand(iframe, func) {
   if (!iframe?.contentWindow) return;
-  iframe.contentWindow.postMessage(JSON.stringify({
-    event: 'command',
-    func,
-    args: []
-  }), 'https://www.youtube-nocookie.com');
+  iframe.contentWindow.postMessage(
+    JSON.stringify({ event: 'command', func, args: [] }),
+    'https://www.youtube-nocookie.com'
+  );
 }
 
-function useViewportAutoplay(ref, { onEnter, onLeave, enabled = true } = {}) {
+function useViewportAutoplay(ref, { onEnter, onLeave, enabled }) {
   useEffect(() => {
-    if (!enabled || !ref.current) return;
+    if (!enabled || !ref.current || typeof IntersectionObserver === 'undefined') return;
+
     const node = ref.current;
     let active = false;
+
     const observer = new IntersectionObserver(([entry]) => {
       const visible = entry.isIntersecting && entry.intersectionRatio >= 0.55;
+
       if (visible && !active) {
         active = true;
         window.dispatchEvent(new CustomEvent('vibepulse:media-enter', { detail: node }));
@@ -81,11 +35,17 @@ function useViewportAutoplay(ref, { onEnter, onLeave, enabled = true } = {}) {
         onLeave?.();
       }
     }, { threshold: [0, 0.55, 0.8] });
+
     const stopWhenAnotherStarts = (event) => {
-      if (event.detail && event.detail !== node) onLeave?.();
+      if (event.detail && event.detail !== node) {
+        active = false;
+        onLeave?.();
+      }
     };
+
     window.addEventListener('vibepulse:media-enter', stopWhenAnotherStarts);
     observer.observe(node);
+
     return () => {
       observer.disconnect();
       window.removeEventListener('vibepulse:media-enter', stopWhenAnotherStarts);
@@ -103,62 +63,99 @@ export default function MediaEmbed({ media, preview = false }) {
   if (!media?.embed_url && !media?.url) return null;
 
   const provider = media.provider || 'direct';
-  const type = media.type;
+  const type = media.type || 'video';
   const src = media.embed_url || media.url;
 
   const play = () => {
     if (provider === 'direct' && videoRef.current) {
       videoRef.current.muted = muted;
-      videoRef.current.play().then(() => setPlaying(true)).catch(() => {});
-    } else if (provider === 'youtube') {
+      videoRef.current.play()
+        .then(() => setPlaying(true))
+        .catch(() => {});
+      return;
+    }
+
+    if (provider === 'youtube') {
       postYouTubeCommand(iframeRef.current, 'playVideo');
       setPlaying(true);
     }
   };
 
   const pause = () => {
-    if (provider === 'direct' && videoRef.current) videoRef.current.pause();
-    if (provider === 'youtube') postYouTubeCommand(iframeRef.current, 'pauseVideo');
-    setPlaying(false);
+    if (provider === 'direct' && videoRef.current) {
+      videoRef.current.pause();
+      return;
+    }
+
+    if (provider === 'youtube') {
+      postYouTubeCommand(iframeRef.current, 'pauseVideo');
+      setPlaying(false);
+    }
   };
 
   const toggleMute = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+    event?.stopPropagation();
+
     const next = !muted;
     setMuted(next);
+
     if (provider === 'direct' && videoRef.current) {
       videoRef.current.muted = next;
-      if (next) {
+      if (!next && videoRef.current.paused) {
         videoRef.current.play().catch(() => {});
       }
     } else if (provider === 'youtube') {
       postYouTubeCommand(iframeRef.current, next ? 'mute' : 'unMute');
-      if (!playing) play();
+      if (!playing) {
+        postYouTubeCommand(iframeRef.current, 'playVideo');
+        setPlaying(true);
+      }
     }
   };
 
   const onEnter = () => {
-    // Browsers permit autoplay when the media starts muted.
+    // Muted autoplay is required by most browsers.
     if (provider === 'direct' && videoRef.current) {
       videoRef.current.muted = true;
       setMuted(true);
     }
-    play();
+
+    if (provider === 'direct') {
+      videoRef.current?.play()
+        .then(() => setPlaying(true))
+        .catch(() => {});
+    } else if (provider === 'youtube') {
+      postYouTubeCommand(iframeRef.current, 'mute');
+      postYouTubeCommand(iframeRef.current, 'playVideo');
+      setMuted(true);
+      setPlaying(true);
+    }
   };
+
   const onLeave = () => pause();
 
-  useViewportAutoplay(containerRef, { onEnter, onLeave, enabled: type === 'video' });
+  useViewportAutoplay(containerRef, {
+    onEnter,
+    onLeave,
+    enabled: type === 'video'
+  });
 
   useEffect(() => {
     const onMessage = (event) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
       if (event.origin !== 'https://www.youtube-nocookie.com') return;
+
       try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data?.event === 'onStateChange') setPlaying(data.info === 1);
+        const data = typeof event.data === 'string'
+          ? JSON.parse(event.data)
+          : event.data;
+
+        if (data?.event === 'onStateChange') {
+          setPlaying(data.info === 1);
+        }
       } catch {}
     };
+
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, []);
@@ -166,65 +163,102 @@ export default function MediaEmbed({ media, preview = false }) {
   if (type === 'image') {
     return (
       <div ref={containerRef} className="overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-900">
-        <img src={src} alt={media.title || 'Post media'} loading="lazy" className="block w-full max-h-[680px] object-contain mx-auto pointer-events-none select-none" draggable="false" />
+        <img
+          src={src}
+          alt={media.title || 'Post media'}
+          loading="lazy"
+          className="block w-full max-h-[680px] object-contain mx-auto"
+          onError={(event) => {
+            event.currentTarget.style.display = 'none';
+          }}
+        />
       </div>
     );
   }
 
   if (type === 'video' && provider === 'direct') {
     return (
-      <div ref={containerRef} className={`media-embed media-secure ${preview ? 'media-embed-preview' : ''}`}>
+      <div
+        ref={containerRef}
+        className={`media-embed ${preview ? 'media-embed-preview' : ''}`}
+      >
         <video
           ref={videoRef}
           src={src}
-          muted
+          muted={muted}
           playsInline
+          controls
           preload="metadata"
-          className="block w-full h-full object-contain pointer-events-none select-none"
+          className="block w-full h-full object-contain"
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
-          onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
+          onVolumeChange={(event) => setMuted(event.currentTarget.muted)}
         />
-        <div className="media-click-shield" aria-hidden="true" />
-        <div className="media-controls" onClick={(e) => e.stopPropagation()}>
-          <button type="button" className="media-control-btn" onClick={playing ? pause : play} aria-label={playing ? 'Pause video' : 'Play video'}>
+
+        <div className="media-controls" onClick={(event) => event.stopPropagation()}>
+          <button
+            type="button"
+            className="media-control-btn"
+            onClick={playing ? pause : play}
+            aria-label={playing ? 'Pause video' : 'Play video'}
+          >
             {playing ? <Pause size={18} /> : <Play size={18} />}
           </button>
-          <button type="button" className="media-control-btn" onClick={toggleMute} aria-label={muted ? 'Unmute video' : 'Mute video'}>
+
+          <button
+            type="button"
+            className="media-control-btn"
+            onClick={toggleMute}
+            aria-label={muted ? 'Unmute video' : 'Mute video'}
+          >
             {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
-          <span className="media-secure-badge"><ShieldCheck size={14} /> VibePulse</span>
         </div>
       </div>
     );
   }
 
   if (type === 'video' || ['youtube', 'facebook', 'instagram'].includes(provider)) {
-    const isYoutube = provider === 'youtube';
     return (
-      <div ref={containerRef} className={`media-embed media-secure ${preview ? 'media-embed-preview' : ''}`}>
+      <div
+        ref={containerRef}
+        className={`media-embed ${preview ? 'media-embed-preview' : ''}`}
+      >
         <iframe
           ref={iframeRef}
           src={src}
           title={`${providerNames[provider] || 'Embedded'} media`}
           loading="lazy"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          allowFullScreen={false}
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
-          tabIndex={-1}
+          // Keep the player interactive. The sandbox prevents the embedded
+          // document from taking over the top-level VibePulse page.
+          sandbox="allow-scripts allow-same-origin allow-presentation"
           className="media-iframe"
         />
-        {/* Strict shield: external player controls, logos, titles and links cannot receive pointer input. */}
-        <div className="media-click-shield" aria-hidden="true" />
-        <div className="media-controls" onClick={(e) => e.stopPropagation()}>
-          <button type="button" className="media-control-btn" onClick={playing ? pause : play} aria-label={playing ? 'Pause video' : 'Play video'}>
-            {playing ? <Pause size={18} /> : <Play size={18} />}
-          </button>
-          <button type="button" className="media-control-btn" onClick={toggleMute} aria-label={muted ? 'Unmute video' : 'Mute video'}>
-            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-          </button>
-          <span className="media-secure-badge"><ShieldCheck size={14} /> VibePulse</span>
-        </div>
+
+        {provider === 'youtube' && (
+          <div className="media-controls media-controls-iframe">
+            <button
+              type="button"
+              className="media-control-btn"
+              onClick={playing ? pause : play}
+              aria-label={playing ? 'Pause video' : 'Play video'}
+            >
+              {playing ? <Pause size={18} /> : <Play size={18} />}
+            </button>
+
+            <button
+              type="button"
+              className="media-control-btn"
+              onClick={toggleMute}
+              aria-label={muted ? 'Unmute video' : 'Mute video'}
+            >
+              {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+          </div>
+        )}
       </div>
     );
   }

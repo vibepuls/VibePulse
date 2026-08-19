@@ -6,7 +6,7 @@ import { MapPin, Link as LinkIcon, Calendar, MessageCircle, VolumeX, Camera, X, 
 import { format } from 'date-fns';
 import api from '../services/api';
 import PostCard from '../components/PostCard';
-import { mediaUrl } from '../services/media';
+import { mediaUrl, avatarUrl, handleAvatarError } from '../services/media';
 import { cloudinaryConfigured, uploadImageToCloudinary } from '../services/cloudinary';
 
 function PhotoEditor({ title, currentUrl, onSave, onClose }) {
@@ -38,7 +38,16 @@ function PhotoEditor({ title, currentUrl, onSave, onClose }) {
         </div>
 
         <div className="mb-4 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900">
-          {url ? <img src={url} alt="Preview" className="w-full h-48 object-cover" /> : <div className="h-48 flex items-center justify-center text-gray-500">No image selected</div>}
+          {url ? (
+            <img
+              src={url}
+              alt="Preview"
+              className="w-full h-48 object-cover"
+              onError={(event) => {
+                event.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : <div className="h-48 flex items-center justify-center text-gray-500">No image selected</div>}
         </div>
 
         <label className="block text-sm font-medium mb-1">Direct image URL</label>
@@ -134,7 +143,14 @@ export default function Profile() {
   return (
     <div>
       <div className="relative h-48 sm:h-64 bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-xl overflow-hidden">
-        {profile.cover_photo && <img src={mediaUrl(profile.cover_photo)} alt="" className="w-full h-full object-cover" />}
+        <img
+          src={mediaUrl(profile.cover_photo) || '/default-avatar.svg'}
+          alt=""
+          className={`w-full h-full object-cover ${profile.cover_photo ? '' : 'opacity-0'}`}
+          onError={(event) => {
+            event.currentTarget.style.display = 'none';
+          }}
+        />
         {isOwnProfile && (
           <button onClick={() => setPhotoEditor({ field: 'cover_photo', title: 'Update cover photo' })} className="absolute right-3 bottom-3 btn-secondary flex items-center gap-2 shadow-lg">
             <Camera size={17} /> Cover
@@ -145,7 +161,12 @@ export default function Profile() {
       <div className="card -mt-16 mx-2 sm:mx-4 p-4 sm:p-6 relative">
         <div className="flex items-end justify-between mb-4 gap-3">
           <div className="relative">
-            <img src={mediaUrl(profile.profile_picture) || '/default-avatar.svg'} alt="" className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 object-cover bg-white" />
+            <img
+              src={avatarUrl(profile.profile_picture, profile.full_name || profile.username)}
+              onError={(event) => handleAvatarError(event, profile.full_name || profile.username)}
+              alt={`${profile.full_name || profile.username || 'User'} profile`}
+              className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 object-cover bg-white"
+            />
             {isOwnProfile && (
               <button onClick={() => setPhotoEditor({ field: 'profile_picture', title: 'Update profile picture' })} className="absolute bottom-0 right-0 p-2 rounded-full bg-blue-600 text-white border-2 border-white" aria-label="Change profile picture">
                 <Camera size={15} />

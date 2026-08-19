@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Trash2, Edit2, X, Link2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import api from '../services/api';
-import { mediaUrl } from '../services/media';
+import { mediaUrl, avatarUrl, handleAvatarError } from '../services/media';
 import MediaEmbed from './MediaEmbed';
 
 export default function PostCard({ post, onUpdate, onDelete }) {
@@ -72,7 +72,12 @@ export default function PostCard({ post, onUpdate, onDelete }) {
     <article className="card p-4 mb-4 overflow-hidden">
       <div className="flex items-start justify-between mb-3">
         <Link to={`/profile/${post.username}`} className="flex items-center gap-3 min-w-0">
-          <img src={mediaUrl(post.profile_picture) || '/default-avatar.svg'} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+          <img
+            src={avatarUrl(post.profile_picture, post.full_name || post.username)}
+            onError={(event) => handleAvatarError(event, post.full_name || post.username)}
+            alt={`${post.full_name || post.username || 'User'} avatar`}
+            className="w-10 h-10 rounded-full object-cover shrink-0"
+          />
           <div className="min-w-0">
             <p className="font-semibold text-sm truncate">{post.full_name} {post.is_verified && <span className="text-blue-500">✓</span>}</p>
             <p className="text-xs text-gray-500 truncate">@{post.username} · {formatDistanceToNow(new Date(post.created_at))} ago</p>

@@ -4,7 +4,7 @@ import { Home, MessageCircle, Bell, Sun, Moon, LogOut, User, Shield } from 'luci
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
-import { mediaUrl } from '../services/media';
+import { mediaUrl, avatarUrl, handleAvatarError } from '../services/media';
 
 function Badge({ count }) { return count > 0 ? <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">{count > 99 ? '99+' : count}</span> : null; }
 
@@ -42,7 +42,12 @@ export default function Navbar() {
         <Link to="/notifications" className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><Bell size={22}/><Badge count={notificationCount}/></Link>
         <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">{theme === 'dark' ? <Sun size={22}/> : <Moon size={22}/>}</button>
         <div className="relative">
-          <button onClick={() => setMenuOpen(v => !v)}><img src={mediaUrl(user?.profile_picture) || '/default-avatar.svg'} className="w-8 h-8 rounded-full object-cover" alt="" /></button>
+          <button onClick={() => setMenuOpen(v => !v)}><img
+            src={avatarUrl(user?.profile_picture, user?.full_name || user?.username)}
+            onError={(event) => handleAvatarError(event, user?.full_name || user?.username)}
+            className="w-8 h-8 rounded-full object-cover"
+            alt={`${user?.full_name || user?.username || 'User'} avatar`}
+          /></button>
           {menuOpen && <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border py-2 z-50">
             <Link to={`/profile/${user?.username}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"><User size={16}/> Profile</Link>
             {user?.role !== 'user' && <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"><Shield size={16}/> Admin</Link>}
