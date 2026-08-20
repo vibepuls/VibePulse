@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Heart, MessageCircle, Share2, Volume2, VolumeX, Play } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Volume2, VolumeX, Play, RefreshCw } from 'lucide-react';
 import api from '../services/api';
 import ShortsModal from '../components/ShortsModal';
-import { getShortsFromPosts, getYouTubeShortEmbedUrl } from '../components/ShortsUtils';
+import { getFallbackShorts, getYouTubeShortEmbedUrl, normalizeShort } from '../components/ShortsUtils';
 
 function count(value) {
   const n = Number(value || 0);
@@ -13,75 +13,113 @@ function count(value) {
 }
 
 export default function Shorts() {
-  const [rawPosts, setRawPosts] = useState([]);
+  const [shorts, setShorts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
   const [viewerIndex, setViewerIndex] = useState(null);
+  const [feedRound, setFeedRound] = useState(0);
+  const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
+  const feedRef = useRef(null);
   const lastSlideRef = useRef(null);
+  const loadingRef = useRef(false);
 
-  const shorts = useMemo(() => getShortsFromPosts(rawPosts), [rawPosts]);
+  const loadShorts = useCallback(async (reset = false) => {
+    if (loadingRef.current) return;
+    if (!reset && loadingMore) return;
 
-  const loadPosts = async (reset = false) => {
-    if (reset ? loading : loadingMore || !hasMore) return;
-
+    loadingRef.current = true;
     if (reset) setLoading(true);
     else setLoadingMore(true);
-
-    const nextOffset = reset ? 0 : offset;
+    setError('');
 
     try {
-      const res = await api.get(`/posts/feed?mode=for-you&limit=20&offset=${nextOffset}`);
-      const incoming = Array.isArray(res.data) ? res.data : [];
+      const response = await api.get('/shorts?limit=24', { timeout: 6000 });
+      const incoming = Array.isArray(response.data?.items)
+        ? response.data.items.map((item, index) => normalizeShort(item, index)).filter(Boolean)
+        : [];
 
-      setRawPosts((current) => {
-        const merged = reset ? incoming : [...current, ...incoming];
-        const seen = new Set();
-        return merged.filter((post) => {
-          if (seen.has(post.id)) return false;
-          seen.add(post.id);
-          return true;
-        });
+      if (!incoming.length) throw new Error('Empty Shorts response');
+
+      setShorts((current) => {
+        if (reset) return incoming;
+
+        const round = feedRound + 1;
+        return [
+          ...current,
+          ...incoming.map((item, index) => ({
+            ...item,
+            id: `${item.id}-r${round}-${index}`,
+            position: current.length + index
+          }))
+        ];
       });
-      setOffset(nextOffset + incoming.length);
-      setHasMore(incoming.length === 20);
+      setFeedRound((value) => value + (reset ? 0 : 1));
     } catch {
-      if (reset) setRawPosts([]);
+      const fallback = getFallbackShorts();
+
+      setShorts((current) => {
+        if (reset) return fallback;
+        const round = feedRound + 1;
+        return [
+          ...current,
+          ...fallback.map((item, index) => ({
+            ...item,
+            id: `${item.id}-fallback-${round}-${index}`,
+            position: current.length + index
+          }))
+        ];
+      });
+      setFeedRound((value) => value + (reset ? 0 : 1));
+      setError('Live Shorts source unavailable. Showing VibePulse fallback Shorts.');
     } finally {
-      if (reset) setLoading(false);
-      else setLoadingMore(false);
+      setLoading(false);
+      setLoadingMore(false);
+      loadingRef.current = false;
     }
-  };
+  }, [feedRound, loadingMore]);
 
   useEffect(() => {
-    loadPosts(true);
-  }, []);
+    loadShorts(true);
+  }, []); // initial load only
 
   useEffect(() => {
+    const root = feedRef.current;
     const node = lastSlideRef.current;
-    if (!node || !hasMore || loadingMore) return undefined;
+    if (!root || !node) return undefined;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) loadPosts(false);
+        if (entry.isIntersecting) loadShorts(false);
       },
-      { rootMargin: '100vh 0px' }
+      { root, rootMargin: '150% 0px', threshold: 0.1 }
     );
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [shorts.length, hasMore, loadingMore]);
+  }, [shorts.length, loadShorts]);
 
   useEffect(() => {
     const video = searchParams.get('video');
     if (!video || !shorts.length) return;
+
     const index = shorts.findIndex((item) => item.videoId === video);
     if (index >= 0) setViewerIndex(index);
   }, [searchParams, shorts]);
 
-  if (loading) return <div className="shorts-feed-loading">Loading Shorts...</div>;
+  const retry = () => loadShorts(true);
+
+  if (loading && !shorts.length) {
+    return (
+      <div className="shorts-feed-loading">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
+          <p className="font-semibold">Loading Shorts…</p>
+          <p className="text-xs text-white/50 mt-1">VibePulse is preparing your feed</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="shorts-page">
@@ -90,20 +128,27 @@ export default function Shorts() {
           <h1 className="text-xl font-bold">Shorts</h1>
           <p className="text-xs text-white/60">Swipe up or down</p>
         </div>
+        {error && (
+          <button type="button" onClick={retry} className="shorts-source-status" title="Retry Shorts">
+            <RefreshCw size={14} /> Fallback
+          </button>
+        )}
       </div>
 
-      <div className="shorts-feed">
+      <div ref={feedRef} className="shorts-feed">
         {shorts.map((short, index) => (
-          <section key={short.id} ref={index === shorts.length - 1 ? lastSlideRef : null} className="short-slide">
-            <ShortSlide short={short} index={index} onOpen={() => setViewerIndex(index)} />
+          <section
+            key={short.id}
+            ref={index === shorts.length - 1 ? lastSlideRef : null}
+            className="short-slide"
+          >
+            <ShortSlide short={short} onOpen={() => setViewerIndex(index)} />
           </section>
         ))}
+
         {loadingMore && (
-          <div className="h-20 flex items-center justify-center text-white/60 text-sm">Loading more Shorts...</div>
-        )}
-        {!shorts.length && (
-          <div className="h-screen flex items-center justify-center text-gray-500">
-            No YouTube Shorts are available in your feed yet.
+          <div className="shorts-inline-loading">
+            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           </div>
         )}
       </div>
@@ -119,13 +164,24 @@ export default function Shorts() {
   );
 }
 
-function ShortSlide({ short, index, onOpen }) {
+function ShortSlide({ short, onOpen }) {
   const [liked, setLiked] = useState(short.isLiked);
   const [likes, setLikes] = useState(short.likesCount);
   const [muted, setMuted] = useState(true);
 
+  useEffect(() => {
+    setLiked(Boolean(short.isLiked));
+    setLikes(Number(short.likesCount || 0));
+  }, [short.id, short.isLiked, short.likesCount]);
+
   const toggleLike = async (event) => {
     event.stopPropagation();
+    if (!short.postId) {
+      setLiked((value) => !value);
+      setLikes((value) => Math.max(0, value + (liked ? -1 : 1)));
+      return;
+    }
+
     try {
       const res = await api.post(`/reactions/${short.postId}`, { type: 'like' });
       const removed = res.data.action === 'removed';
@@ -137,42 +193,77 @@ function ShortSlide({ short, index, onOpen }) {
   const share = async (event) => {
     event.stopPropagation();
     const url = `${window.location.origin}/shorts?video=${short.videoId}`;
+
     try {
       if (navigator.share) await navigator.share({ title: 'VibePulse Short', url });
-      else { await navigator.clipboard?.writeText(url); alert('Short link copied.'); }
+      else {
+        await navigator.clipboard?.writeText(url);
+        alert('Short link copied.');
+      }
     } catch {}
+  };
+
+  const toggleMute = (event) => {
+    event.stopPropagation();
+    setMuted((value) => !value);
   };
 
   return (
     <div className="short-player-shell" onClick={onOpen}>
+      <div className="short-iframe-viewport" aria-label="VibePulse Short player">
         <iframe
-          src={getYouTubeShortEmbedUrl(short.videoId).replace('mute=1', `mute=${muted ? '1' : '0'}`)}
+          key={`${short.videoId}-${muted}`}
+          src={getYouTubeShortEmbedUrl(short.videoId, window.location.origin, muted)}
           title="VibePulse Short"
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allow="autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
           referrerPolicy="origin"
           className="short-player-iframe pointer-events-none"
         />
+        <div className="short-brand-mask short-brand-mask-top" aria-hidden="true" />
+        <div className="short-brand-mask short-brand-mask-bottom" aria-hidden="true" />
+      </div>
 
-        <div className="short-ui-mask">
-          <div className="short-ui-creator">
-            <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center font-bold">V</div>
-            <div>
-              <div className="font-bold text-sm">VibePulse Shorts</div>
-              <div className="text-xs text-white/70">Shorts</div>
-            </div>
+      <div className="short-ui-mask">
+        <div className="short-ui-creator">
+          <img src="/default-avatar.svg" alt="" className="w-10 h-10 rounded-full object-cover" />
+          <div>
+            <div className="font-bold text-sm">VibePulse Trends</div>
+            <div className="text-xs text-white/70">Trending Shorts</div>
           </div>
-          {short.content && <p className="max-w-[min(560px,72vw)] text-sm leading-5 mt-3 line-clamp-3">{short.content}</p>}
         </div>
+        {short.content && (
+          <p className="max-w-[min(560px,72vw)] text-sm leading-5 mt-3 line-clamp-2">
+            {short.content}
+          </p>
+        )}
+      </div>
 
-        <div className="short-actions" onClick={(event) => event.stopPropagation()}>
-          <button type="button" onClick={toggleLike} className="short-action"><Heart size={28} fill={liked ? 'currentColor' : 'none'} className={liked ? 'text-red-500' : ''} /><span>{count(likes)}</span></button>
-          <button type="button" onClick={onOpen} className="short-action"><MessageCircle size={28} /><span>{count(short.commentsCount)}</span></button>
-          <button type="button" onClick={share} className="short-action"><Share2 size={28} /><span>{count(short.sharesCount)}</span></button>
-          <button type="button" onClick={(event) => { event.stopPropagation(); setMuted((v) => !v); }} className="short-action">{muted ? <VolumeX size={28} /> : <Volume2 size={28} />}<span>{muted ? 'Muted' : 'Sound'}</span></button>
-        </div>
+      <div className="short-actions" onClick={(event) => event.stopPropagation()}>
+        <button type="button" onClick={toggleLike} className="short-action" aria-label="Like">
+          <Heart size={28} fill={liked ? 'currentColor' : 'none'} className={liked ? 'text-red-500' : ''} />
+          <span>{count(likes)}</span>
+        </button>
 
-        <button type="button" className="short-open-hint" onClick={onOpen}><Play size={17} fill="currentColor" /> Open Short</button>
+        <button type="button" onClick={onOpen} className="short-action" aria-label="Comments">
+          <MessageCircle size={28} />
+          <span>{count(short.commentsCount)}</span>
+        </button>
+
+        <button type="button" onClick={share} className="short-action" aria-label="Share">
+          <Share2 size={28} />
+          <span>{count(short.sharesCount)}</span>
+        </button>
+
+        <button type="button" onClick={toggleMute} className="short-action" aria-label={muted ? 'Unmute' : 'Mute'}>
+          {muted ? <VolumeX size={28} /> : <Volume2 size={28} />}
+          <span>{muted ? 'Muted' : 'Sound'}</span>
+        </button>
+      </div>
+
+      <button type="button" className="short-open-hint" onClick={onOpen}>
+        <Play size={17} fill="currentColor" /> Open Short
+      </button>
     </div>
   );
 }

@@ -396,3 +396,88 @@
 .shorts-like-pulse {
   animation: shortsLikePulse .3s ease-out;
 }
+
+
+@layer components {
+  .short-iframe-viewport {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #000;
+    z-index: 1;
+  }
+
+  .short-player-iframe,
+  .shorts-player-iframe {
+    position: absolute;
+    inset: -2%;
+    width: 104%;
+    height: 104%;
+    border: 0;
+    pointer-events: none !important;
+  }
+
+  /* Presentation masks keep third-party player chrome from appearing in the VibePulse UI.
+     The embedded provider can still render its own branding; that cannot be guaranteed
+     removable from an official iframe. */
+  .short-brand-mask {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 12;
+    pointer-events: none;
+    background: #000;
+  }
+
+  .short-brand-mask-top {
+    top: 0;
+    height: 5.5rem;
+    background: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.96) 58%, rgba(0,0,0,0) 100%);
+  }
+
+  .short-brand-mask-bottom {
+    bottom: 0;
+    height: 6rem;
+    background: linear-gradient(to top, #000 0%, rgba(0,0,0,.96) 58%, rgba(0,0,0,0) 100%);
+  }
+
+  .shorts-source-status {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin-top: .5rem;
+    padding: .35rem .65rem;
+    border-radius: 9999px;
+    background: rgba(0,0,0,.45);
+    color: rgba(255,255,255,.75);
+    font-size: .7rem;
+  }
+
+  .shorts-inline-loading {
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,.65);
+  }
+
+  .short-player-shell {
+    isolation: isolate;
+  }
+
+  .short-player-shell .short-ui-mask,
+  .short-player-shell .short-actions,
+  .short-player-shell .short-open-hint {
+    z-index: 30;
+  }
+
+  .shorts-modal-player {
+    isolation: isolate;
+  }
+
+  .shorts-modal-player .shorts-source-mask,
+  .shorts-modal-player .shorts-actions {
+    z-index: 30;
+  }
+}
