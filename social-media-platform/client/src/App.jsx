@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import RightSidebar from './components/RightSidebar';
 import Home from './pages/Home';
+import Shorts from './pages/Shorts';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
@@ -124,6 +125,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile/:username" element={<Profile />} />
             <Route path="/explore" element={<Explore />} />
+            <Route path="/shorts" element={<Shorts />} />
             <Route path="/search" element={<Search />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/messages/:conversationId" element={<Messages />} />

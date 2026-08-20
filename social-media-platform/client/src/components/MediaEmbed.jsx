@@ -275,8 +275,7 @@ export default function MediaEmbed({ media, preview = false }) {
           loading="lazy"
           allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
           allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-          sandbox="allow-scripts allow-same-origin allow-presentation"
+          referrerPolicy="origin"
           className="media-iframe"
         />
 

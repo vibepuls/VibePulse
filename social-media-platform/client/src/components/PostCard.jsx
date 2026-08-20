@@ -6,8 +6,9 @@ import { formatDistanceToNow } from 'date-fns';
 import api from '../services/api';
 import { mediaUrl, avatarUrl, handleAvatarError } from '../services/media';
 import MediaEmbed from './MediaEmbed';
+import { isYouTubeShort } from './ShortsUtils';
 
-export default function PostCard({ post, onUpdate, onDelete }) {
+export default function PostCard({ post, onUpdate, onDelete, onShortOpen }) {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const [liked, setLiked] = useState(Boolean(post.is_liked));
   const [reaction, setReaction] = useState(post.user_reaction || (post.is_liked ? 'like' : null));
@@ -114,11 +115,39 @@ export default function PostCard({ post, onUpdate, onDelete }) {
       ) : (
         <>
           {post.content && <Link to={`/post/${post.id}`} className="block mb-3"><p className="whitespace-pre-wrap break-words">{post.content}</p></Link>}
-          {Array.isArray(post.media) && post.media.filter((m) => m?.url).map((media) => (
-            <div key={media.id} className="mb-3">
-              <MediaEmbed media={{ ...media, embed_url: mediaUrl(media.embed_url || media.url), url: mediaUrl(media.url) }} />
-            </div>
-          ))}
+          {Array.isArray(post.media) && post.media.filter((m) => m?.url).map((media) => {
+            const sourceUrl = media.url || media.embed_url || '';
+            const isShort = isYouTubeShort(sourceUrl);
+            const rendered = (
+              <MediaEmbed
+                media={{ ...media, embed_url: mediaUrl(media.embed_url || media.url), url: mediaUrl(media.url) }}
+              />
+            );
+
+            if (!isShort) {
+              return <div key={media.id} className="mb-3">{rendered}</div>;
+            }
+
+            return (
+              <div
+                key={media.id}
+                className="mb-3 relative cursor-pointer group"
+                onClick={() => onShortOpen?.(post)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') onShortOpen?.(post);
+                }}
+              >
+                {rendered}
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition">
+                  <span className="px-4 py-2 rounded-full bg-black/70 text-white text-sm font-semibold">
+                    Open in Shorts
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </>
       )}
 

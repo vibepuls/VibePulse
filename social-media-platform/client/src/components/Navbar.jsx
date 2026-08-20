@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, MessageCircle, Bell, Sun, Moon, LogOut, User, Shield } from 'lucide-react';
+import { Home, MessageCircle, Bell, Sun, Moon, LogOut, User, Shield, PlaySquare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
@@ -37,7 +37,8 @@ export default function Navbar() {
       <Link to="/" className="text-xl font-bold text-blue-600">SocialApp</Link>
       <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8"><input type="text" placeholder="Search users, posts, hashtags..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="input" /></form>
       <div className="flex items-center gap-3">
-        <Link to="/" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><Home size={22}/></Link>
+        <Link to="/" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Home"><Home size={22}/></Link>
+        <Link to="/shorts" className="shorts-nav-link" aria-label="Open Shorts"><PlaySquare size={20}/><span>Shorts</span></Link>
         <Link to="/messages" className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><MessageCircle size={22}/><Badge count={messageCount}/></Link>
         <Link to="/notifications" className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><Bell size={22}/><Badge count={notificationCount}/></Link>
         <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">{theme === 'dark' ? <Sun size={22}/> : <Moon size={22}/>}</button>

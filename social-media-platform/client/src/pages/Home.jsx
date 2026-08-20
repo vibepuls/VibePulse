@@ -3,6 +3,8 @@ import api from '../services/api';
 import CreatePost from '../components/CreatePost';
 import PostCard from '../components/PostCard';
 import StoriesBar from '../components/StoriesBar';
+import ShortsModal from '../components/ShortsModal';
+import { getShortsFromPosts } from '../components/ShortsUtils';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
@@ -11,6 +13,7 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const observer = useRef();
+  const [shortViewerIndex, setShortViewerIndex] = useState(null);
 
   const loadPosts = async (reset = false) => {
     if (loading) return;
@@ -43,11 +46,26 @@ export default function Home() {
       <CreatePost onPostCreated={(post) => setPosts(prev => [post, ...prev])} />
       {posts.map((post, i) => (
         <div key={post.id} ref={i === posts.length - 1 ? lastPostRef : null}>
-          <PostCard post={post} onUpdate={(updated) => setPosts(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p))} onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))} />
+          <PostCard post={post} onShortOpen={(selectedPost) => {
+            const shorts = getShortsFromPosts(posts);
+            const selected = getShortsFromPosts([selectedPost])[0];
+            const selectedIndex = selected ? shorts.findIndex((item) => item.videoId === selected.videoId) : -1;
+            if (selectedIndex >= 0) setShortViewerIndex(selectedIndex);
+          }} onUpdate={(updated) => setPosts(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p))} onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))} />
         </div>
       ))}
       {loading && <div className="text-center py-4 text-gray-500">Loading...</div>}
       {!hasMore && posts.length > 0 && <div className="text-center py-4 text-gray-500">No more posts</div>}
+      {shortViewerIndex !== null && (() => {
+        const shorts = getShortsFromPosts(posts);
+        return (
+          <ShortsModal
+            shorts={shorts}
+            initialIndex={shortViewerIndex}
+            onClose={() => setShortViewerIndex(null)}
+          />
+        );
+      })()}
       {posts.length === 0 && !loading && <div className="text-center py-8 text-gray-500">No posts yet. Follow users to see their posts!</div>}
     </div>
   );

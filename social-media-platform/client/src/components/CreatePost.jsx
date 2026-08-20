@@ -55,7 +55,7 @@ export default function CreatePost({ onPostCreated }) {
           <input
             value={mediaUrl}
             onChange={(e) => setMediaUrl(e.target.value)}
-            placeholder="Paste a YouTube, Facebook, Instagram, image or video URL"
+            placeholder="Paste a YouTube, Facebook, Instagram, TikTok, image or video URL"
             className="input pl-10 pr-10"
             inputMode="url"
             type="url"
@@ -72,7 +72,7 @@ export default function CreatePost({ onPostCreated }) {
             {preview ? (
               <div className="text-sm text-blue-700 dark:text-blue-300">Detected: <strong className="capitalize">{preview.provider}</strong> {preview.type} — media bytes stay on the original host.</div>
             ) : (
-              <div className="text-sm text-red-600">Unsupported URL. Use YouTube, Facebook, Instagram, or a direct image/video URL.</div>
+              <div className="text-sm text-red-600">Unsupported URL. Use YouTube, Facebook, Instagram, TikTok, or a direct image/video URL.</div>
             )}
           </div>
         )}
