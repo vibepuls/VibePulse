@@ -6,7 +6,51 @@ export const FALLBACK_SHORTS = [
   'QcHnK2ieMEQ',
   'RBydcIKzDhU',
   'uigJ41xv6TY',
-  '1Zosx1gNHzM'
+  '1Zosx1gNHzM',
+  'dQw4w9WgXcQ',
+  '9bZkp7q19f0',
+  'kJQP7kiw5Fk',
+  'JGwWNGJdvx8',
+  'OPf0YbXqDm0',
+  'RgKAFK5djSk',
+  'CevxZvSJLk8',
+  'YQHsXMglC9A',
+  'fRh_vgS2dFE',
+  'hT_nvWreIhg',
+  '60ItHLz5WEA',
+  '3JZ_D3ELwOQ',
+  'L_jWHffIx5E',
+  '2Vv-BfVoq4g',
+  'uelHwf8o7_U',
+  'C0DPdy98e4c',
+  'lp-EO5I60KA',
+  'ktvTqknDobU',
+  'pRpeEdMmmQ0',
+  'kXYiU_JCYtU',
+  '09R8_2nJtjg',
+  'e-ORhEE9VVg',
+  'YykjpeuMNEk',
+  '2vjPBrBU-TM',
+  'fLexgOxsZu0',
+  'KQ6zr6kCPj8',
+  'SlPhMPnQ58k',
+  'RBumgq5yVrA',
+  'tAGnKpE4NCI',
+  'hLQl3WQQoQ0',
+  'V-_O7nl0Ii0',
+  '3AtDnEC4zak',
+  'ru0K8uYEZWw',
+  'tgbNymZ7vqY',
+  'fJ9rUzIMcZQ',
+  'M7lc1UVf-VE',
+  'ScMzIvxBSi4',
+  'ysz5S6PUM-U',
+  'oHg5SJYRHA0',
+  'Zi_XLOBDo_Y',
+  'kffacxfA7G4',
+  'hTWKbfoikeg',
+  '2g5xk5I4qZQ',
+  'hY7m5jjJ9mM'
 ];
 
 export function extractYouTubeVideoId(value) {
@@ -87,7 +131,14 @@ export function normalizeShort(item, index = 0) {
 }
 
 export function getFallbackShorts() {
-  return FALLBACK_SHORTS.map((videoId, index) => normalizeShort({ videoId }, index));
+  const shuffled = [...FALLBACK_SHORTS];
+
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled.map((videoId, index) => normalizeShort({ videoId }, index)).filter(Boolean);
 }
 
 

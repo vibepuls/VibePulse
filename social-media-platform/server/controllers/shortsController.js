@@ -1,5 +1,7 @@
+const crypto = require('crypto');
+const { searchYouTube, clampLimit } = require('../services/youtubeService');
+
 const FALLBACK_SHORT_IDS = [
-  // Public Shorts used only when the YouTube Data API is unavailable.
   'OS6znEJWWSQ',
   'SH2CMN_-dsI',
   'SVZ6wp1q8rI',
@@ -7,11 +9,52 @@ const FALLBACK_SHORT_IDS = [
   'QcHnK2ieMEQ',
   'RBydcIKzDhU',
   'uigJ41xv6TY',
-  '1Zosx1gNHzM'
+  '1Zosx1gNHzM',
+  'dQw4w9WgXcQ',
+  '9bZkp7q19f0',
+  'kJQP7kiw5Fk',
+  'JGwWNGJdvx8',
+  'OPf0YbXqDm0',
+  'RgKAFK5djSk',
+  'CevxZvSJLk8',
+  'YQHsXMglC9A',
+  'fRh_vgS2dFE',
+  'hT_nvWreIhg',
+  '60ItHLz5WEA',
+  '3JZ_D3ELwOQ',
+  'L_jWHffIx5E',
+  '2Vv-BfVoq4g',
+  'uelHwf8o7_U',
+  'C0DPdy98e4c',
+  'lp-EO5I60KA',
+  'ktvTqknDobU',
+  'pRpeEdMmmQ0',
+  'kXYiU_JCYtU',
+  '09R8_2nJtjg',
+  'e-ORhEE9VVg',
+  'YykjpeuMNEk',
+  '2vjPBrBU-TM',
+  'fLexgOxsZu0',
+  'KQ6zr6kCPj8',
+  'SlPhMPnQ58k',
+  'RBumgq5yVrA',
+  'tAGnKpE4NCI',
+  'hLQl3WQQoQ0',
+  'V-_O7nl0Ii0',
+  '3AtDnEC4zak',
+  'ru0K8uYEZWw',
+  'tgbNymZ7vqY',
+  'fJ9rUzIMcZQ',
+  'M7lc1UVf-VE',
+  'ScMzIvxBSi4',
+  'ysz5S6PUM-U',
+  'oHg5SJYRHA0',
+  'Zi_XLOBDo_Y',
+  'kffacxfA7G4',
+  'hTWKbfoikeg',
+  '2g5xk5I4qZQ',
+  'hY7m5jjJ9mM'
 ];
-
-const CACHE_TTL_MS = 60 * 1000;
-let cached = { expiresAt: 0, items: null, source: null };
 
 function normalizeIds(value) {
   return String(value || '')
@@ -20,12 +63,37 @@ function normalizeIds(value) {
     .filter((id) => /^[A-Za-z0-9_-]{11}$/.test(id));
 }
 
-function fallbackItems() {
-  const configured = normalizeIds(process.env.VIBEPULSE_SHORT_FALLBACK_IDS);
-  const ids = configured.length ? configured : FALLBACK_SHORT_IDS;
+function shuffle(values) {
+  const copy = [...values];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = crypto.randomInt(0, i + 1);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 
+function fallbackPool() {
+  const configured = normalizeIds(process.env.VIBEPULSE_SHORT_FALLBACK_IDS);
+  return configured.length ? configured : FALLBACK_SHORT_IDS;
+}
+
+function encodeFallbackState(ids) {
+  return `fallback:${Buffer.from(JSON.stringify(ids), 'utf8').toString('base64url')}`;
+}
+
+function decodeFallbackState(token) {
+  if (!String(token || '').startsWith('fallback:')) return null;
+  try {
+    const ids = JSON.parse(Buffer.from(String(token).slice(9), 'base64url').toString('utf8'));
+    return Array.isArray(ids) ? ids.filter((id) => /^[A-Za-z0-9_-]{11}$/.test(id)) : null;
+  } catch {
+    return null;
+  }
+}
+
+function fallbackItems(ids) {
   return ids.map((videoId, index) => ({
-    id: `fallback-${videoId}`,
+    id: `fallback-${videoId}-${crypto.randomUUID()}`,
     videoId,
     postId: null,
     content: 'Trending short on VibePulse',
@@ -40,97 +108,80 @@ function fallbackItems() {
   }));
 }
 
-function toApiItems(items) {
-  return (Array.isArray(items) ? items : [])
-    .map((item, index) => {
-      const videoId = item?.id?.videoId;
-      if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
+function getFallbackPage(limit, pageToken) {
+  const pool = fallbackPool();
+  let remaining = decodeFallbackState(pageToken);
+  if (!remaining) remaining = shuffle(pool);
 
-      return {
-        id: `youtube-${videoId}`,
-        videoId,
-        postId: null,
-        content: 'Trending short on VibePulse',
-        likesCount: 0,
-        commentsCount: 0,
-        sharesCount: 0,
-        isLiked: false,
-        creator: 'VibePulse Trends',
-        avatar: null,
-        source: 'youtube-api',
-        position: index
-      };
-    })
-    .filter(Boolean);
+  const pageIds = remaining.slice(0, limit);
+  let nextIds = remaining.slice(limit);
+  if (!nextIds.length) nextIds = shuffle(pool);
+
+  return {
+    items: fallbackItems(pageIds),
+    nextPageToken: encodeFallbackState(nextIds),
+    hasMore: true,
+    source: 'fallback',
+    fallback: true,
+    query: null,
+    queryIndex: null,
+    nextQueryIndex: null
+  };
 }
 
-async function fetchFromYouTube(limit) {
-  const key = String(process.env.YOUTUBE_API_KEY || '').trim();
-  if (!key) return [];
+exports.getShorts = async (req, res) => {
+  const requested = clampLimit(req.query.limit);
+  const pageToken = String(req.query.pageToken || '').trim();
+  const requestedQueryIndex = Number.parseInt(req.query.queryIndex, 10) || 0;
 
-  const params = new URLSearchParams({
-    part: 'snippet',
-    type: 'video',
-    q: 'shorts',
-    videoDuration: 'short',
-    order: 'viewCount',
-    maxResults: String(Math.min(Math.max(limit, 5), 50)),
-    key
-  });
-
-  const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params.toString()}`);
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`YouTube API ${response.status}: ${body.slice(0, 300)}`);
+  if (pageToken.startsWith('fallback:')) {
+    return res.json(getFallbackPage(requested, pageToken));
   }
 
-  const data = await response.json();
-  return toApiItems(data.items);
-}
-
-exports.getShorts = async (req, res, next) => {
   try {
-    const requested = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 12, 5), 30);
-    const now = Date.now();
+    const result = await searchYouTube({
+      limit: requested,
+      pageToken,
+      queryIndex: requestedQueryIndex
+    });
 
-    if (cached.items && cached.expiresAt > now) {
+    if (result && result.items.length) {
       return res.json({
-        items: cached.items.slice(0, requested),
-        source: cached.source,
-        fallback: cached.source === 'fallback'
+        items: result.items,
+        nextPageToken: result.nextPageToken,
+        hasMore: Boolean(result.nextPageToken) || result.totalResults > 0,
+        query: result.query,
+        queryIndex: result.queryIndex,
+        nextQueryIndex: result.nextQueryIndex,
+        source: 'youtube-api',
+        fallback: false
       });
     }
 
-    let items = [];
-    let source = 'fallback';
+    if (result) {
+      const nextQueryIndex = Number(result.nextQueryIndex || 0);
+      const nextResult = await searchYouTube({
+        limit: requested,
+        pageToken: '',
+        queryIndex: nextQueryIndex
+      });
 
-    try {
-      items = await fetchFromYouTube(requested);
-      if (items.length) source = 'youtube-api';
-    } catch (error) {
-      console.warn('[shorts] YouTube API unavailable; using fallback:', error.message);
+      if (nextResult?.items?.length) {
+        return res.json({
+          items: nextResult.items,
+          nextPageToken: nextResult.nextPageToken,
+          hasMore: Boolean(nextResult.nextPageToken) || nextResult.totalResults > 0,
+          query: nextResult.query,
+          queryIndex: nextResult.queryIndex,
+          nextQueryIndex: nextResult.nextQueryIndex,
+          source: 'youtube-api',
+          fallback: false
+        });
+      }
     }
-
-    if (!items.length) items = fallbackItems();
-
-    cached = {
-      items,
-      source,
-      expiresAt: now + CACHE_TTL_MS
-    };
-
-    return res.json({
-      items: items.slice(0, requested),
-      source,
-      fallback: source === 'fallback'
-    });
   } catch (error) {
-    // The Shorts endpoint must never leave the client waiting for a network/API failure.
-    console.error('[shorts] unexpected error; serving fallback:', error);
-    return res.status(200).json({
-      items: fallbackItems().slice(0, 12),
-      source: 'fallback',
-      fallback: true
-    });
+    console.warn('[shorts] YouTube API unavailable; using paginated fallback:', error.message);
   }
+
+  return res.json(getFallbackPage(requested, pageToken));
 };

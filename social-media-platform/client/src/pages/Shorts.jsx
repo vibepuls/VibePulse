@@ -17,71 +17,128 @@ export default function Shorts() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
-  const [feedRound, setFeedRound] = useState(0);
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
+
   const feedRef = useRef(null);
   const lastSlideRef = useRef(null);
   const loadingRef = useRef(false);
+  const nextPageTokenRef = useRef('');
+  const queryIndexRef = useRef(0);
+  const hasMoreRef = useRef(true);
+  const mountedRef = useRef(true);
+  const clientFallbackRef = useRef([]);
+  const clientFallbackCursorRef = useRef(0);
 
   const loadShorts = useCallback(async (reset = false) => {
     if (loadingRef.current) return;
-    if (!reset && loadingMore) return;
+    if (!reset && !hasMoreRef.current) return;
 
     loadingRef.current = true;
-    if (reset) setLoading(true);
-    else setLoadingMore(true);
+    if (reset) {
+      setLoading(true);
+      nextPageTokenRef.current = '';
+      queryIndexRef.current = 0;
+      hasMoreRef.current = true;
+    } else {
+      setLoadingMore(true);
+    }
     setError('');
 
     try {
-      const response = await api.get('/shorts?limit=24', { timeout: 6000 });
+      const params = new URLSearchParams({
+        limit: '50',
+        queryIndex: String(queryIndexRef.current)
+      });
+
+      if (nextPageTokenRef.current) {
+        params.set('pageToken', nextPageTokenRef.current);
+      }
+
+      const response = await api.get(`/shorts?${params.toString()}`, { timeout: 15000 });
       const incoming = Array.isArray(response.data?.items)
         ? response.data.items.map((item, index) => normalizeShort(item, index)).filter(Boolean)
         : [];
 
       if (!incoming.length) throw new Error('Empty Shorts response');
 
+      // YouTube page tokens are tied to the same search query. Keep the
+      // current query while a token exists; rotate only when it is exhausted.
+      nextPageTokenRef.current = response.data?.nextPageToken || '';
+      queryIndexRef.current = Number.isInteger(Number(response.data?.nextQueryIndex))
+        ? Number(response.data.nextQueryIndex)
+        : queryIndexRef.current;
+      hasMoreRef.current = Boolean(nextPageTokenRef.current || response.data?.nextQueryIndex !== null);
+
       setShorts((current) => {
         if (reset) return incoming;
 
-        const round = feedRound + 1;
+        const existing = new Set(current.map((item) => item.videoId));
+        const uniqueIncoming = incoming.filter((item) => !existing.has(item.videoId));
+
         return [
           ...current,
-          ...incoming.map((item, index) => ({
+          ...uniqueIncoming.map((item, index) => ({
             ...item,
-            id: `${item.id}-r${round}-${index}`,
+            id: `${item.id}-${current.length + index}`,
             position: current.length + index
           }))
         ];
       });
-      setFeedRound((value) => value + (reset ? 0 : 1));
     } catch {
-      const fallback = getFallbackShorts();
+      // Client-side fallback is only a last-resort network fallback. The
+      // backend normally provides its own randomized, paginated fallback.
+      if (
+        reset ||
+        !clientFallbackRef.current.length ||
+        clientFallbackCursorRef.current >= clientFallbackRef.current.length - 2
+      ) {
+        clientFallbackRef.current = getFallbackShorts();
+        clientFallbackCursorRef.current = 0;
+      }
+
+      const fallback = clientFallbackRef.current.slice(
+        clientFallbackCursorRef.current,
+        clientFallbackCursorRef.current + 50
+      );
+      clientFallbackCursorRef.current += fallback.length;
 
       setShorts((current) => {
+        const existing = new Set(current.map((item) => item.videoId));
+        const uniqueFallback = fallback.filter((item) => !existing.has(item.videoId));
+
         if (reset) return fallback;
-        const round = feedRound + 1;
+
         return [
           ...current,
-          ...fallback.map((item, index) => ({
+          ...uniqueFallback.map((item, index) => ({
             ...item,
-            id: `${item.id}-fallback-${round}-${index}`,
+            id: `${item.id}-fallback-${current.length + index}`,
             position: current.length + index
           }))
         ];
       });
-      setFeedRound((value) => value + (reset ? 0 : 1));
-      setError('Live Shorts source unavailable. Showing VibePulse fallback Shorts.');
+
+      // Keep trying the backend on the next scroll instead of trapping the
+      // user in the same eight-item client array.
+      hasMoreRef.current = true;
+      setError('Live Shorts source unavailable. Showing randomized VibePulse fallback Shorts.');
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (mountedRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
       loadingRef.current = false;
     }
-  }, [feedRound, loadingMore]);
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadShorts(true);
-  }, []); // initial load only
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [loadShorts]);
 
   useEffect(() => {
     const root = feedRef.current;
@@ -90,9 +147,11 @@ export default function Shorts() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) loadShorts(false);
+        if (entry.isIntersecting && hasMoreRef.current && !loadingRef.current) {
+          loadShorts(false);
+        }
       },
-      { root, rootMargin: '150% 0px', threshold: 0.1 }
+      { root, rootMargin: '200% 0px', threshold: 0.01 }
     );
 
     observer.observe(node);
