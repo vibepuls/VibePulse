@@ -12,6 +12,20 @@ function count(value) {
   return String(n);
 }
 
+async function trackShortInteraction(short, eventType, payload = {}) {
+  if (!short?.videoId) return;
+  try {
+    await api.post('/shorts/track', {
+      videoId: short.videoId,
+      tags: short.tags || ['#shorts'],
+      eventType,
+      ...payload
+    }, { timeout: 8000 });
+  } catch {
+    // Tracking is intentionally non-blocking: feed playback must never wait for analytics.
+  }
+}
+
 export default function Shorts() {
   const [shorts, setShorts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -227,25 +241,82 @@ function ShortSlide({ short, onOpen }) {
   const [liked, setLiked] = useState(short.isLiked);
   const [likes, setLikes] = useState(short.likesCount);
   const [muted, setMuted] = useState(true);
+  const slideRef = useRef(null);
+  const watchTimerRef = useRef(null);
+  const skipTimerRef = useRef(null);
+  const tracked70Ref = useRef(false);
+  const trackedLoopRef = useRef(false);
 
   useEffect(() => {
     setLiked(Boolean(short.isLiked));
     setLikes(Number(short.likesCount || 0));
-  }, [short.id, short.isLiked, short.likesCount]);
+    tracked70Ref.current = false;
+    trackedLoopRef.current = false;
+
+    const node = slideRef.current;
+    if (!node) return undefined;
+
+    const durationMs = Math.max(8000, Number(short.durationSec || 30) * 1000);
+    const watch70Ms = Math.round(durationMs * 0.70);
+    let visibleStartedAt = 0;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.65) {
+        visibleStartedAt = Date.now();
+
+        clearTimeout(skipTimerRef.current);
+        clearTimeout(watchTimerRef.current);
+
+        if (!tracked70Ref.current) {
+          skipTimerRef.current = setTimeout(() => {
+            const elapsed = Date.now() - visibleStartedAt;
+            if (elapsed < 2000) {
+              trackShortInteraction(short, 'skip', {
+                watchDurationMs: elapsed,
+                watchPercent: Math.min(100, (elapsed / durationMs) * 100)
+              });
+            }
+          }, 2100);
+
+          watchTimerRef.current = setTimeout(() => {
+            tracked70Ref.current = true;
+            trackShortInteraction(short, 'watch_70', {
+              watchDurationMs: watch70Ms,
+              watchPercent: 70
+            });
+          }, watch70Ms);
+        }
+      } else {
+        clearTimeout(skipTimerRef.current);
+        clearTimeout(watchTimerRef.current);
+      }
+    }, { threshold: [0.65] });
+
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      clearTimeout(skipTimerRef.current);
+      clearTimeout(watchTimerRef.current);
+    };
+  }, [short.id, short.videoId, short.durationSec]);
 
   const toggleLike = async (event) => {
     event.stopPropagation();
-    if (!short.postId) {
-      setLiked((value) => !value);
-      setLikes((value) => Math.max(0, value + (liked ? -1 : 1)));
-      return;
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setLikes((value) => Math.max(0, value + (nextLiked ? 1 : -1)));
+
+    if (nextLiked) {
+      trackShortInteraction(short, 'like');
     }
+
+    if (!short.postId) return;
 
     try {
       const res = await api.post(`/reactions/${short.postId}`, { type: 'like' });
       const removed = res.data.action === 'removed';
       setLiked(!removed);
-      setLikes((value) => Math.max(0, value + (removed ? -1 : res.data.action === 'added' ? 1 : 0)));
+      setLikes((value) => Math.max(0, value + (removed ? -1 : res.data.action === 'added' ? 0 : 0)));
     } catch {}
   };
 
@@ -259,7 +330,14 @@ function ShortSlide({ short, onOpen }) {
         await navigator.clipboard?.writeText(url);
         alert('Short link copied.');
       }
+      trackShortInteraction(short, 'share');
     } catch {}
+  };
+
+  const openComments = (event) => {
+    event.stopPropagation();
+    trackShortInteraction(short, 'comment');
+    onOpen();
   };
 
   const toggleMute = (event) => {
@@ -268,7 +346,7 @@ function ShortSlide({ short, onOpen }) {
   };
 
   return (
-    <div className="short-player-shell" onClick={onOpen}>
+    <div ref={slideRef} className="short-player-shell" onClick={onOpen}>
       <div className="short-iframe-viewport" aria-label="VibePulse Short player">
         <iframe
           key={`${short.videoId}-${muted}`}
@@ -285,10 +363,10 @@ function ShortSlide({ short, onOpen }) {
 
       <div className="short-ui-mask">
         <div className="short-ui-creator">
-          <img src="/default-avatar.svg" alt="" className="w-10 h-10 rounded-full object-cover" />
+          <img src={short.avatar || "/default-avatar.svg"} alt="" className="w-10 h-10 rounded-full object-cover" />
           <div>
-            <div className="font-bold text-sm">VibePulse Trends</div>
-            <div className="text-xs text-white/70">Trending Shorts</div>
+            <div className="font-bold text-sm">{short.creator || 'VibePulse Trends'}</div>
+            <div className="text-xs text-white/70">Personalized Shorts</div>
           </div>
         </div>
         {short.content && (
@@ -304,7 +382,7 @@ function ShortSlide({ short, onOpen }) {
           <span>{count(likes)}</span>
         </button>
 
-        <button type="button" onClick={onOpen} className="short-action" aria-label="Comments">
+        <button type="button" onClick={openComments} className="short-action" aria-label="Comments">
           <MessageCircle size={28} />
           <span>{count(short.commentsCount)}</span>
         </button>

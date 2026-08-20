@@ -118,13 +118,15 @@ export function normalizeShort(item, index = 0) {
     id: item?.id || `short-${videoId}`,
     videoId,
     postId: item?.postId || null,
-    content: 'Trending short on VibePulse',
+    content: item?.content || item?.title || 'Trending short on VibePulse',
+    tags: Array.isArray(item?.tags) ? item.tags : ['#shorts'],
+    durationSec: Number(item?.durationSec || item?.duration || 30),
     likesCount: Number(item?.likesCount || 0),
     commentsCount: Number(item?.commentsCount || 0),
     sharesCount: Number(item?.sharesCount || 0),
     isLiked: Boolean(item?.isLiked),
-    creator: 'VibePulse Trends',
-    avatar: '/default-avatar.svg',
+    creator: item?.creator || 'VibePulse Trends',
+    avatar: item?.avatar || '/default-avatar.svg',
     source: item?.source || 'fallback',
     position: index
   };

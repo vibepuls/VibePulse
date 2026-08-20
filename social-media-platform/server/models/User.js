@@ -24,7 +24,7 @@ class User {
   static async findByUsername(username) {
     const result = await query(
       `SELECT id, email, username, full_name, bio, website, location, profile_picture, 
-       cover_photo, is_private, is_verified, role, created_at, updated_at,
+       cover_photo, is_private, is_verified, role, user_interests, created_at, updated_at,
        (SELECT COUNT(*) FROM follows WHERE following_id = users.id AND status = 'accepted') as followers_count,
        (SELECT COUNT(*) FROM follows WHERE follower_id = users.id AND status = 'accepted') as following_count,
        (SELECT COUNT(*) FROM posts WHERE user_id = users.id AND is_deleted = false) as posts_count
@@ -37,7 +37,7 @@ class User {
   static async findById(id) {
     const result = await query(
       `SELECT id, email, username, full_name, bio, website, location, profile_picture, 
-       cover_photo, is_private, is_verified, is_active, is_suspended, role, created_at, updated_at,
+       cover_photo, is_private, is_verified, is_active, is_suspended, role, user_interests, created_at, updated_at,
        (SELECT COUNT(*) FROM follows WHERE following_id = users.id AND status = 'accepted') as followers_count,
        (SELECT COUNT(*) FROM follows WHERE follower_id = users.id AND status = 'accepted') as following_count,
        (SELECT COUNT(*) FROM posts WHERE user_id = users.id AND is_deleted = false) as posts_count
@@ -69,6 +69,71 @@ class User {
       values
     );
     return result.rows[0];
+  }
+
+
+  static async getInterests(id) {
+    const result = await query(
+      `SELECT COALESCE(user_interests, '{}'::jsonb) AS user_interests
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [id]
+    );
+    return result.rows[0]?.user_interests || {};
+  }
+
+  static async updateInterestScores(id, scores = {}) {
+    const entries = Object.entries(scores)
+      .map(([tag, delta]) => [String(tag).toLowerCase().trim(), Number(delta)])
+      .filter(([tag, delta]) => /^#[^\\s#]{1,80}$/.test(tag) && Number.isFinite(delta) && delta !== 0);
+
+    if (!entries.length) return this.getInterests(id);
+
+    const current = await this.getInterests(id);
+    const next = { ...current };
+
+    for (const [tag, delta] of entries) {
+      const value = Number(next[tag] || 0) + delta;
+      next[tag] = Math.max(0, Math.min(20, Number(value.toFixed(2))));
+    }
+
+    const result = await query(
+      `UPDATE users
+       SET user_interests = $1::jsonb, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING user_interests`,
+      [JSON.stringify(next), id]
+    );
+    return result.rows[0]?.user_interests || next;
+  }
+
+  static async recordShortInteraction({ userId, videoId, tags = [], eventType, watchDurationMs = 0, watchPercent = null }) {
+    const allowed = new Set(['watch_70', 'loop', 'like', 'share', 'comment', 'skip']);
+    if (!allowed.has(eventType)) throw new Error('Invalid Shorts interaction type');
+
+    const cleanTags = [...new Set((Array.isArray(tags) ? tags : [])
+      .map((tag) => String(tag).toLowerCase().trim())
+      .filter((tag) => /^#[^\\s#]{1,80}$/.test(tag)))].slice(0, 30);
+
+    const weights = {
+      watch_70: 2,
+      loop: 2.5,
+      like: 4,
+      share: 5,
+      comment: 3,
+      skip: -1.5
+    };
+    const delta = weights[eventType];
+
+    await query(
+      `INSERT INTO shorts_interactions
+       (user_id, video_id, tags, event_type, watch_duration_ms, watch_percent)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, String(videoId).slice(0, 32), cleanTags, eventType, Math.max(0, Number(watchDurationMs) || 0), watchPercent == null ? null : Number(watchPercent)]
+    );
+
+    const scores = {};
+    for (const tag of cleanTags) scores[tag] = delta;
+    return this.updateInterestScores(userId, scores);
   }
 
   static async updatePassword(id, newPassword) {
