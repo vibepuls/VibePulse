@@ -173,7 +173,6 @@ function ShortSlide({ short, index, onOpen }) {
         </div>
 
         <button type="button" className="short-open-hint" onClick={onOpen}><Play size={17} fill="currentColor" /> Open Short</button>
-      </div>
     </div>
   );
 }
