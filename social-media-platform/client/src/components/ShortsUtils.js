@@ -89,3 +89,26 @@ export function normalizeShort(item, index = 0) {
 export function getFallbackShorts() {
   return FALLBACK_SHORTS.map((videoId, index) => normalizeShort({ videoId }, index));
 }
+
+
+export function getShortsFromPosts(posts = []) {
+  const result = [];
+  for (const post of Array.isArray(posts) ? posts : []) {
+    const mediaItems = Array.isArray(post?.media) ? post.media : [];
+    for (const media of mediaItems) {
+      const source = media?.url || media?.embed_url || media?.media_url || '';
+      if (!isYouTubeShort(source)) continue;
+      const item = normalizeShort({
+        id: `${post.id || 'post'}-${extractYouTubeVideoId(source)}`,
+        videoId: extractYouTubeVideoId(source),
+        postId: post.id || null,
+        likesCount: post.likes_count,
+        commentsCount: post.comments_count,
+        sharesCount: post.shares_count,
+        isLiked: post.is_liked
+      }, result.length);
+      if (item) result.push(item);
+    }
+  }
+  return result;
+}
