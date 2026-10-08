@@ -177,3 +177,5 @@ export default function PointWars() {
     </div>
   );
 }
+
+// Point Wars deployment sync
