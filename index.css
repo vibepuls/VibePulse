@@ -1,0 +1,483 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100; }
+}
+
+@layer components {
+  .btn-primary { @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition; }
+  .btn-secondary { @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 transition; }
+  .card { @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700; }
+  .input { @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none; }
+}
+
+@layer components {
+  .media-embed {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: #000;
+  }
+
+  .media-embed iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .media-embed-preview {
+    max-height: 360px;
+  }
+
+  @media (max-width: 640px) {
+    .media-embed {
+      border-radius: 0.75rem;
+    }
+  }
+}
+
+
+
+/* Interactive embedded media */
+@layer components {
+  .media-embed {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: #000;
+  }
+
+  .media-embed iframe,
+  .media-embed video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .media-iframe {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+  }
+
+  .media-embed-preview {
+    max-height: 360px;
+  }
+
+  .media-controls {
+    position: absolute;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+
+  .media-controls-iframe {
+    pointer-events: none;
+  }
+
+  .media-control-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    color: white;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255,255,255,.22);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .media-control-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.04);
+  }
+
+  @media (max-width: 640px) {
+    .media-embed {
+      border-radius: 0.75rem;
+    }
+  }
+}
+
+
+@layer components {
+  .shorts-nav-link {
+    @apply inline-flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition;
+  }
+
+  .shorts-page {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: #000;
+    color: #fff;
+    overflow: hidden;
+  }
+
+  .shorts-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 80;
+    padding: 1rem 1.25rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(0,0,0,.7), transparent);
+  }
+
+  .shorts-feed {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+  }
+
+  .shorts-feed::-webkit-scrollbar {
+    display: none;
+  }
+
+  .short-slide {
+    height: 100vh;
+    min-height: 100vh;
+    width: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    position: relative;
+  }
+
+  .short-player-shell {
+    position: relative;
+    height: 100%;
+    width: min(100vw, 560px);
+    overflow: hidden;
+    background: #000;
+  }
+
+  .short-player-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    object-fit: cover;
+    transform: scale(1.01);
+  }
+
+  .short-ui-mask {
+    position: absolute;
+    left: 1rem;
+    right: 5.5rem;
+    bottom: 1.5rem;
+    z-index: 20;
+    pointer-events: none;
+    text-shadow: 0 1px 5px rgba(0,0,0,.8);
+  }
+
+  .short-ui-creator {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  .short-actions {
+    position: absolute;
+    right: .75rem;
+    bottom: 5.25rem;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .9rem;
+  }
+
+  .short-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .2rem;
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 700;
+    text-shadow: 0 1px 5px rgba(0,0,0,.8);
+    transition: transform .15s ease;
+  }
+
+  .short-action:hover {
+    transform: scale(1.06);
+  }
+
+  .short-action svg {
+    filter: drop-shadow(0 1px 5px rgba(0,0,0,.8));
+  }
+
+  .short-open-hint {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .65rem .9rem;
+    border-radius: 9999px;
+    background: rgba(0,0,0,.55);
+    color: #fff;
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+
+  .short-player-shell:hover .short-open-hint,
+  .short-player-shell:focus-within .short-open-hint {
+    opacity: 1;
+  }
+
+  .shorts-feed-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: #000;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shorts-modal-stage {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .shorts-modal-player {
+    position: relative;
+    height: 100vh;
+    width: min(100vw, 560px);
+    background: #000;
+    overflow: hidden;
+  }
+
+  .shorts-player-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .shorts-source-mask {
+    position: absolute;
+    left: 1rem;
+    right: 5rem;
+    bottom: 1.5rem;
+    z-index: 30;
+    pointer-events: none;
+    text-shadow: 0 1px 5px rgba(0,0,0,.8);
+  }
+
+  .shorts-creator {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  .shorts-actions {
+    position: absolute;
+    right: .75rem;
+    bottom: 5.25rem;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .9rem;
+  }
+
+  .shorts-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .2rem;
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 700;
+    text-shadow: 0 1px 5px rgba(0,0,0,.8);
+  }
+
+  .shorts-action-icon {
+    transition: transform .15s ease;
+  }
+
+  .shorts-action:hover .shorts-action-icon {
+    transform: scale(1.08);
+  }
+
+  .shorts-modal-nav {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    font-size: .75rem;
+    color: rgba(255,255,255,.75);
+  }
+
+  .shorts-nav-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    background: rgba(255,255,255,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+  }
+
+  .shorts-nav-btn:disabled {
+    opacity: .3;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    .shorts-nav-link span {
+      display: none;
+    }
+
+    .shorts-modal-nav {
+      display: none;
+    }
+
+    .shorts-actions {
+      right: .5rem;
+    }
+
+    .short-ui-mask,
+    .shorts-source-mask {
+      left: .75rem;
+      right: 4.5rem;
+      bottom: 1rem;
+    }
+  }
+}
+
+@keyframes shortsLikePulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.shorts-like-pulse {
+  animation: shortsLikePulse .3s ease-out;
+}
+
+
+@layer components {
+  .short-iframe-viewport {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #000;
+    z-index: 1;
+  }
+
+  .short-player-iframe,
+  .shorts-player-iframe {
+    position: absolute;
+    inset: -2%;
+    width: 104%;
+    height: 104%;
+    border: 0;
+    pointer-events: none !important;
+  }
+
+  /* Presentation masks keep third-party player chrome from appearing in the VibePulse UI.
+     The embedded provider can still render its own branding; that cannot be guaranteed
+     removable from an official iframe. */
+  .short-brand-mask {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 12;
+    pointer-events: none;
+    background: #000;
+  }
+
+  .short-brand-mask-top {
+    top: 0;
+    height: 5.5rem;
+    background: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.96) 58%, rgba(0,0,0,0) 100%);
+  }
+
+  .short-brand-mask-bottom {
+    bottom: 0;
+    height: 6rem;
+    background: linear-gradient(to top, #000 0%, rgba(0,0,0,.96) 58%, rgba(0,0,0,0) 100%);
+  }
+
+  .shorts-source-status {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin-top: .5rem;
+    padding: .35rem .65rem;
+    border-radius: 9999px;
+    background: rgba(0,0,0,.45);
+    color: rgba(255,255,255,.75);
+    font-size: .7rem;
+  }
+
+  .shorts-inline-loading {
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,.65);
+  }
+
+  .short-player-shell {
+    isolation: isolate;
+  }
+
+  .short-player-shell .short-ui-mask,
+  .short-player-shell .short-actions,
+  .short-player-shell .short-open-hint {
+    z-index: 30;
+  }
+
+  .shorts-modal-player {
+    isolation: isolate;
+  }
+
+  .shorts-modal-player .shorts-source-mask,
+  .shorts-modal-player .shorts-actions {
+    z-index: 30;
+  }
+}

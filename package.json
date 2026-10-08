@@ -1,19 +1,29 @@
 {
-  "name": "vibepulse",
+  "name": "social-media-client",
+  "private": true,
   "version": "1.0.0",
-  "description": "VibePulse - Social Media Platform",
+  "type": "module",
   "scripts": {
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && npm run dev",
-    "client": "cd client && npm run dev",
-    "build": "cd client && npm install && npm run build",
-    "start": "cd server && npm start",
-    "migrate": "cd server && npm run migrate",
-    "migrate:up": "cd server && npm run migrate:up",
-    "migrate:down": "cd server && npm run migrate:down"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0",
+    "socket.io-client": "^4.7.4",
+    "lucide-react": "^0.294.0",
+    "date-fns": "^3.0.6"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "vite": "^5.0.8"
   }
 }
