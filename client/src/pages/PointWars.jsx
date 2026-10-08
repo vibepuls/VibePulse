@@ -30,7 +30,7 @@ function loadState() {
 export default function PointWars() {
   const [state, setState] = useState(loadState);
   const [loading, setLoading] = useState(true);
-  useEffect(() => { api.get('/point-wars').then(({data}) => setState(s => ({...s, points:data.balance, posts:data.posts.map((p,i)=>({id:p.id,user:p.username,avatar:(p.username||'U')[0].toUpperCase(),caption:p.content||'VibePulse post',points:Number(p.points||0),color:['from-orange-500 to-pink-500','from-violet-500 to-fuchsia-500','from-cyan-500 to-blue-600','from-emerald-500 to-teal-600'][i%4],shield:!!p.shield_expires_at}), inventory:{shields:Number(data.inventory.find(x=>x.item_type==='shield')?.quantity||0),boosters:Number(data.inventory.find(x=>x.item_type==='booster')?.quantity||0)}, quests:data.quests, shop:data.shop, hall:data.hall.map(x=>[x.username,Math.floor(Number(x.king_seconds||0)/60)])}))).catch(e=>flash(e.response?.data?.error||'Failed to load Point Wars')).finally(()=>setLoading(false)); }, []);
+  useEffect(() => { api.get('/point-wars').then(({data}) => setState(s => ({...s, points:data.balance, posts:data.posts.map((p,i)=>({id:p.id,user:p.username,avatar:(p.username||'U')[0].toUpperCase(),caption:p.content||'VibePulse post',points:Number(p.points||0),color:['from-orange-500 to-pink-500','from-violet-500 to-fuchsia-500','from-cyan-500 to-blue-600','from-emerald-500 to-teal-600'][i%4],shield:!!p.shield_expires_at})), inventory:{shields:Number(data.inventory.find(x=>x.item_type==='shield')?.quantity||0),boosters:Number(data.inventory.find(x=>x.item_type==='booster')?.quantity||0)}, quests:data.quests, shop:data.shop, hall:data.hall.map(x=>[x.username,Math.floor(Number(x.king_seconds||0)/60)])}))).catch(e=>flash(e.response?.data?.error||'Failed to load Point Wars')).finally(()=>setLoading(false)); }, []);
   const [tab, setTab] = useState('battle');
   const [message, setMessage] = useState('');
   const [giftTarget, setGiftTarget] = useState(null);
@@ -177,5 +177,3 @@ export default function PointWars() {
     </div>
   );
 }
-
-// Point Wars deployment sync
