@@ -5,6 +5,7 @@ import PostCard from '../components/PostCard';
 import StoriesBar from '../components/StoriesBar';
 import ShortsModal from '../components/ShortsModal';
 import { getShortsFromPosts } from '../components/ShortsUtils';
+import PointWars from './PointWars';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
@@ -41,6 +42,7 @@ export default function Home() {
 
   return (
     <div>
+      <PointWars />
       <div className="flex items-center justify-between mb-4"><h1 className="text-2xl font-bold">Home</h1><div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">{[['following','Following'],['for-you','For You']].map(([value,label]) => <button key={value} onClick={() => { setMode(value); setOffset(0); setHasMore(true); }} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${mode === value ? 'bg-white dark:bg-gray-700 shadow' : 'text-gray-500'}`}>{label}</button>)}</div></div>
       <StoriesBar />
       <CreatePost onPostCreated={(post) => setPosts(prev => [post, ...prev])} />
