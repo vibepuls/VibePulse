@@ -35,5 +35,139 @@ app.post('/api/reports',auth,async(req:any,res)=>{const d=z.object({targetType:z
 app.get('/api/admin/reports',auth,admin,async(_req,res)=>res.json(await prisma.report.findMany({where:{status:'OPEN'},orderBy:{createdAt:'asc'},take:100})));
 app.post('/api/admin/points',auth,admin,async(req:any,res)=>{const d=z.object({username:z.string(),amount:z.number().int().min(-1000000).max(1000000),note:z.string().max(200).default('Admin adjustment')}).safeParse(req.body);if(!d.success||d.data.amount===0)return res.status(400).json({error:'Invalid adjustment'});const u=await prisma.user.findUnique({where:{username:d.data.username.toLowerCase()}});if(!u)return res.status(404).json({error:'User not found'});try{const updated=await prisma.$transaction(async tx=>{const current=await tx.user.findUniqueOrThrow({where:{id:u.id}});if(current.points+d.data.amount<0)throw new Error('NEGATIVE');const next=await tx.user.update({where:{id:u.id},data:{points:{increment:d.data.amount}}});await tx.pointTransaction.create({data:{receiverId:u.id,amount:Math.abs(d.data.amount),type:'ADMIN_ADJUSTMENT',note:`${d.data.note} (${d.data.amount>0?'+':''}${d.data.amount})`}});return next;});res.json(safeUser(updated));}catch{return res.status(409).json({error:'Adjustment would make balance negative'});}});
 app.get('/api/admin/users',auth,admin,async(_req,res)=>res.json((await prisma.user.findMany({select:{id:true,username:true,displayName:true,points:true,status:true,role:true,createdAt:true},orderBy:{createdAt:'desc'},take:100}))));
+
+/* Social gaming MVP: profile, follow, wallet history, referrals and moderation. */
+app.get('/api/users/:username/profile', async (req, res) => {
+  const username = String(req.params.username).toLowerCase();
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      id: true, username: true, displayName: true, bio: true, avatarUrl: true,
+      points: true, role: true, status: true, createdAt: true,
+      _count: { select: { followsIn: true, followsOut: true, posts: true } }
+    }
+  });
+  if (!user || user.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
+  res.json({ ...user, followers: user._count.followsIn, following: user._count.followsOut, postCount: user._count.posts, _count: undefined });
+});
+
+app.post('/api/follows/:username', auth, async (req:any, res) => {
+  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() } });
+  if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'You cannot follow yourself' });
+  const existing = await prisma.follow.findUnique({ where: { followerId_followingId: { followerId: req.user.id, followingId: target.id } } });
+  if (existing) {
+    await prisma.follow.delete({ where: { id: existing.id } });
+    return res.json({ following: false });
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.follow.create({ data: { followerId: req.user.id, followingId: target.id } });
+    await tx.notification.create({ data: { userId: target.id, text: `@${req.user.username} started following you.` } });
+  });
+  res.json({ following: true });
+});
+
+app.get('/api/points/transactions', auth, async (req:any, res) => {
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+  const transactions = await prisma.pointTransaction.findMany({
+    where: { OR: [{ senderId: req.user.id }, { receiverId: req.user.id }] },
+    include: {
+      sender: { select: { username: true, displayName: true } },
+      receiver: { select: { username: true, displayName: true } }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit
+  });
+  res.json(transactions.map((tx:any) => ({
+    id: tx.id, amount: tx.amount, type: tx.type, note: tx.note, createdAt: tx.createdAt,
+    direction: tx.receiverId === req.user.id ? 'in' : 'out',
+    sender: tx.sender, receiver: tx.receiver
+  })));
+});
+
+app.post('/api/notifications/:id/read', auth, async (req:any, res) => {
+  const updated = await prisma.notification.updateMany({
+    where: { id: req.params.id, userId: req.user.id },
+    data: { readAt: new Date() }
+  });
+  if (!updated.count) return res.status(404).json({ error: 'Notification not found' });
+  res.json({ success: true });
+});
+
+app.get('/api/referrals/me', auth, async (req:any, res) => {
+  const [sent, user] = await Promise.all([
+    prisma.referral.count({ where: { referrerId: req.user.id } }),
+    prisma.user.findUnique({ where: { id: req.user.id }, select: { username: true } })
+  ]);
+  const base = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').replace(/\/+$/, '');
+  res.json({ username: user?.username, referralCount: sent, referralUrl: `${base}/register?ref=${encodeURIComponent(user?.username || '')}` });
+});
+
+app.post('/api/referrals/claim', auth, async (req:any, res) => {
+  const parsed = z.object({ referrerUsername: z.string().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Invalid referral username' });
+  const username = parsed.data.referrerUsername.toLowerCase();
+  const referrer = await prisma.user.findUnique({ where: { username } });
+  if (!referrer || referrer.status !== 'ACTIVE') return res.status(404).json({ error: 'Referrer not found' });
+  if (referrer.id === req.user.id) return res.status(400).json({ error: 'You cannot use your own referral link' });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.referral.create({ data: { referrerId: referrer.id, referredId: req.user.id } });
+      await tx.user.update({ where: { id: referrer.id }, data: { points: { increment: 10000 } } });
+      await tx.pointTransaction.create({ data: { senderId: null, receiverId: referrer.id, amount: 10000, type: 'REFERRAL', note: `Signup referral: @${req.user.username}` } });
+      await tx.notification.create({ data: { userId: referrer.id, text: `@${req.user.username} joined using your referral link. +10,000 points.` } });
+    });
+    res.json({ success: true, reward: 10000 });
+  } catch (error:any) {
+    if (error?.code === 'P2002') return res.status(409).json({ error: 'A referral has already been claimed for this account' });
+    res.status(400).json({ error: 'Referral could not be claimed' });
+  }
+});
+
+app.get('/api/admin/transactions', auth, admin, async (_req, res) => {
+  res.json(await prisma.pointTransaction.findMany({
+    include: { sender: { select: { username: true } }, receiver: { select: { username: true } } },
+    orderBy: { createdAt: 'desc' }, take: 200
+  }));
+});
+
+app.patch('/api/admin/users/:username/status', auth, admin, async (req:any, res) => {
+  const parsed = z.object({ status: z.enum(['ACTIVE', 'SUSPENDED', 'BANNED']) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Status must be ACTIVE, SUSPENDED or BANNED' });
+  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() } });
+  if (!target) return res.status(404).json({ error: 'User not found' });
+  if (target.id === req.user.id) return res.status(400).json({ error: 'You cannot change your own account status' });
+  const updated = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({ where: { id: target.id }, data: { status: parsed.data.status } });
+    await tx.adminAction.create({ data: { actorId: req.user.id, action: 'USER_STATUS_CHANGED', targetType: 'USER', targetId: target.id, details: `status=${parsed.data.status}` } });
+    await tx.notification.create({ data: { userId: target.id, text: `Your account status was changed to ${parsed.data.status} by an administrator.` } });
+    return user;
+  });
+  res.json(safeUser(updated));
+});
+
+app.patch('/api/admin/posts/:id/moderation', auth, admin, async (req:any, res) => {
+  const parsed = z.object({ hidden: z.boolean() }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'hidden must be true or false' });
+  const post = await prisma.post.findUnique({ where: { id: req.params.id } });
+  if (!post) return res.status(404).json({ error: 'Post not found' });
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.post.update({ where: { id: post.id }, data: { hidden: parsed.data.hidden } });
+    await tx.adminAction.create({ data: { actorId: req.user.id, action: parsed.data.hidden ? 'POST_HIDDEN' : 'POST_RESTORED', targetType: 'POST', targetId: post.id } });
+    return result;
+  });
+  res.json({ id: updated.id, hidden: updated.hidden });
+});
+
+app.patch('/api/admin/reports/:id/status', auth, admin, async (req:any, res) => {
+  const parsed = z.object({ status: z.enum(['OPEN', 'REVIEWING', 'RESOLVED', 'DISMISSED']) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Invalid report status' });
+  const report = await prisma.report.findUnique({ where: { id: req.params.id } });
+  if (!report) return res.status(404).json({ error: 'Report not found' });
+  const updated = await prisma.report.update({ where: { id: report.id }, data: { status: parsed.data.status } });
+  await prisma.adminAction.create({ data: { actorId: req.user.id, action: 'REPORT_STATUS_CHANGED', targetType: 'REPORT', targetId: report.id, details: `status=${parsed.data.status}` } });
+  res.json(updated);
+});
+
 app.use((err:any,_req:any,res:any,_next:any)=>{console.error(err);res.status(500).json({error:'Internal server error'});});
 app.listen(PORT,()=>console.log(`VibePulse API listening on ${PORT}`));
