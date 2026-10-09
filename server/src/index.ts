@@ -568,6 +568,13 @@ app.post('/api/referrals/claim', auth, async (req:any, res) => {
   }
 });
 
+app.get('/api/admin/audit-logs', auth, admin, async (_req, res) => {
+  res.json(await prisma.adminAction.findMany({
+    include: { actor: { select: { username: true, displayName: true } } },
+    orderBy: { createdAt: 'desc' }, take: 200
+  }));
+});
+
 app.get('/api/admin/transactions', auth, admin, async (_req, res) => {
   res.json(await prisma.pointTransaction.findMany({
     include: { sender: { select: { username: true } }, receiver: { select: { username: true } } },
