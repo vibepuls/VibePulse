@@ -576,9 +576,7 @@ function SocialGamingApp() {
 
       {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
-          <section className="rounded-3xl border border-sky-300/15 bg-gradient-to-br from-sky-600/20 via-slate-900 to-sky-500/10 p-5 sm:p-7">
-            <div className="flex flex-wrap items-end justify-between gap-4"><div><div className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">Post → Earn → Steal → Gift → Battle → Rank</div><h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">Your next rank starts here.</h1><p className="mt-2 max-w-2xl text-sm text-slate-400">Publish a photo, earn verified points, compete fairly, and climb the community leaderboard.</p></div><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><div className="text-xs text-slate-400">Your rank</div><div className="mt-1 text-3xl font-black text-white">{myRank ? `#${myRank}` : '—'}</div></div></div>
-          </section>
+          <section className="flex items-center justify-between border-b border-white/10 pb-3"><div><h1 className="text-xl font-extrabold text-white">Home</h1><p className="mt-1 text-sm text-slate-400">Your community, all in one place.</p></div><div className="rounded-full bg-sky-500/10 px-3 py-2 text-sm font-bold text-sky-200">Rank ${myRank ? `#${myRank}` : "—"}</div></section>
           <Panel title="Create post" subtitle="Share a thought or add a photo.">
             <form onSubmit={createPost} className="space-y-3">
               <textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-20 resize-y`}/>
