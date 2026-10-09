@@ -9,6 +9,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const referral = new URLSearchParams(window.location.search).get('ref');
+  const registerPath = referral ? `/register?ref=${encodeURIComponent(referral)}` : '/register';
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
@@ -32,7 +34,7 @@ export default function Login() {
           <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>
         <p className="text-center mt-3 text-sm"><Link to="/forgot-password" className="text-blue-600 hover:underline">Forgot password?</Link></p>
-        <p className="text-center mt-4 text-sm text-gray-600">Don't have an account? <Link to={`/register${new URLSearchParams(window.location.search).get('ref') ? `?ref=${encodeURIComponent(new URLSearchParams(window.location.search).get('ref'))}` : ''}` className="text-blue-600 hover:underline">Sign up</Link></p>
+        <p className="text-center mt-4 text-sm text-gray-600">Don't have an account? <Link to={registerPath} className="text-blue-600 hover:underline">Sign up</Link></p>
       </div>
     </div>
   );
