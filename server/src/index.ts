@@ -31,7 +31,7 @@ function hasValidImageSignature(buffer:Buffer) {
   return png || jpeg || gif || webp;
 }
 
-function auth(req:any,res:any,next:any){const h=req.headers.authorization; if(!h?.startsWith('Bearer ')) return res.status(401).json({error:'Please log in'}); try {req.user=jwt.verify(h.slice(7),AUTH_SECRET) as any; next();} catch{return res.status(401).json({error:'Invalid or expired session'});}}
+async function auth(req:any,res:any,next:any){const h=req.headers.authorization;if(!h?.startsWith('Bearer '))return res.status(401).json({error:'Please log in'});try{const payload=jwt.verify(h.slice(7),AUTH_SECRET) as any;const current=await prisma.user.findUnique({where:{id:String(payload.id)},select:{id:true,username:true,role:true,status:true}});if(!current||current.status!=='ACTIVE')return res.status(403).json({error:'Account is not active'});req.user={id:current.id,username:current.username,role:current.role};next();}catch{return res.status(401).json({error:'Invalid or expired session'});}}
 function admin(req:any,res:any,next:any){if(req.user?.role!=='ADMIN') return res.status(403).json({error:'Admin access required'}); next();}
 const safeUser=(u:any)=>({id:u.id,username:u.username,displayName:u.displayName,bio:u.bio,avatarUrl:u.avatarUrl,points:u.points,role:u.role,createdAt:u.createdAt});
 const dayKey = () => new Date().toISOString().slice(0, 10);
