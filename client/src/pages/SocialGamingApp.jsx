@@ -354,6 +354,13 @@ function SocialGamingApp() {
     finally { setBusy(''); }
   };
 
+  const finishBattle = async (battleId) => {
+    setBusy('finish:' + battleId);
+    try { const { data } = await api.post(`/battles/${battleId}/finish`); tell(data.winnerId ? 'Battle finished and winner reward was credited.' : 'Battle finished in a tie.'); await loadCore(); }
+    catch (e) { tell(errText(e), 'error'); }
+    finally { setBusy(''); }
+  };
+
   const voteBattle = async (battleId, choice) => {
     setBusy(`vote:${battleId}`);
     try { await api.post(`/battles/${battleId}/vote`, { choice }); tell('Your vote has been recorded.'); await loadCore(); }
@@ -389,6 +396,7 @@ function SocialGamingApp() {
     if (results[1].status === 'fulfilled') setReports(results[1].value.data || []);
     if (results[2].status === 'fulfilled') setAuditLogs(results[2].value.data || []);
     if (results[3].status === 'fulfilled') setAdminTransactions(results[3].value.data || []);
+    if (results[4].status === 'fulfilled') setAdminPosts(results[4].value.data || []);
   };
 
   useEffect(() => { if (section === 'admin') loadAdmin(); }, [section, me?.role]);
@@ -540,7 +548,7 @@ function SocialGamingApp() {
       </div>}
 
       {section === 'battles' && <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-        <Panel title="Community photo battles" subtitle="Vote once per battle. Voting closes after 10 minutes."><div className="space-y-4">{battles.map((battle) => <article key={battle.id} className="rounded-xl border border-white/10 bg-slate-950/50 p-4"><div className="mb-3 flex items-center justify-between gap-3"><div className="font-bold text-white">{battle.title}</div><span className="text-xs text-slate-500">{battle.status}</span></div><div className="grid grid-cols-2 gap-3">{[[battle.challenger,battle.challengerPost,'CHALLENGER'],[battle.opponent,battle.opponentPost,'OPPONENT']].map(([player,photo,choice]) => <div key={choice} className="overflow-hidden rounded-xl border border-white/10"><div className="p-2 text-xs font-semibold text-slate-300">@{player?.username || 'waiting'}</div>{photo?.imageUrl && <img src={photo.imageUrl} alt={photo.caption || 'Battle photo'} className="aspect-square w-full object-cover"/>}<div className="p-2 text-xs text-slate-400">{photo?.caption}</div><button disabled={battle.status !== 'OPEN' || Boolean(busy)} onClick={() => voteBattle(battle.id, choice)} className={secondaryButton + ' m-2'}>Vote for this photo</button></div>)}</div><div className="mt-3 text-xs text-slate-500">Votes: {battle.challengerVotes || 0} — {battle.opponentVotes || 0} · Reward: {fmt(battle.reward)} pts</div></article>)}{battles.length === 0 && <p className="py-6 text-sm text-slate-500">No battles yet. Start one using photos from both players.</p>}</div></Panel>
+        <Panel title="Community photo battles" subtitle="Vote once per battle. Voting closes after 10 minutes."><div className="space-y-4">{battles.map((battle) => <article key={battle.id} className="rounded-xl border border-white/10 bg-slate-950/50 p-4"><div className="mb-3 flex items-center justify-between gap-3"><div className="font-bold text-white">{battle.title}</div><span className="text-xs text-slate-500">{battle.status}</span></div><div className="grid grid-cols-2 gap-3">{[[battle.challenger,battle.challengerPost,'CHALLENGER'],[battle.opponent,battle.opponentPost,'OPPONENT']].map(([player,photo,choice]) => <div key={choice} className="overflow-hidden rounded-xl border border-white/10"><div className="p-2 text-xs font-semibold text-slate-300">@{player?.username || 'waiting'}</div>{photo?.imageUrl && <img src={photo.imageUrl} alt={photo.caption || 'Battle photo'} className="aspect-square w-full object-cover"/>}<div className="p-2 text-xs text-slate-400">{photo?.caption}</div><button disabled={battle.status !== 'OPEN' || Boolean(busy)} onClick={() => voteBattle(battle.id, choice)} className={secondaryButton + ' m-2'}>Vote for this photo</button></div>)}</div><div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>Votes: {battle.challengerVotes || 0} — {battle.opponentVotes || 0} · Reward: {fmt(battle.reward)} pts</span>{battle.status === 'OPEN' && battle.endsAt && new Date(battle.endsAt) <= new Date() && <button disabled={Boolean(busy)} onClick={() => finishBattle(battle.id)} className={secondaryButton}>{busy === `finish:${battle.id}` ? 'Finishing…' : 'Finish battle'}</button>}</div></article>)}{battles.length === 0 && <p className="py-6 text-sm text-slate-500">No battles yet. Start one using photos from both players.</p>}</div></Panel>
         <Panel title="Create a photo battle" subtitle="Choose one photo you own and one public photo from your opponent.">
           <form onSubmit={loadOpponentPosts} className="space-y-3"><label className="block text-xs text-slate-400">Opponent username<input value={opponentUsername} onChange={(e) => setOpponentUsername(e.target.value)} className={inputClass} placeholder="username"/></label><button className={secondaryButton}>Load battle photos</button></form>
           {myPosts.length > 0 && opponentPosts.length > 0 && <form onSubmit={createBattle} className="mt-4 space-y-3"><label className="block text-xs text-slate-400">Your photo<select value={myBattlePostId} onChange={(e) => setMyBattlePostId(e.target.value)} className={inputClass}>{myPosts.map((p) => <option key={p.id} value={p.id}>{p.caption || p.id}</option>)}</select></label><label className="block text-xs text-slate-400">Opponent photo<select value={opponentBattlePostId} onChange={(e) => setOpponentBattlePostId(e.target.value)} className={inputClass}>{opponentPosts.map((p) => <option key={p.id} value={p.id}>{p.caption || p.id}</option>)}</select></label><button disabled={busy === 'battle'} className={primaryButton}>Challenge to battle</button></form>}
