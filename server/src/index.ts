@@ -11,7 +11,7 @@ import multer from 'multer';
 import { randomInt, randomUUID } from 'node:crypto';
 
 const app = express(); const prisma = new PrismaClient();
-const PORT = Number(process.env.PORT || 4000); const AUTH_SECRET = process.env.AUTH_SECRET || 'development-only-change-this-secret-please';
+const PORT = Number(process.env.PORT || 4000); if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET) throw new Error('AUTH_SECRET must be configured in production'); const AUTH_SECRET = process.env.AUTH_SECRET || 'development-only-change-this-secret-please';
 app.use(helmet()); app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' })); app.use(express.json({ limit: '1mb' }));
 app.use('/api', rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false }));
 const upload = multer({
