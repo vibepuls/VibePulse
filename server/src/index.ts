@@ -92,6 +92,38 @@ app.patch('/api/me/profile', auth, async (req:any, res) => {
 });
 app.get('/api/users',async(req,res)=>{const q=String(req.query.q||'').slice(0,40);const users=await prisma.user.findMany({where:{status:'ACTIVE',OR:[{username:{contains:q,mode:'insensitive'}},{displayName:{contains:q,mode:'insensitive'}}]},select:{id:true,username:true,displayName:true,avatarUrl:true,points:true},take:20,orderBy:{points:'desc'}});res.json(users);});
 app.get('/api/leaderboard',async(_req,res)=>{const users=await prisma.user.findMany({where:{status:'ACTIVE'},select:{id:true,username:true,displayName:true,avatarUrl:true,points:true},orderBy:{points:'desc'},take:50});res.json(users.map((u,i)=>({...u,rank:i+1})));});
+app.get('/api/trending', async (_req, res) => {
+  const posts = await prisma.post.findMany({
+    where: { hidden: false, privacy: 'PUBLIC' },
+    include: { author: { select: { username: true, displayName: true, avatarUrl: true } }, _count: { select: { likes: true, comments: true } } },
+    orderBy: [{ createdAt: 'desc' }],
+    take: 100
+  });
+  const ranked = posts.map((post:any) => ({
+    ...post,
+    hotScore: Number(post.points || 0) + post._count.likes * 3 + post._count.comments * 2,
+    isHot: post.createdAt.getTime() >= Date.now() - 60 * 60 * 1000 && (post._count.likes + post._count.comments) >= 3
+  })).sort((a:any,b:any) => b.hotScore - a.hotScore || b.createdAt.getTime() - a.createdAt.getTime());
+  res.json(ranked.slice(0, 50));
+});
+
+app.get('/api/rising-users', async (_req, res) => {
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  let users = await prisma.user.findMany({
+    where: { status: 'ACTIVE', createdAt: { gte: since } },
+    select: { id: true, username: true, displayName: true, avatarUrl: true, points: true, createdAt: true },
+    orderBy: [{ points: 'desc' }, { createdAt: 'desc' }],
+    take: 10
+  });
+  if (!users.length) users = await prisma.user.findMany({
+    where: { status: 'ACTIVE' },
+    select: { id: true, username: true, displayName: true, avatarUrl: true, points: true, createdAt: true },
+    orderBy: [{ createdAt: 'desc' }, { points: 'desc' }],
+    take: 10
+  });
+  res.json(users);
+});
+
 app.get('/api/leaderboard/:period', async (req, res) => {
   const period = String(req.params.period).toLowerCase();
   if (!['daily', 'weekly'].includes(period)) return res.status(404).json({ error: 'Leaderboard period not found' });
