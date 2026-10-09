@@ -38,3 +38,18 @@
 .battlephotos button{width:100%;margin-top:auto}
 .battlewinner{margin-top:12px;font-weight:800;color:#7c3aed}
 @media(max-width:520px){.battlephotos{grid-template-columns:1fr}.battleheading{flex-direction:column}}
+
+.achievementgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px}
+.achievement{border:1px solid var(--line,#e6e8ef);border-radius:14px;padding:15px;min-width:0}
+.achievementicon{font-size:1.8rem;margin-bottom:10px}
+.achievement p{font-size:.82rem;color:var(--muted,#687085);margin:7px 0}
+.achievement small{font-size:.75rem;color:var(--muted,#687085)}
+.achievement.unlocked{border-color:rgba(124,58,237,.38);background:rgba(124,58,237,.06)}
+.achievement.locked{opacity:.75}
+.teamcard{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--line,#e6e8ef)}
+.teamcard:last-child{border-bottom:0}
+.teamrank{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:rgba(124,58,237,.1);font-weight:900;color:#7c3aed;flex-shrink:0}
+.teamcard p{font-size:.85rem;color:var(--muted,#687085);margin:4px 0}
+.teamcard small{display:block;font-size:.74rem;color:var(--muted,#687085);margin-top:5px}
+.teamowner{font-size:.78rem;font-weight:800;color:#7c3aed}
+.game-result{margin-top:10px;font-weight:800;color:#0a9b69}
