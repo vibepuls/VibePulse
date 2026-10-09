@@ -625,15 +625,19 @@ function SocialGamingApp() {
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     {post.author?.username !== me?.username && <>
                       <button disabled={busy === `steal:${post.id}` || (stealCountdowns[post.id] || 0) > 0} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? (bn ? 'নিচ্ছে…' : 'Stealing…') : (stealCountdowns[post.id] || 0) > 0 ? (bn ? `আবার ${stealCountdowns[post.id]}s` : `Steal in ${stealCountdowns[post.id]}s`) : <><ArrowDownRight size={15} className="mr-1 inline"/>{bn ? '৩ পয়েন্ট নাও' : 'Steal 3'}</>}</button>
-                      <button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}><Gift size={15} className="mr-1 inline"/>Gift points</button>
-                      <button onClick={() => openConversation(post.author.username)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>
-                      <button onClick={() => setReportTarget({ type: "POST", id: post.id })} className={secondaryButton}>Report</button>
+                      <button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}><Gift size={15} className="mr-1 inline"/>{bn ? 'পয়েন্ট উপহার' : 'Gift points'}</button>
+                      <button onClick={() => openConversation(post.author.username)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>{bn ? 'মেসেজ' : 'Message'}</button>
                     </>}
-                    {post.author?.username === me?.username && <>
-                      <button disabled={Boolean(busy)} onClick={() => addPointsToPost(post)} className={secondaryButton}><Plus size={15} className="mr-1 inline"/>Add points</button>
-                      <button disabled={Boolean(busy)} onClick={() => editOwnPost(post)} className={secondaryButton}>Edit</button>
-                      <button disabled={Boolean(busy)} onClick={() => deletePost(post)} className="rounded-xl border border-rose-400/30 px-3 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-400/10">{busy === "delete:" + post.id ? "Deleting…" : "Delete post"}</button>
-                    </>}
+                    {post.author?.username === me?.username && <button disabled={Boolean(busy)} onClick={() => addPointsToPost(post)} className={secondaryButton}><Plus size={15} className="mr-1 inline"/>{bn ? 'পয়েন্ট যোগ' : 'Add points'}</button>}
+                    <div className="relative ml-auto">
+                      <button type="button" aria-label="More post options" title="More options" onClick={() => setOpenPostMenu(openPostMenu === post.id ? null : post.id)} className={secondaryButton}><MoreHorizontal size={18}/></button>
+                      {openPostMenu === post.id && <div className="absolute right-0 top-full z-30 mt-1 min-w-44 rounded-xl border border-white/10 bg-slate-900 p-1 shadow-2xl">
+                        {post.author?.username === me?.username ? <>
+                          <button onClick={() => { setOpenPostMenu(null); editOwnPost(post); }} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10">{bn ? 'পোস্ট সম্পাদনা' : 'Edit post'}</button>
+                          <button onClick={() => { setOpenPostMenu(null); deletePost(post); }} className="block w-full rounded-lg px-3 py-2 text-left text-sm text-rose-300 hover:bg-white/10">{bn ? 'পোস্ট মুছুন' : 'Delete post'}</button>
+                        </> : <button onClick={() => { setOpenPostMenu(null); setReportTarget({ type: "POST", id: post.id }); }} className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/10">{bn ? 'রিপোর্ট করুন' : 'Report post'}</button>}
+                      </div>}
+                    </div>
                   </div>
                   <form onSubmit={(event) => addComment(event, post.id)} className="mt-3 flex gap-2">
                     <input value={commentDrafts[post.id] || ''} onChange={(event) => setCommentDrafts((old) => ({ ...old, [post.id]: event.target.value }))} maxLength={1000} id={"comment-" + post.id} placeholder="Write a comment…" className={inputClass}/>
