@@ -12,11 +12,15 @@ This branch is a first real-backend slice of the Social Gaming Platform. It is i
 - Referral URL, successful-signup reward (+10,000 points to the referrer), and one daily +30 referral-sharing claim.
 - Notification read action.
 - Admin user status controls, point adjustments, report status, and post hide/restore endpoints, with admin action records.
-- Free reaction practice game that never changes points.
+- Daily missions with server-tracked progress and claim-once rewards; a mission can grant a 30-minute shield.
+- Achievement unlocks derived from actual points, posts, steals, gifts, battle wins, and team membership.
+- Photo battles with opponent photo validation, one community vote per user, a 10-minute voting window, and a server-awarded winner reward.
+- Teams with join/leave controls and combined member-point rankings.
+- Quick Tap game with server-created sessions, a score cap, one-time reward claims, and five rewarded rounds per day.
 
 ## Important limits
 
-This is not the full specification yet. Actual image binary upload/storage, validated mission progress and achievements, photo battle voting, team ranking, shield inventory, payment provider integration, and production anti-fraud controls still require further work. Point purchase must remain disabled until a real provider verifies payment server-side.
+This is not the full specification yet. Actual image binary upload/storage, team ownership transfer, a full moderator/audit dashboard, advanced referral anti-fraud, and production anti-bot controls still require further work. Point purchase must remain disabled until a real provider verifies payment server-side.
 
 ## Preserve the existing Supabase data
 
