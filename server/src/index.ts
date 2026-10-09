@@ -136,6 +136,21 @@ app.get('/api/referrals/me', auth, async (req:any, res) => {
   res.json({ username: user?.username, referralCount: sent, referralUrl: `${base}/register?ref=${encodeURIComponent(user?.username || '')}` });
 });
 
+app.post('/api/referrals/share-reward', auth, async (req:any, res) => {
+  const periodKey = new Date().toISOString().slice(0, 10);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.referralShareClaim.create({ data: { userId: req.user.id, periodKey } });
+      await tx.user.update({ where: { id: req.user.id }, data: { points: { increment: 30 } } });
+      await tx.pointTransaction.create({ data: { receiverId: req.user.id, amount: 30, type: 'REFERRAL_SHARE', note: 'Daily referral sharing reward' } });
+    });
+    res.json({ success: true, reward: 30, periodKey });
+  } catch (error:any) {
+    if (error?.code === 'P2002') return res.status(409).json({ error: 'Daily referral share reward already claimed' });
+    res.status(400).json({ error: 'Could not claim referral share reward' });
+  }
+});
+
 app.post('/api/referrals/claim', auth, async (req:any, res) => {
   const parsed = z.object({ referrerUsername: z.string().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/) }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: 'Invalid referral username' });
