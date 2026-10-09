@@ -69,3 +69,5 @@
 .wallet-summary p{grid-column:1/-1;color:var(--muted,#687085);font-size:.75rem;margin:0}
 .wallet-summary small{display:block;color:var(--muted,#687085);font-size:.73rem}
 .wallet-summary b{display:block;margin-top:5px;font-size:1.05rem;overflow-wrap:anywhere}
+
+.hot-badge{display:inline-block;margin-left:5px;padding:3px 6px;border-radius:6px;background:rgba(249,115,22,.12);color:#ea580c;font-size:.65rem;vertical-align:middle}
