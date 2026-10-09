@@ -204,6 +204,48 @@ app.post('/api/battles/:id/finish', auth, async (req:any, res) => {
   }
 });
 
+app.get('/api/achievements/me', auth, async (req:any, res) => {
+  const defaults = [
+    { key: 'first-post', title: 'First Photo', description: 'Publish your first photo post.', metric: 'POSTS', target: 1, active: true },
+    { key: 'first-1000', title: 'First 1,000', description: 'Reach 1,000 points.', metric: 'POINTS', target: 1000, active: true },
+    { key: 'first-10000', title: 'Point Collector', description: 'Reach 10,000 points.', metric: 'POINTS', target: 10000, active: true },
+    { key: 'first-steal', title: 'First Heist', description: 'Collect points from another player once.', metric: 'STEALS', target: 1, active: true },
+    { key: 'steal-100', title: 'Shadow Collector', description: 'Collect points 100 times.', metric: 'STEALS', target: 100, active: true },
+    { key: 'first-gift', title: 'Generous Friend', description: 'Send your first point gift.', metric: 'GIFTS', target: 1, active: true },
+    { key: 'gift-50', title: 'Big Heart', description: 'Send 50 point gifts.', metric: 'GIFTS', target: 50, active: true },
+    { key: 'first-battle-win', title: 'Battle Winner', description: 'Win a photo battle.', metric: 'BATTLE_WINS', target: 1, active: true },
+    { key: 'team-player', title: 'Team Player', description: 'Join a team.', metric: 'TEAMS', target: 1, active: true }
+  ];
+  for (const item of defaults) await prisma.achievement.upsert({ where: { key: item.key }, update: {}, create: item });
+  const [user, posts, steals, gifts, battleWins, teamCount] = await Promise.all([
+    prisma.user.findUniqueOrThrow({ where: { id: req.user.id }, select: { points: true } }),
+    prisma.post.count({ where: { authorId: req.user.id } }),
+    prisma.pointTransaction.count({ where: { receiverId: req.user.id, type: 'STEAL' } }),
+    prisma.pointTransaction.count({ where: { senderId: req.user.id, type: 'GIFT' } }),
+    prisma.battle.count({ where: { winnerId: req.user.id, status: 'FINISHED' } }),
+    prisma.teamMember.count({ where: { userId: req.user.id } })
+  ]);
+  const metrics:any = { POSTS: posts, POINTS: user.points, STEALS: steals, GIFTS: gifts, BATTLE_WINS: battleWins, TEAMS: teamCount };
+  const achievements = await prisma.achievement.findMany({ where: { active: true } });
+  for (const achievement of achievements) {
+    if ((metrics[achievement.metric] || 0) >= achievement.target) {
+      await prisma.userAchievement.upsert({
+        where: { userId_achievementId: { userId: req.user.id, achievementId: achievement.id } },
+        update: {},
+        create: { userId: req.user.id, achievementId: achievement.id }
+      });
+    }
+  }
+  const unlocked = await prisma.userAchievement.findMany({ where: { userId: req.user.id }, select: { achievementId: true, unlockedAt: true } });
+  const unlockedMap = new Map(unlocked.map((item:any) => [item.achievementId, item.unlockedAt]));
+  res.json(achievements.map((achievement:any) => ({
+    ...achievement,
+    unlocked: unlockedMap.has(achievement.id),
+    unlockedAt: unlockedMap.get(achievement.id) || null,
+    current: metrics[achievement.metric] || 0
+  })));
+});
+
 app.get('/api/missions', auth, async (req:any, res) => {
   const defaults = [
     { key: 'daily-post', title: 'Photo starter', description: 'Publish one photo post today.', actionType: 'POST', target: 1, reward: 100, active: true },
