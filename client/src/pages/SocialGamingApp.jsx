@@ -186,8 +186,6 @@ function SocialGamingApp() {
 
   const collectPoints = async (post) => {
     if (!post?.id || post.author?.username === me?.username) return;
-    const ownPublicPost = posts.filter((item) => item.authorId === me?.id && item.privacy === 'PUBLIC' && !item.hidden);
-    if (!ownPublicPost.length) return tell('Publish a public post first so stolen points can be added to it.', 'error');
     setBusy(`steal:${post.id}`);
     try {
       const { data } = await api.post(`/posts/${encodeURIComponent(post.id)}/steal`);
