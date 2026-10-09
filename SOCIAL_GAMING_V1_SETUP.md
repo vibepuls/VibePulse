@@ -58,6 +58,7 @@ Open `http://localhost:5173`. The API health endpoint is `http://localhost:4000/
 - API build command: `npm install && npm --prefix server install && npm --prefix server run db:generate && npm --prefix server run build`
 - API start command: `npm --prefix server start`
 - Required API environment variables: `DATABASE_URL`, `AUTH_SECRET`, `CLIENT_ORIGIN`, and `PORT`.
+- For photo uploads, also set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `SUPABASE_STORAGE_BUCKET=vibepulse-media` on the API service only. Create a `vibepulse-media` bucket in the existing Supabase Storage dashboard and make it public for direct photo display. Never add the service-role key to the frontend or GitHub.
 - Static frontend root: `client`.
 - Frontend build command: `npm install && npm run build`
 - Publish directory: `dist`.
