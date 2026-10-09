@@ -77,6 +77,19 @@ app.get('/api/health',(_req,res)=>res.json({ok:true,service:'VibePulse API'}));
 app.post('/api/auth/register',async(req,res)=>{try{const data=z.object({username:z.string().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/),displayName:z.string().min(1).max(60),email:z.string().email().optional().or(z.literal('')),password:z.string().min(8).max(100)}).parse(req.body); const username=data.username.toLowerCase(); const hash=await bcrypt.hash(data.password,12); const user=await prisma.user.create({data:{username,displayName:data.displayName,email:data.email||null,passwordHash:hash}}); const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'}); res.status(201).json({token,user:safeUser(user)});}catch(e:any){res.status(e?.code==='P2002'?409:400).json({error:e?.code==='P2002'?'Username or email already exists':e.message||'Registration failed'});}});
 app.post('/api/auth/login',async(req,res)=>{const data=z.object({username:z.string(),password:z.string()}).safeParse(req.body);if(!data.success)return res.status(400).json({error:'Username and password required'});const user=await prisma.user.findUnique({where:{username:data.data.username.toLowerCase()}});if(!user||!(await bcrypt.compare(data.data.password,user.passwordHash)))return res.status(401).json({error:'Incorrect username or password'});if(user.status!=='ACTIVE')return res.status(403).json({error:'Account is not active'});const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'});res.json({token,user:safeUser(user)});});
 app.get('/api/me',auth,async(req:any,res)=>{const u=await prisma.user.findUnique({where:{id:req.user.id}});if(!u)return res.status(404).json({error:'User not found'});res.json(safeUser(u));});
+app.patch('/api/me/profile', auth, async (req:any, res) => {
+  const parsed = z.object({
+    displayName: z.string().trim().min(1).max(60),
+    bio: z.string().max(500).default(''),
+    avatarUrl: z.string().url().max(2000).optional().or(z.literal(''))
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Display name, bio or avatar URL is invalid' });
+  const updated = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { displayName: parsed.data.displayName, bio: parsed.data.bio, avatarUrl: parsed.data.avatarUrl || null }
+  });
+  res.json(safeUser(updated));
+});
 app.get('/api/users',async(req,res)=>{const q=String(req.query.q||'').slice(0,40);const users=await prisma.user.findMany({where:{status:'ACTIVE',OR:[{username:{contains:q,mode:'insensitive'}},{displayName:{contains:q,mode:'insensitive'}}]},select:{id:true,username:true,displayName:true,avatarUrl:true,points:true},take:20,orderBy:{points:'desc'}});res.json(users);});
 app.get('/api/leaderboard',async(_req,res)=>{const users=await prisma.user.findMany({where:{status:'ACTIVE'},select:{id:true,username:true,displayName:true,avatarUrl:true,points:true},orderBy:{points:'desc'},take:50});res.json(users.map((u,i)=>({...u,rank:i+1})));});
 app.get('/api/leaderboard/:period', async (req, res) => {
