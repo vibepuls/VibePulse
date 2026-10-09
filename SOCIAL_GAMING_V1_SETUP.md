@@ -20,7 +20,7 @@ This branch is a first real-backend slice of the Social Gaming Platform. It is i
 
 ## Important limits
 
-This is not the full specification yet. Actual image binary upload/storage, team ownership transfer, a full moderator/audit dashboard, advanced referral anti-fraud, and production anti-bot controls still require further work. Point purchase must remain disabled until a real provider verifies payment server-side.
+This is not the full specification yet. Image upload requires the documented Supabase Storage bucket and server-only credentials. Team ownership transfer, production media moderation/scanning, advanced referral anti-fraud, and production anti-bot/device-fraud controls still require further work. Point purchase must remain disabled until a real provider verifies payment server-side.
 
 ## Preserve the existing Supabase data
 
