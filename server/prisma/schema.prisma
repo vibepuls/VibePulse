@@ -28,6 +28,10 @@ model User {
  battlesAsOpponent Battle[] @relation("BattleOpponent")
  battlesWon Battle[] @relation("BattleWinner")
  battleVotes BattleVote[]
+ gameSessions GameSession[]
+ achievements UserAchievement[]
+ createdTeams Team[] @relation("TeamCreator")
+ teamMemberships TeamMember[]
  adminActions AdminAction[] @relation("AdminActor")
  sentTransactions PointTransaction[] @relation("Sender")
  receivedTransactions PointTransaction[] @relation("Receiver")
@@ -213,6 +217,7 @@ model DailyMission {
  actionType String
  target Int @default(1)
  reward Int @default(100)
+ rewardType String @default("POINTS")
  active Boolean @default(true)
  createdAt DateTime @default(now())
  progress MissionProgress[]
@@ -231,4 +236,57 @@ model MissionProgress {
  mission DailyMission @relation(fields:[missionId], references:[id], onDelete:Cascade)
  @@unique([userId,missionId,periodKey])
  @@index([userId,periodKey])
+}
+
+model GameSession {
+ id String @id @default(cuid())
+ userId String
+ startedAt DateTime @default(now())
+ endsAt DateTime
+ claimedAt DateTime?
+ score Int?
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@index([userId,startedAt])
+}
+
+model Achievement {
+ id String @id @default(cuid())
+ key String @unique
+ title String
+ description String
+ metric String
+ target Int
+ active Boolean @default(true)
+ users UserAchievement[]
+}
+
+model UserAchievement {
+ id String @id @default(cuid())
+ userId String
+ achievementId String
+ unlockedAt DateTime @default(now())
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ achievement Achievement @relation(fields:[achievementId], references:[id], onDelete:Cascade)
+ @@unique([userId,achievementId])
+}
+
+model Team {
+ id String @id @default(cuid())
+ name String @unique
+ description String @default("")
+ creatorId String
+ createdAt DateTime @default(now())
+ creator User @relation("TeamCreator", fields:[creatorId], references:[id], onDelete:Cascade)
+ members TeamMember[]
+}
+
+model TeamMember {
+ id String @id @default(cuid())
+ teamId String
+ userId String
+ joinedAt DateTime @default(now())
+ team Team @relation(fields:[teamId], references:[id], onDelete:Cascade)
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([teamId,userId])
+ @@index([userId])
 }
