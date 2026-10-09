@@ -23,6 +23,11 @@ model User {
  referralReceived Referral? @relation("ReferralReferred")
  referralShareClaims ReferralShareClaim[]
  missionProgress MissionProgress[]
+ battlesCreated Battle[] @relation("BattleCreator")
+ battlesAsChallenger Battle[] @relation("BattleChallenger")
+ battlesAsOpponent Battle[] @relation("BattleOpponent")
+ battlesWon Battle[] @relation("BattleWinner")
+ battleVotes BattleVote[]
  adminActions AdminAction[] @relation("AdminActor")
  sentTransactions PointTransaction[] @relation("Sender")
  receivedTransactions PointTransaction[] @relation("Receiver")
@@ -47,6 +52,8 @@ model Post {
  likes Like[]
  @@index([createdAt])
  @@index([points])
+ battlesAsChallengerPost Battle[] @relation("BattleChallengerPost")
+ battlesAsOpponentPost Battle[] @relation("BattleOpponentPost")
 }
 model Comment {
  id String @id @default(cuid())
@@ -134,7 +141,36 @@ model Battle {
  id String @id @default(cuid())
  title String
  status String @default("OPEN")
+ creatorId String?
+ challengerId String?
+ opponentId String?
+ challengerPostId String?
+ opponentPostId String?
+ winnerId String?
+ challengerVotes Int @default(0)
+ opponentVotes Int @default(0)
+ reward Int @default(100)
+ endsAt DateTime?
  createdAt DateTime @default(now())
+ creator User? @relation("BattleCreator", fields:[creatorId], references:[id], onDelete:SetNull)
+ challenger User? @relation("BattleChallenger", fields:[challengerId], references:[id], onDelete:SetNull)
+ opponent User? @relation("BattleOpponent", fields:[opponentId], references:[id], onDelete:SetNull)
+ winner User? @relation("BattleWinner", fields:[winnerId], references:[id], onDelete:SetNull)
+ challengerPost Post? @relation("BattleChallengerPost", fields:[challengerPostId], references:[id], onDelete:SetNull)
+ opponentPost Post? @relation("BattleOpponentPost", fields:[opponentPostId], references:[id], onDelete:SetNull)
+ votes BattleVote[]
+ @@index([status,endsAt])
+}
+
+model BattleVote {
+ id String @id @default(cuid())
+ battleId String
+ userId String
+ choice String
+ createdAt DateTime @default(now())
+ battle Battle @relation(fields:[battleId], references:[id], onDelete:Cascade)
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([battleId,userId])
 }
 
 model Referral {
