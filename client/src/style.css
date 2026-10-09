@@ -75,3 +75,7 @@
 .champion{border-color:rgba(234,179,8,.28)!important;background:linear-gradient(145deg,rgba(234,179,8,.08),rgba(124,58,237,.04))}
 .championname{font-size:1.25rem;font-weight:900;margin-top:8px;overflow-wrap:anywhere}
 .champion p{font-size:.83rem;color:var(--muted,#687085);margin:7px 0 12px}
+
+.mystery-reward{margin-top:18px;padding:16px;border:1px dashed rgba(124,58,237,.4);border-radius:14px;background:rgba(124,58,237,.04)}
+.mystery-reward h3{font-weight:900}
+.mystery-reward p{font-size:.83rem;color:var(--muted,#687085);margin:6px 0 12px}
