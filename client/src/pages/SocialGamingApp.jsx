@@ -207,7 +207,7 @@ function SocialGamingApp() {
       tell(`🥷 Took ${fmt(data.stolen)} points from @${post.author?.username}'s post and added them to your post.`);
       await Promise.all([refreshMe(), loadCore()]);
     } catch (e) { tell(errText(e, 'Point collection failed.'), 'error'); }
-    finally { setBusy(''); }
+    finally { setBusy((old) => old === `steal:${post.id}` ? '' : old); }
   };
 
   const giftPoints = async (event) => {
