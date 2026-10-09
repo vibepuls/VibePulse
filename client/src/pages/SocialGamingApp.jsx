@@ -323,7 +323,7 @@ function SocialGamingApp() {
           window.clearInterval(interval);
           (async () => {
             try {
-              const { data } = await api.post(`/games/quick-tap/${gameSession.id}/finish`, { score: gameScoreRef.current });
+              const { data } = await api.post(`/games/quick-tap/${gameSession.id}/finish`, {});
               tell(`Practice complete: +${fmt(data.score)} points.`);
               setGameSession(null); await loadCore();
             } catch (e) { tell(errText(e, 'Game reward could not be claimed.'), 'error'); setGameSession(null); }
@@ -336,10 +336,16 @@ function SocialGamingApp() {
     return () => window.clearInterval(interval);
   }, [gameSession, loadCore]);
 
-  const tapGame = () => {
+  const tapGame = async () => {
     if (!gameSession || gameRemaining <= 0) return;
-    gameScoreRef.current = Math.min(120, gameScoreRef.current + 1);
-    setGameScore(gameScoreRef.current);
+    try {
+      const { data } = await api.post(`/games/quick-tap/${gameSession.id}/tap`, {});
+      const acceptedScore = Math.max(gameScoreRef.current, Number(data.score || 0));
+      gameScoreRef.current = acceptedScore;
+      setGameScore(acceptedScore);
+    } catch (e) {
+      tell(errText(e, 'Tap was not accepted.'), 'error');
+    }
   };
 
   const createTeam = async (event) => {
