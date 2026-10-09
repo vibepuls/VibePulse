@@ -63,6 +63,43 @@ app.post('/api/posts/:id/like',auth,async(req:any,res)=>{try{const like=await pr
 app.post('/api/posts/:id/comments',auth,async(req:any,res)=>{const body=z.string().trim().min(1).max(1000).safeParse(req.body.body);if(!body.success)return res.status(400).json({error:'Comment must be 1–1000 characters'});const comment=await prisma.$transaction(async tx=>{const created=await tx.comment.create({data:{postId:req.params.id,authorId:req.user.id,body:body.data},include:{author:{select:{username:true,displayName:true}}}});await recordMissionProgress(tx,req.user.id,'COMMENT',1);return created;});res.status(201).json(comment);});
 app.post('/api/points/steal/:targetUsername',auth,async(req:any,res)=>{const thiefId=req.user.id;const target=await prisma.user.findUnique({where:{username:String(req.params.targetUsername).toLowerCase()}});if(!target)return res.status(404).json({error:'User not found'});if(target.id===thiefId)return res.status(400).json({error:'You cannot steal from yourself'});if(target.shieldUntil&&target.shieldUntil>new Date())return res.status(409).json({error:'This user is protected by a shield'});try{const result=await prisma.$transaction(async tx=>{const now=new Date();const prior=await tx.stealCooldown.findUnique({where:{thiefId_targetId:{thiefId,targetId:target.id}}});if(prior){const claimed=await tx.stealCooldown.updateMany({where:{id:prior.id,lastAt:{lte:new Date(now.getTime()-4000)}},data:{lastAt:now}});if(!claimed.count)throw new Error('COOLDOWN');}else{await tx.stealCooldown.create({data:{thiefId,targetId:target.id,lastAt:now}});}const debit=await tx.user.updateMany({where:{id:target.id,points:{gte:3}},data:{points:{decrement:3}}});if(!debit.count)throw new Error('LOW_BALANCE');const me=await tx.user.update({where:{id:thiefId},data:{points:{increment:3}}});await tx.pointTransaction.create({data:{senderId:target.id,receiverId:thiefId,amount:3,type:'STEAL',note:'Points stolen'}});await tx.notification.create({data:{userId:target.id,text:`@${req.user.username} stole 3 points from you.`}});return me;});res.json({success:true,stolen:3,balance:result.points});}catch(e:any){const msg=e.message==='COOLDOWN'||e?.code==='P2002'?'Wait 4 seconds before stealing from this user again':e.message==='LOW_BALANCE'?'This user does not have enough points':e.message;res.status(409).json({error:msg});}});
 app.post('/api/points/gift',auth,async(req:any,res)=>{const d=z.object({username:z.string(),amount:z.number().int().min(1).max(1000000)}).safeParse(req.body);if(!d.success)return res.status(400).json({error:'Invalid gift amount or recipient'});const target=await prisma.user.findUnique({where:{username:d.data.username.toLowerCase()}});if(!target||target.id===req.user.id)return res.status(400).json({error:'Invalid recipient'});try{const updated=await prisma.$transaction(async tx=>{const debit=await tx.user.updateMany({where:{id:req.user.id,points:{gte:d.data.amount}},data:{points:{decrement:d.data.amount}}});if(!debit.count)throw new Error('NOT_ENOUGH');const sender=await tx.user.findUniqueOrThrow({where:{id:req.user.id}});const receiver=await tx.user.update({where:{id:target.id},data:{points:{increment:d.data.amount}}});await tx.pointTransaction.create({data:{senderId:sender.id,receiverId:receiver.id,amount:d.data.amount,type:'GIFT',note:'User gift'}});await tx.notification.create({data:{userId:receiver.id,text:`@${sender.username} sent you ${d.data.amount.toLocaleString()} points.`}});return {balance:sender.points};});res.json({success:true,...updated});}catch(e:any){res.status(409).json({error:e.message==='NOT_ENOUGH'?'Not enough points': 'Gift could not be completed'});}});
+app.post('/api/games/quick-tap/start', auth, async (req:any, res) => {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const playedToday = await prisma.gameSession.count({ where: { userId: req.user.id, startedAt: { gte: startOfDay } } });
+  if (playedToday >= 5) return res.status(429).json({ error: 'Daily practice reward limit reached. Try again tomorrow.' });
+  const session = await prisma.gameSession.create({ data: { userId: req.user.id, endsAt: new Date(Date.now() + 10_000) } });
+  res.status(201).json({ id: session.id, endsAt: session.endsAt, durationSeconds: 10, dailyGamesRemaining: 4 - playedToday });
+});
+
+app.post('/api/games/quick-tap/:id/finish', auth, async (req:any, res) => {
+  const parsed = z.object({ score: z.number().int().min(0).max(120) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Invalid tap score' });
+  const session = await prisma.gameSession.findFirst({ where: { id: req.params.id, userId: req.user.id } });
+  if (!session) return res.status(404).json({ error: 'Game session not found' });
+  if (session.claimedAt) return res.status(409).json({ error: 'This game reward was already claimed' });
+  const now = new Date();
+  if (now < session.endsAt) return res.status(409).json({ error: 'Finish the full 10-second round before claiming points' });
+  const elapsedSeconds = (now.getTime() - session.startedAt.getTime()) / 1000;
+  const maxAllowedScore = Math.min(120, Math.floor(elapsedSeconds * 12));
+  if (parsed.data.score > maxAllowedScore) return res.status(400).json({ error: `Score exceeds the server limit of ${maxAllowedScore} taps for this session` });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.gameSession.updateMany({
+        where: { id: session.id, userId: req.user.id, claimedAt: null, endsAt: { lte: now } },
+        data: { claimedAt: now, score: parsed.data.score }
+      });
+      if (!claimed.count) throw new Error('ALREADY_CLAIMED');
+      const user = await tx.user.update({ where: { id: req.user.id }, data: { points: { increment: parsed.data.score } } });
+      if (parsed.data.score > 0) await tx.pointTransaction.create({ data: { receiverId: user.id, amount: parsed.data.score, type: 'GAME', note: 'Quick Tap skill game' } });
+      return { score: parsed.data.score, balance: user.points };
+    });
+    res.json({ success: true, ...result });
+  } catch (error:any) {
+    res.status(409).json({ error: 'This game reward was already claimed' });
+  }
+});
+
 app.get('/api/battles', async (_req, res) => {
   const battles = await prisma.battle.findMany({
     include: {
