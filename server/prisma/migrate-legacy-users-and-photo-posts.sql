@@ -1,5 +1,5 @@
 -- Optional, non-destructive copy from the legacy VibePulse schema into the new Prisma schema.
--- Run ONLY after `npm --prefix server run db:push` has created the new "User" and "Post" tables.
+-- Run ONLY after `npm --prefix server run db:push` has created the new "social_gaming"."User" and "social_gaming"."Post" tables.
 -- This script copies compatible records and never deletes or updates the legacy tables.
 -- Existing legacy point_accounts.balance is preserved when that table exists.
 -- Any username/email conflicts are skipped rather than overwriting existing new-schema records.
@@ -10,7 +10,7 @@ BEGIN
   IF to_regclass('public.users') IS NOT NULL THEN
     IF to_regclass('public.point_accounts') IS NOT NULL THEN
       EXECUTE $copy_users_with_points$
-        INSERT INTO "User" ("id", "username", "displayName", "email", "passwordHash", "bio", "avatarUrl", "points", "role", "status", "createdAt")
+        INSERT INTO "social_gaming"."User" ("id", "username", "displayName", "email", "passwordHash", "bio", "avatarUrl", "points", "role", "status", "createdAt")
         SELECT
           u.id::text,
           lower(u.username),
@@ -33,7 +33,7 @@ BEGIN
         ON CONFLICT DO NOTHING
       $copy_users_with_points$;
     ELSE
-      INSERT INTO "User" ("id", "username", "displayName", "email", "passwordHash", "bio", "avatarUrl", "points", "role", "status", "createdAt")
+      INSERT INTO "social_gaming"."User" ("id", "username", "displayName", "email", "passwordHash", "bio", "avatarUrl", "points", "role", "status", "createdAt")
       SELECT
         u.id::text,
         lower(u.username),
@@ -59,7 +59,7 @@ BEGIN
   END IF;
 
   IF to_regclass('public.posts') IS NOT NULL AND to_regclass('public.post_media') IS NOT NULL THEN
-    INSERT INTO "Post" ("id", "authorId", "imageUrl", "caption", "points", "hidden", "createdAt")
+    INSERT INTO "social_gaming"."Post" ("id", "authorId", "imageUrl", "caption", "points", "hidden", "createdAt")
     SELECT DISTINCT ON (p.id)
       p.id::text,
       u.id,
@@ -70,7 +70,7 @@ BEGIN
       COALESCE(p.created_at, now())
     FROM public.posts p
     JOIN public.post_media pm ON pm.post_id = p.id AND pm.media_type = 'image'
-    JOIN "User" u ON u.id = p.user_id::text
+    JOIN "social_gaming"."User" u ON u.id = p.user_id::text
     WHERE COALESCE(p.is_deleted, false) = false
       AND NULLIF(pm.media_url, '') IS NOT NULL
     ORDER BY p.id, pm.order_index ASC
