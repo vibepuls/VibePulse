@@ -576,7 +576,7 @@ function SocialGamingApp() {
 
       {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
-          <section className="flex items-center justify-between border-b border-white/10 pb-3"><div><h1 className="text-xl font-extrabold text-white">Home</h1><p className="mt-1 text-sm text-slate-400">Your community, all in one place.</p></div><div className="rounded-full bg-sky-500/10 px-3 py-2 text-sm font-bold text-sky-200">Rank ${myRank ? `#${myRank}` : "—"}</div></section>
+          <section className="flex items-center justify-between border-b border-white/10 pb-3"><div><h1 className="text-xl font-extrabold text-white">Home</h1><p className="mt-1 text-sm text-slate-400">Your community, all in one place.</p></div><div className="rounded-full bg-sky-500/10 px-3 py-2 text-sm font-bold text-sky-200">Rank {myRank ? `#${myRank}` : "—"}</div></section>
           <Panel title="Create post" subtitle="Share a thought or add a photo.">
             <form onSubmit={createPost} className="space-y-3">
               <textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-20 resize-y`}/>
