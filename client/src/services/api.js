@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const configuredApiUrl = (import.meta.env.VITE_API_URL || 'https://vibepulse-backend-boxi.onrender.com/api').trim();
+const configuredApiUrl = (import.meta.env.VITE_API_URL || '/api').trim();
 const API_URL = configuredApiUrl.replace(/\/+$/, '').endsWith('/api')
   ? configuredApiUrl.replace(/\/+$/, '')
   : `${configuredApiUrl.replace(/\/+$/, '')}/api`;
