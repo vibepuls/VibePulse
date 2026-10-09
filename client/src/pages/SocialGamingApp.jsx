@@ -137,15 +137,16 @@ function SocialGamingApp() {
       api.get('/achievements/me'), api.get('/battles'), api.get('/teams'), api.get('/notifications'),
       api.get('/points/transactions?limit=50'), api.get('/referrals/me'), api.get('/leaderboard/daily'), api.get('/trending'), api.get('/rising-users')
     ]);
-    const take = (i, setter, fallback) => {
+    const take = (i, setter) => {
+      // Keep the last successful data visible when a request temporarily fails.
+      // Do not replace the feed with an empty list during a slow/retrying request.
       if (jobs[i].status === 'fulfilled') setter(jobs[i].value.data);
-      else if (fallback !== undefined) setter(fallback);
     };
-    take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); setAvatarUrl(value.avatarUrl || ''); }, null);
-    take(1, setPosts, []); take(2, setLeaderboard, []); take(3, setMissions, []);
-    take(4, setAchievements, []); take(5, setBattles, []); take(6, setTeams, []);
-    take(7, setNotifications, []); take(8, setTransactions, []); take(9, setReferral, null);
-    take(10, setDailyLeaderboard, []); take(11, setTrending, []); take(12, setRisingUsers, []);
+    take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); setAvatarUrl(value.avatarUrl || ''); });
+    take(1, setPosts); take(2, setLeaderboard); take(3, setMissions);
+    take(4, setAchievements); take(5, setBattles); take(6, setTeams);
+    take(7, setNotifications); take(8, setTransactions); take(9, setReferral);
+    take(10, setDailyLeaderboard); take(11, setTrending); take(12, setRisingUsers);
     setLoading(false);
   }, [setUser]);
 
