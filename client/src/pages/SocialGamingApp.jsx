@@ -209,6 +209,28 @@ function SocialGamingApp() {
     finally { setBusy(''); }
   };
 
+  const giftPostAuthor = async (post) => {
+    const username = post?.author?.username;
+    if (!username || username === me?.username) return;
+    const rawAmount = window.prompt(`How many points would you like to gift @${username}?`, '10');
+    if (rawAmount === null) return;
+    const amount = Number(rawAmount);
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) {
+      tell('Enter a whole-number amount from 1 to 1,000,000.', 'error');
+      return;
+    }
+    setBusy(`gift-post:${post.id}`);
+    try {
+      await api.post('/points/gift', { username, amount });
+      tell(`🎁 ${fmt(amount)} points sent to @${username}.`);
+      await Promise.all([refreshMe(), loadCore()]);
+    } catch (e) {
+      tell(errText(e, 'Gift failed.'), 'error');
+    } finally {
+      setBusy('');
+    }
+  };
+
   const createPost = async (event) => {
     event.preventDefault();
     setBusy('post');
@@ -553,7 +575,7 @@ function SocialGamingApp() {
                   <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
                     {post.author?.username === me?.username && <button disabled={Boolean(busy) || editCooldownLabel(post.lastEditedAt) !== 'Edit photo/caption'} title={editCooldownLabel(post.lastEditedAt)} onClick={() => editOwnPost(post)} className={secondaryButton}>{busy === `edit:${post.id}` ? 'Saving…' : editCooldownLabel(post.lastEditedAt)}</button>}
                     <button disabled={Boolean(busy)} onClick={() => likePost(post.id)} className={secondaryButton}>{busy === `like:${post.id}` ? '…' : <><Heart size={15} className="mr-1 inline"/>Like</>}</button>
-                    {post.author?.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3 from post</>}</button>}
+                    {post.author?.username !== me?.username && <><button disabled={Boolean(busy)} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3 from post</>}</button><button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}>{busy === `gift-post:${post.id}` ? '…' : <><Gift size={15} className="mr-1 inline"/>Gift points</>}</button></>}
                     <button onClick={() => sharePost(post)} className={secondaryButton}><Share2 size={15} className="mr-1 inline"/>Share</button>
                     <button onClick={() => setReportTarget({ type: 'POST', id: post.id })} className={secondaryButton}>Report</button>
                     {post.author?.username && <button onClick={() => { setMessageTarget(post.author.username); setSection('messages'); }} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>}
