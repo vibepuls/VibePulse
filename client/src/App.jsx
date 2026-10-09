@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import SocialGamingApp from './pages/SocialGamingApp';
+import GuestBrowse from './pages/GuestBrowse';
 
 export default function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -15,8 +16,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <Register />} />
-      <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <Login />} />
-      <Route path="/*" element={isAuthenticated ? <SocialGamingApp /> : <Login />} />
+      <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <GuestBrowse />} />
+      <Route path="/*" element={isAuthenticated ? <SocialGamingApp /> : <GuestBrowse />} />
     </Routes>
   );
 }
