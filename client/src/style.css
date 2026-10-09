@@ -53,3 +53,6 @@
 .teamcard small{display:block;font-size:.74rem;color:var(--muted,#687085);margin-top:5px}
 .teamowner{font-size:.78rem;font-weight:800;color:#7c3aed}
 .game-result{margin-top:10px;font-weight:800;color:#0a9b69}
+
+.ranking-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
+.ranking-growth{font-size:.72rem;color:#0a9b69;white-space:nowrap}
