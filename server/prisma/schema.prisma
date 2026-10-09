@@ -21,6 +21,7 @@ model User {
  posts Post[]
  referralsSent Referral[] @relation("ReferralReferrer")
  referralReceived Referral? @relation("ReferralReferred")
+ referralShareClaims ReferralShareClaim[]
  adminActions AdminAction[] @relation("AdminActor")
  sentTransactions PointTransaction[] @relation("Sender")
  receivedTransactions PointTransaction[] @relation("Receiver")
@@ -156,4 +157,13 @@ model AdminAction {
  actor User @relation("AdminActor", fields:[actorId], references:[id], onDelete:Restrict)
  @@index([createdAt])
  @@index([targetType,targetId])
+}
+
+model ReferralShareClaim {
+ id String @id @default(cuid())
+ userId String
+ periodKey String
+ createdAt DateTime @default(now())
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([userId,periodKey])
 }
