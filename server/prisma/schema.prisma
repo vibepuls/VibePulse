@@ -1,9 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["social_gaming"]
 }
 model User {
  id String @id @default(cuid())
@@ -42,6 +44,7 @@ model User {
  followsIn Follow[] @relation("Followers")
  comments Comment[]
  likes Like[]
+ @@schema("social_gaming")
 }
 model Post {
  id String @id @default(cuid())
@@ -60,6 +63,7 @@ model Post {
  @@index([points])
  battlesAsChallengerPost Battle[] @relation("BattleChallengerPost")
  battlesAsOpponentPost Battle[] @relation("BattleOpponentPost")
+ @@schema("social_gaming")
 }
 model Comment {
  id String @id @default(cuid())
@@ -69,6 +73,7 @@ model Comment {
  createdAt DateTime @default(now())
  post Post @relation(fields:[postId], references:[id], onDelete:Cascade)
  author User @relation(fields:[authorId], references:[id], onDelete:Cascade)
+ @@schema("social_gaming")
 }
 model Like {
  id String @id @default(cuid())
@@ -78,6 +83,7 @@ model Like {
  post Post @relation(fields:[postId], references:[id], onDelete:Cascade)
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@unique([postId,userId])
+ @@schema("social_gaming")
 }
 model Follow {
  id String @id @default(cuid())
@@ -87,6 +93,7 @@ model Follow {
  follower User @relation("Following", fields:[followerId], references:[id], onDelete:Cascade)
  following User @relation("Followers", fields:[followingId], references:[id], onDelete:Cascade)
  @@unique([followerId,followingId])
+ @@schema("social_gaming")
 }
 model PointTransaction {
  id String @id @default(cuid())
@@ -100,6 +107,7 @@ model PointTransaction {
  receiver User? @relation("Receiver", fields:[receiverId], references:[id], onDelete:SetNull)
  @@index([createdAt])
  @@index([type])
+ @@schema("social_gaming")
 }
 model StealCooldown {
  id String @id @default(cuid())
@@ -107,6 +115,7 @@ model StealCooldown {
  targetId String
  lastAt DateTime @default(now())
  @@unique([thiefId,targetId])
+ @@schema("social_gaming")
 }
 model Message {
  id String @id @default(cuid())
@@ -117,6 +126,7 @@ model Message {
  createdAt DateTime @default(now())
  sender User @relation(fields:[senderId], references:[id], onDelete:Cascade)
  @@index([senderId,receiverId,createdAt])
+ @@schema("social_gaming")
 }
 model Notification {
  id String @id @default(cuid())
@@ -125,6 +135,7 @@ model Notification {
  readAt DateTime?
  createdAt DateTime @default(now())
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@schema("social_gaming")
 }
 model Report {
  id String @id @default(cuid())
@@ -135,6 +146,7 @@ model Report {
  details String @default("")
  status String @default("OPEN")
  createdAt DateTime @default(now())
+ @@schema("social_gaming")
 }
 model Mission {
  id String @id @default(cuid())
@@ -142,6 +154,7 @@ model Mission {
  description String
  reward Int @default(0)
  active Boolean @default(true)
+ @@schema("social_gaming")
 }
 model Battle {
  id String @id @default(cuid())
@@ -166,6 +179,7 @@ model Battle {
  opponentPost Post? @relation("BattleOpponentPost", fields:[opponentPostId], references:[id], onDelete:SetNull)
  votes BattleVote[]
  @@index([status,endsAt])
+ @@schema("social_gaming")
 }
 
 model BattleVote {
@@ -177,6 +191,7 @@ model BattleVote {
  battle Battle @relation(fields:[battleId], references:[id], onDelete:Cascade)
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@unique([battleId,userId])
+ @@schema("social_gaming")
 }
 
 model Referral {
@@ -187,6 +202,7 @@ model Referral {
  referrer User @relation("ReferralReferrer", fields:[referrerId], references:[id], onDelete:Cascade)
  referred User @relation("ReferralReferred", fields:[referredId], references:[id], onDelete:Cascade)
  @@index([referrerId,createdAt])
+ @@schema("social_gaming")
 }
 
 model AdminAction {
@@ -200,6 +216,7 @@ model AdminAction {
  actor User @relation("AdminActor", fields:[actorId], references:[id], onDelete:Restrict)
  @@index([createdAt])
  @@index([targetType,targetId])
+ @@schema("social_gaming")
 }
 
 model ReferralShareClaim {
@@ -209,6 +226,7 @@ model ReferralShareClaim {
  createdAt DateTime @default(now())
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@unique([userId,periodKey])
+ @@schema("social_gaming")
 }
 
 model DailyMission {
@@ -223,6 +241,7 @@ model DailyMission {
  active Boolean @default(true)
  createdAt DateTime @default(now())
  progress MissionProgress[]
+ @@schema("social_gaming")
 }
 
 model MissionProgress {
@@ -238,6 +257,7 @@ model MissionProgress {
  mission DailyMission @relation(fields:[missionId], references:[id], onDelete:Cascade)
  @@unique([userId,missionId,periodKey])
  @@index([userId,periodKey])
+ @@schema("social_gaming")
 }
 
 model GameSession {
@@ -249,6 +269,7 @@ model GameSession {
  score Int?
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@index([userId,startedAt])
+ @@schema("social_gaming")
 }
 
 model Achievement {
@@ -260,6 +281,7 @@ model Achievement {
  target Int
  active Boolean @default(true)
  users UserAchievement[]
+ @@schema("social_gaming")
 }
 
 model UserAchievement {
@@ -270,6 +292,7 @@ model UserAchievement {
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  achievement Achievement @relation(fields:[achievementId], references:[id], onDelete:Cascade)
  @@unique([userId,achievementId])
+ @@schema("social_gaming")
 }
 
 model Team {
@@ -280,6 +303,7 @@ model Team {
  createdAt DateTime @default(now())
  creator User @relation("TeamCreator", fields:[creatorId], references:[id], onDelete:Cascade)
  members TeamMember[]
+ @@schema("social_gaming")
 }
 
 model TeamMember {
@@ -291,6 +315,7 @@ model TeamMember {
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@unique([teamId,userId])
  @@index([userId])
+ @@schema("social_gaming")
 }
 
 model MysteryRewardClaim {
@@ -302,4 +327,5 @@ model MysteryRewardClaim {
  createdAt DateTime @default(now())
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@unique([userId,periodKey])
+ @@schema("social_gaming")
 }

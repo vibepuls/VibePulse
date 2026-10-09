@@ -6,7 +6,7 @@
   "scripts": {
     "start": "cd ../../server && npm start",
     "dev": "cd ../../server && npm run dev",
-    "migrate": "npm --prefix ../../server install --include=dev && npm --prefix ../../server run db:generate && npm --prefix ../../server run build && cd ../../server && npx prisma db push --schema prisma/schema.prisma && npx prisma db execute --schema prisma/schema.prisma --file prisma/migrate-legacy-users-and-photo-posts.sql",
+    "migrate": "npm --prefix ../../server install --include=dev && npm --prefix ../../server run db:generate && npm --prefix ../../server run build && cd ../../server && npx prisma db execute --schema prisma/schema.prisma --file prisma/create-social-gaming-schema.sql && npx prisma db push --schema prisma/schema.prisma && npx prisma db execute --schema prisma/schema.prisma --file prisma/migrate-legacy-users-and-photo-posts.sql",
     "seed": "echo 'Production demo-user seed skipped'"
   },
   "engines": {
