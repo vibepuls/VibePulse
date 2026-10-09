@@ -22,6 +22,7 @@ model User {
  referralsSent Referral[] @relation("ReferralReferrer")
  referralReceived Referral? @relation("ReferralReferred")
  referralShareClaims ReferralShareClaim[]
+ mysteryRewardClaims MysteryRewardClaim[]
  missionProgress MissionProgress[]
  battlesCreated Battle[] @relation("BattleCreator")
  battlesAsChallenger Battle[] @relation("BattleChallenger")
@@ -290,4 +291,15 @@ model TeamMember {
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@unique([teamId,userId])
  @@index([userId])
+}
+
+model MysteryRewardClaim {
+ id String @id @default(cuid())
+ userId String
+ periodKey String
+ rewardType String
+ amount Int @default(0)
+ createdAt DateTime @default(now())
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([userId,periodKey])
 }
