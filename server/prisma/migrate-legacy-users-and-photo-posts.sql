@@ -1,31 +1,59 @@
 -- Optional, non-destructive copy from the legacy VibePulse schema into the new Prisma schema.
 -- Run ONLY after `npm --prefix server run db:push` has created the new "User" and "Post" tables.
 -- This script copies compatible records and never deletes or updates the legacy tables.
+-- Existing legacy point_accounts.balance is preserved when that table exists.
+-- Any username/email conflicts are skipped rather than overwriting existing new-schema records.
 BEGIN;
 
 DO $$
 BEGIN
   IF to_regclass('public.users') IS NOT NULL THEN
-    INSERT INTO "User" ("id", "username", "displayName", "email", "passwordHash", "bio", "avatarUrl", "points", "role", "status", "createdAt")
-    SELECT
-      u.id::text,
-      lower(u.username),
-      COALESCE(NULLIF(u.full_name, ''), u.username),
-      NULLIF(u.email, ''),
-      u.password_hash,
-      COALESCE(u.bio, ''),
-      NULLIF(u.profile_picture, ''),
-      100,
-      CASE WHEN lower(COALESCE(u.role, 'user')) IN ('admin', 'super_admin') THEN 'ADMIN' ELSE 'USER' END,
-      CASE
-        WHEN COALESCE(u.is_suspended, false) THEN 'SUSPENDED'
-        WHEN NOT COALESCE(u.is_active, true) THEN 'BANNED'
-        ELSE 'ACTIVE'
-      END,
-      COALESCE(u.created_at, now())
-    FROM public.users u
-    WHERE u.deleted_at IS NULL
-    ON CONFLICT ("username") DO NOTHING;
+    IF to_regclass('public.point_accounts') IS NOT NULL THEN
+      EXECUTE $copy_users_with_points$
+        INSERT INTO "User" ("id", "username", "displayName", "email", "passwordHash", "bio", "avatarUrl", "points", "role", "status", "createdAt")
+        SELECT
+          u.id::text,
+          lower(u.username),
+          COALESCE(NULLIF(u.full_name, ''), u.username),
+          NULLIF(u.email, ''),
+          u.password_hash,
+          COALESCE(u.bio, ''),
+          NULLIF(u.profile_picture, ''),
+          LEAST(GREATEST(COALESCE(pa.balance, 100), 0), 2147483647)::integer,
+          CASE WHEN lower(COALESCE(u.role, 'user')) IN ('admin', 'super_admin') THEN 'ADMIN' ELSE 'USER' END,
+          CASE
+            WHEN COALESCE(u.is_suspended, false) THEN 'SUSPENDED'
+            WHEN NOT COALESCE(u.is_active, true) THEN 'BANNED'
+            ELSE 'ACTIVE'
+          END,
+          COALESCE(u.created_at, now())
+        FROM public.users u
+        LEFT JOIN public.point_accounts pa ON pa.user_id = u.id
+        WHERE u.deleted_at IS NULL
+        ON CONFLICT DO NOTHING
+      $copy_users_with_points$;
+    ELSE
+      INSERT INTO "User" ("id", "username", "displayName", "email", "passwordHash", "bio", "avatarUrl", "points", "role", "status", "createdAt")
+      SELECT
+        u.id::text,
+        lower(u.username),
+        COALESCE(NULLIF(u.full_name, ''), u.username),
+        NULLIF(u.email, ''),
+        u.password_hash,
+        COALESCE(u.bio, ''),
+        NULLIF(u.profile_picture, ''),
+        100,
+        CASE WHEN lower(COALESCE(u.role, 'user')) IN ('admin', 'super_admin') THEN 'ADMIN' ELSE 'USER' END,
+        CASE
+          WHEN COALESCE(u.is_suspended, false) THEN 'SUSPENDED'
+          WHEN NOT COALESCE(u.is_active, true) THEN 'BANNED'
+          ELSE 'ACTIVE'
+        END,
+        COALESCE(u.created_at, now())
+      FROM public.users u
+      WHERE u.deleted_at IS NULL
+      ON CONFLICT DO NOTHING;
+    END IF;
   ELSE
     RAISE NOTICE 'Legacy public.users table not found; skipping user copy.';
   END IF;
