@@ -1,19 +1,7 @@
 {
-  "name": "vibepulse",
+  "name": "vibepulse-relaunch",
+  "private": true,
   "version": "1.0.0",
-  "description": "VibePulse - Social Media Platform",
-  "scripts": {
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && npm run dev",
-    "client": "cd client && npm run dev",
-    "build": "cd client && npm install && npm run build",
-    "start": "cd server && npm start",
-    "migrate": "cd server && npm run migrate",
-    "migrate:up": "cd server && npm run migrate:up",
-    "migrate:down": "cd server && npm run migrate:down"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  }
+  "scripts": {"dev": "concurrently -k -n API,WEB -c blue,green \"npm:dev:server\" \"npm:dev:client\"", "dev:server": "npm --prefix server run dev", "dev:client": "npm --prefix client run dev", "build": "npm --prefix client run build", "start": "npm --prefix server start", "db:generate": "npm --prefix server run db:generate", "db:push": "npm --prefix server run db:push", "db:seed": "npm --prefix server run db:seed"},
+  "devDependencies": {"concurrently": "^9.1.2"}
 }

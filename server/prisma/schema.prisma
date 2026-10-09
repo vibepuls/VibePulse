@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+ id String @id @default(cuid())
+ username String @unique
+ displayName String
+ email String? @unique
+ passwordHash String
+ bio String @default("")
+ avatarUrl String?
+ points Int @default(100)
+ role String @default("USER")
+ status String @default("ACTIVE")
+ shieldUntil DateTime?
+ createdAt DateTime @default(now())
+ posts Post[]
+ sentTransactions PointTransaction[] @relation("Sender")
+ receivedTransactions PointTransaction[] @relation("Receiver")
+ sentMessages Message[]
+ notifications Notification[]
+ followsOut Follow[] @relation("Following")
+ followsIn Follow[] @relation("Followers")
+ comments Comment[]
+ likes Like[]
+}
+model Post {
+ id String @id @default(cuid())
+ authorId String
+ imageUrl String
+ caption String @default("")
+ points Int @default(0)
+ hidden Boolean @default(false)
+ lastEditedAt DateTime?
+ createdAt DateTime @default(now())
+ author User @relation(fields:[authorId], references:[id], onDelete:Cascade)
+ comments Comment[]
+ likes Like[]
+ @@index([createdAt])
+ @@index([points])
+}
+model Comment {
+ id String @id @default(cuid())
+ postId String
+ authorId String
+ body String
+ createdAt DateTime @default(now())
+ post Post @relation(fields:[postId], references:[id], onDelete:Cascade)
+ author User @relation(fields:[authorId], references:[id], onDelete:Cascade)
+}
+model Like {
+ id String @id @default(cuid())
+ postId String
+ userId String
+ createdAt DateTime @default(now())
+ post Post @relation(fields:[postId], references:[id], onDelete:Cascade)
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([postId,userId])
+}
+model Follow {
+ id String @id @default(cuid())
+ followerId String
+ followingId String
+ createdAt DateTime @default(now())
+ follower User @relation("Following", fields:[followerId], references:[id], onDelete:Cascade)
+ following User @relation("Followers", fields:[followingId], references:[id], onDelete:Cascade)
+ @@unique([followerId,followingId])
+}
+model PointTransaction {
+ id String @id @default(cuid())
+ senderId String?
+ receiverId String?
+ amount Int
+ type String
+ note String @default("")
+ createdAt DateTime @default(now())
+ sender User? @relation("Sender", fields:[senderId], references:[id], onDelete:SetNull)
+ receiver User? @relation("Receiver", fields:[receiverId], references:[id], onDelete:SetNull)
+ @@index([createdAt])
+ @@index([type])
+}
+model StealCooldown {
+ id String @id @default(cuid())
+ thiefId String
+ targetId String
+ lastAt DateTime @default(now())
+ @@unique([thiefId,targetId])
+}
+model Message {
+ id String @id @default(cuid())
+ senderId String
+ receiverId String
+ body String
+ readAt DateTime?
+ createdAt DateTime @default(now())
+ sender User @relation(fields:[senderId], references:[id], onDelete:Cascade)
+ @@index([senderId,receiverId,createdAt])
+}
+model Notification {
+ id String @id @default(cuid())
+ userId String
+ text String
+ readAt DateTime?
+ createdAt DateTime @default(now())
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+}
+model Report {
+ id String @id @default(cuid())
+ reporterId String
+ targetType String
+ targetId String
+ category String
+ details String @default("")
+ status String @default("OPEN")
+ createdAt DateTime @default(now())
+}
+model Mission {
+ id String @id @default(cuid())
+ title String
+ description String
+ reward Int @default(0)
+ active Boolean @default(true)
+}
+model Battle {
+ id String @id @default(cuid())
+ title String
+ status String @default("OPEN")
+ createdAt DateTime @default(now())
+}

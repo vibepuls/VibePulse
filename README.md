@@ -1,127 +1,46 @@
-# VibePulse
+# VibePulse Relaunch
 
-VibePulse is a React + Node/Express + PostgreSQL social application. This upgrade changes the main feed to **zero-backend-media-storage** mode: posts store captions and remote media URLs/metadata only. The backend does not download or save feed images/videos.
+A mobile-first social competition platform starter: **Post → Earn → Steal → Gift → Battle → Rank**.
 
-## What changed
+This ZIP is a working starter/MVP, not a claim that every item in the large specification is finished. It includes a React/Vite web UI, Express API, PostgreSQL/Prisma schema, authentication, posts, basic likes/comments, leaderboard, 3-point stealing with a server-side 4-second per-target cooldown, point gifting, notifications, messaging, reports, admin-only endpoints, and seed data. Battles, voting, full missions/achievements/teams/referrals, payment integration, image uploads, complete audit logging, and production anti-fraud systems still need implementation before a broad public launch.
 
-### 1. Zero-storage feed
-The Create Post composer now has:
-- Caption/hashtag textarea.
-- Remote media URL field.
+## Requirements
+- Node.js 20 or newer
+- npm
+- A PostgreSQL database (Supabase PostgreSQL is supported)
 
-Supported:
-- YouTube
-- Facebook
-- Instagram
-- Direct `.jpg/.jpeg/.png/.gif/.webp/.avif` image URLs
-- Direct `.mp4/.webm/.mov/.m4v/.ogv` video URLs
+## Local setup (beginner)
+1. Extract this ZIP.
+2. In the project folder, run `npm install`.
+3. Run `npm --prefix server install` and `npm --prefix client install`.
+4. Copy `.env.example` to `server/.env`.
+5. In Supabase, create a project and copy its PostgreSQL connection string into `DATABASE_URL` in `server/.env`. Use the connection string format Supabase shows; keep secrets private.
+6. Set `AUTH_SECRET` to a long random secret (32+ characters). Set `CLIENT_ORIGIN=http://localhost:5173`.
+7. Run `npm run db:generate`.
+8. Run `npm run db:push` to create/update the database tables.
+9. Optional demo data: `npm run db:seed`. Seed accounts use `ChangeMe123!`; do not leave demo accounts active on a public deployment.
+10. Run `npm run dev`.
+11. Open `http://localhost:5173`. API health check: `http://localhost:4000/api/health`.
 
-The backend parses the URL and stores only:
-- provider
-- original URL
-- media type
-- embed URL
+## Build
+- Frontend production build: `npm run build`
+- Server TypeScript build: `npm --prefix server run build`
 
-The UI never prints the raw media URL in the feed card. It renders the original media or a platform iframe.
+## Render deployment
+For the API service, use the repository root as the root directory, build command `npm install && npm --prefix server install && npm --prefix server run db:generate && npm --prefix server run build`, and start command `npm --prefix server start`. Add `DATABASE_URL`, `AUTH_SECRET`, `CLIENT_ORIGIN`, and `PORT` environment variables. For the frontend, create a separate Render Static Site with root directory `client`, build command `npm install && npm run build`, publish directory `dist`, and `VITE_API_URL` pointing to the API service URL. To keep the *same existing Render URL*, it depends on how the current Render service is configured; replacing its source code may require changing build/start settings. Keep the old service/backup until the new deployment passes tests.
 
-### 2. Database
-`post_media` now has:
-- `provider`
-- `embed_url`
+## Database and storage
+The Prisma schema is in `server/prisma/schema.prisma`. This starter uses image URLs in posts. Supabase Storage upload integration is not wired yet; do not expose the Supabase service-role key in frontend code. Configure a private backend upload route and appropriate bucket policies before enabling uploads.
 
-Run the existing migration command:
+## Admin account
+Do not add a public admin signup option. The initial registration endpoint always creates a normal `USER`. For a first admin, register your account, then promote it manually in the database from `USER` to `ADMIN` using a secure SQL session. Example (replace username carefully): `UPDATE "User" SET role='ADMIN' WHERE username='your_username';`. Never expose database credentials in the browser or commit them to GitHub.
 
-```bash
-cd server
-npm run migrate:up
-```
+## Payments
+No real bKash/Nagad integration or payment credentials are included. Do not award purchased points until a trusted provider's server-side verification confirms payment. This starter has no cash-out/withdrawal.
 
-The migration is idempotent and upgrades an existing database.
-
-### 3. Profile and cover photos
-Profile and cover photo changes now use remote URLs. The profile page provides:
-- Direct image URL
-- Optional Cloudinary unsigned upload
-
-The image is uploaded directly from the browser to Cloudinary, then only the returned URL is saved in PostgreSQL. The VibePulse backend never receives or stores the image bytes.
-
-Client environment:
-
-```env
-VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
-VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
-```
-
-Create an **unsigned image upload preset** in Cloudinary and restrict it to images if possible.
-
-### 4. Existing uploads
-The repository still contains legacy upload support for stories/messages and old `/uploads` records. **New feed posts do not use Multer and do not write feed media to `server/uploads`.** Existing old post media continues to render for backward compatibility.
-
-If you want a completely filesystem-free deployment later, migrate legacy stories/messages to the same direct-cloud approach and remove `server/uploads`.
-
-## Deployment
-
-### Backend on Render
-- Root directory: `server`
-- Build: `npm install`
-- Start: `npm start`
-- Environment:
-  - `NODE_ENV=production`
-  - `DATABASE_URL=...`
-  - `JWT_SECRET=...`
-  - `JWT_REFRESH_SECRET=...`
-  - `CLIENT_URL=https://your-frontend-domain`
-
-Run migration once:
-
-```bash
-npm run migrate:up
-```
-
-### Frontend on Vercel/Render
-- Root directory: `client`
-- Build: `npm install && npm run build`
-- Output: `dist`
-- Environment:
-
-```env
-VITE_API_URL=https://your-backend.onrender.com/api
-VITE_CLOUDINARY_CLOUD_NAME=...
-VITE_CLOUDINARY_UPLOAD_PRESET=...
-```
-
-For Vercel, configure a rewrite for SPA routes if your deployment setup requires it.
-
-## Security notes
-
-The embed parser uses URL/hostname allow-list logic rather than fetching arbitrary URLs from the backend. This avoids turning the post endpoint into an SSRF proxy.
-
-For production Cloudinary:
-- Use an unsigned preset restricted to images.
-- Do not put Cloudinary API secrets in Vite environment variables.
-- Consider Cloudinary upload restrictions, transformations, and moderation as the project grows.
-
-## Project structure
-
-```text
-social-media-platform/
-├── client/
-│   └── src/
-│       ├── components/
-│       │   ├── CreatePost.jsx
-│       │   ├── MediaEmbed.jsx
-│       │   └── PostCard.jsx
-│       ├── pages/Profile.jsx
-│       └── services/
-│           └── cloudinary.js
-├── server/
-│   ├── controllers/
-│   │   ├── postController.js
-│   │   └── userController.js
-│   ├── models/Post.js
-│   ├── routes/posts.js
-│   ├── routes/users.js
-│   └── utils/embedParser.js
-└── database/
-    └── migrations/001_initial_schema.sql
-```
+## Security notes before public launch
+- Replace the development fallback secret; set `AUTH_SECRET` in the server environment.
+- Use HTTPS and secure environment variables. Never commit `.env`.
+- Add email verification/password reset, CSRF strategy appropriate to deployment, stronger anti-abuse checks, block/mute tools, full admin audit logs, content moderation, upload scanning, backup/restore procedures, and tests before launch.
+- The current steal transaction uses database transactions, but should be reviewed and concurrency-tested for your production database. Add daily limits and suspicious-activity monitoring before opening it to the public.
+- Demo seed users share a known password; remove or change them before production.
