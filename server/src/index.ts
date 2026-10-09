@@ -180,31 +180,38 @@ app.post('/api/games/quick-tap/start', auth, async (req:any, res) => {
   startOfDay.setUTCHours(0, 0, 0, 0);
   const playedToday = await prisma.gameSession.count({ where: { userId: req.user.id, startedAt: { gte: startOfDay } } });
   if (playedToday >= 5) return res.status(429).json({ error: 'Daily practice reward limit reached. Try again tomorrow.' });
-  const session = await prisma.gameSession.create({ data: { userId: req.user.id, endsAt: new Date(Date.now() + 10_000) } });
+  const session = await prisma.gameSession.create({ data: { userId: req.user.id, endsAt: new Date(Date.now() + 10_000), score: 0 } });
   res.status(201).json({ id: session.id, endsAt: session.endsAt, durationSeconds: 10, dailyGamesRemaining: 4 - playedToday });
 });
 
+app.post('/api/games/quick-tap/:id/tap', auth, async (req:any, res) => {
+  const now = new Date();
+  const updated = await prisma.gameSession.updateMany({
+    where: { id: req.params.id, userId: req.user.id, claimedAt: null, endsAt: { gt: now }, score: { lt: 120 } },
+    data: { score: { increment: 1 } }
+  });
+  if (!updated.count) return res.status(409).json({ error: 'This game is not active or the tap limit was reached' });
+  const session = await prisma.gameSession.findUniqueOrThrow({ where: { id: req.params.id }, select: { score: true } });
+  res.json({ accepted: true, score: session.score || 0 });
+});
+
 app.post('/api/games/quick-tap/:id/finish', auth, async (req:any, res) => {
-  const parsed = z.object({ score: z.number().int().min(0).max(120) }).safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'Invalid tap score' });
   const session = await prisma.gameSession.findFirst({ where: { id: req.params.id, userId: req.user.id } });
   if (!session) return res.status(404).json({ error: 'Game session not found' });
   if (session.claimedAt) return res.status(409).json({ error: 'This game reward was already claimed' });
   const now = new Date();
   if (now < session.endsAt) return res.status(409).json({ error: 'Finish the full 10-second round before claiming points' });
-  const elapsedSeconds = (now.getTime() - session.startedAt.getTime()) / 1000;
-  const maxAllowedScore = Math.min(120, Math.floor(elapsedSeconds * 12));
-  if (parsed.data.score > maxAllowedScore) return res.status(400).json({ error: `Score exceeds the server limit of ${maxAllowedScore} taps for this session` });
+  const score = Math.max(0, Math.min(120, Number(session.score || 0)));
   try {
     const result = await prisma.$transaction(async (tx) => {
       const claimed = await tx.gameSession.updateMany({
         where: { id: session.id, userId: req.user.id, claimedAt: null, endsAt: { lte: now } },
-        data: { claimedAt: now, score: parsed.data.score }
+        data: { claimedAt: now }
       });
       if (!claimed.count) throw new Error('ALREADY_CLAIMED');
-      const user = await tx.user.update({ where: { id: req.user.id }, data: { points: { increment: parsed.data.score } } });
-      if (parsed.data.score > 0) await tx.pointTransaction.create({ data: { receiverId: user.id, amount: parsed.data.score, type: 'GAME', note: 'Quick Tap skill game' } });
-      return { score: parsed.data.score, balance: user.points };
+      const user = await tx.user.update({ where: { id: req.user.id }, data: { points: { increment: score } } });
+      if (score > 0) await tx.pointTransaction.create({ data: { receiverId: user.id, amount: score, type: 'GAME', note: 'Quick Tap skill game' } });
+      return { score, balance: user.points };
     });
     res.json({ success: true, ...result });
   } catch (error:any) {
