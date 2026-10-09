@@ -568,6 +568,17 @@ app.post('/api/referrals/claim', auth, async (req:any, res) => {
   }
 });
 
+app.post('/api/admin/notifications/global', auth, admin, async (req:any, res) => {
+  const parsed = z.object({ text: z.string().trim().min(1).max(500) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Notification text must be 1–500 characters' });
+  const users = await prisma.user.findMany({ where: { status: 'ACTIVE' }, select: { id: true } });
+  await prisma.$transaction(async (tx) => {
+    if (users.length) await tx.notification.createMany({ data: users.map((user:any) => ({ userId: user.id, text: parsed.data.text })) });
+    await tx.adminAction.create({ data: { actorId: req.user.id, action: 'GLOBAL_NOTIFICATION_SENT', targetType: 'ALL_USERS', targetId: 'all', details: parsed.data.text } });
+  });
+  res.json({ success: true, sent: users.length });
+});
+
 app.get('/api/admin/audit-logs', auth, admin, async (_req, res) => {
   res.json(await prisma.adminAction.findMany({
     include: { actor: { select: { username: true, displayName: true } } },
