@@ -606,16 +606,26 @@ function SocialGamingApp() {
                   <div className="flex items-center gap-3"><Avatar user={post.author}/><button onClick={() => { setProfileUsername(post.author?.username); loadProfile(post.author?.username); setSection('profile'); }} className="min-w-0 text-left"><div className="truncate text-sm font-bold text-white">{post.author?.displayName || post.author?.username}</div><div className="text-xs text-slate-500">@{post.author?.username}</div></button><span className="ml-auto text-sm font-black text-amber-200">⚡ {fmt(post.points)}</span></div>
                   {post.caption && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{post.caption}</p>}
                   <div className="flex flex-wrap gap-2 text-xs text-slate-500"><span>{post._count?.likes || 0} likes</span><span>•</span><span>{post._count?.comments || 0} comments</span><span className="ml-auto">{dateText(post.createdAt)}</span></div>
-                  <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
-                    {post.author?.username === me?.username && <button disabled={Boolean(busy) || editCooldownLabel(post.lastEditedAt) !== 'Edit photo/caption'} title={editCooldownLabel(post.lastEditedAt)} onClick={() => editOwnPost(post)} className={secondaryButton}>{busy === `edit:${post.id}` ? 'Saving…' : editCooldownLabel(post.lastEditedAt)}</button>}
-                    <button disabled={Boolean(busy)} onClick={() => likePost(post.id)} className={secondaryButton}>{busy === `like:${post.id}` ? '…' : <><Heart size={15} className="mr-1 inline"/>Like</>}</button>
-                    {post.author?.username !== me?.username && <><button disabled={Boolean(busy)} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3 from post</>}</button><button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}>{busy === `gift-post:${post.id}` ? '…' : <><Gift size={15} className="mr-1 inline"/>Gift points</>}</button></>}
-                    <button onClick={() => sharePost(post)} className={secondaryButton}><Share2 size={15} className="mr-1 inline"/>Share</button>
-                    <button onClick={() => setReportTarget({ type: 'POST', id: post.id })} className={secondaryButton}>Report</button>
-                    {post.author?.username && <button onClick={() => openConversation(post.author.username)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>}
+                  <div className="grid grid-cols-3 gap-1 border-t border-white/10 pt-2">
+                    <button disabled={Boolean(busy) || post.author?.username === me?.username} onClick={() => likePost(post.id)} className="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 disabled:opacity-40"><Heart size={17}/>Like</button>
+                    <button onClick={() => document.getElementById("comment-" + post.id)?.focus()} className="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"><MessageCircle size={17}/>Comment</button>
+                    <button onClick={() => sharePost(post)} className="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"><Share2 size={17}/>Share</button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {post.author?.username !== me?.username && <>
+                      <button disabled={Boolean(busy) || (stealCountdowns[post.author?.username] || 0) > 0} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === "steal:" + post.id ? "Working…" : (stealCountdowns[post.author?.username] || 0) > 0 ? "Steal in " + stealCountdowns[post.author?.username] : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3</>}</button>
+                      <button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}><Gift size={15} className="mr-1 inline"/>Gift points</button>
+                      <button onClick={() => openConversation(post.author.username)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>
+                      <button onClick={() => setReportTarget({ type: "POST", id: post.id })} className={secondaryButton}>Report</button>
+                    </>}
+                    {post.author?.username === me?.username && <>
+                      <button disabled={Boolean(busy)} onClick={() => addPointsToPost(post)} className={secondaryButton}><Plus size={15} className="mr-1 inline"/>Add points</button>
+                      <button disabled={Boolean(busy)} onClick={() => editOwnPost(post)} className={secondaryButton}>Edit</button>
+                      <button disabled={Boolean(busy)} onClick={() => deletePost(post)} className="rounded-xl border border-rose-400/30 px-3 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-400/10">{busy === "delete:" + post.id ? "Deleting…" : "Delete post"}</button>
+                    </>}
                   </div>
                   <form onSubmit={(event) => addComment(event, post.id)} className="mt-3 flex gap-2">
-                    <input value={commentDrafts[post.id] || ''} onChange={(event) => setCommentDrafts((old) => ({ ...old, [post.id]: event.target.value }))} maxLength={1000} placeholder="Write a comment…" className={inputClass}/>
+                    <input value={commentDrafts[post.id] || ''} onChange={(event) => setCommentDrafts((old) => ({ ...old, [post.id]: event.target.value }))} maxLength={1000} id={"comment-" + post.id} placeholder="Write a comment…" className={inputClass}/>
                     <button disabled={busy === `comment:${post.id}`} className={secondaryButton}><Send size={15}/></button>
                   </form>
                 </div>
