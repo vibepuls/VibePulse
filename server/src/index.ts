@@ -156,11 +156,10 @@ app.post('/api/posts',auth,async(req:any,res)=>{
       const dayStart = new Date(now);
       dayStart.setUTCHours(0, 0, 0, 0);
       const postsToday = await tx.post.count({ where: { authorId: req.user.id, createdAt: { gte: dayStart } } });
-      const post = await tx.post.create({data:{authorId:req.user.id,...d.data},include:{author:{select:{username:true,displayName:true,avatarUrl:true}}}});
+      const reward = postsToday < 5 ? 10 : 0;
+      const post = await tx.post.create({data:{authorId:req.user.id,...d.data,points:reward},include:{author:{select:{username:true,displayName:true,avatarUrl:true}}}});
       await recordMissionProgress(tx, req.user.id, 'POST', 1);
-      let reward = 0;
-      if (postsToday < 5) {
-        reward = 10;
+      if (reward > 0) {
         await tx.user.update({where:{id:req.user.id},data:{points:{increment:reward}}});
         await tx.pointTransaction.create({data:{receiverId:req.user.id,amount:reward,type:'POST_REWARD',note:'Daily photo post reward'}});
       }
