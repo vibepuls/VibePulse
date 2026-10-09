@@ -481,3 +481,22 @@
     z-index: 30;
   }
 }
+
+
+/* Responsive safety net: long user-generated text must never widen the whole page. */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body, #root { width: 100%; max-width: 100%; min-width: 0; margin: 0; }
+  html, body { overflow-x: clip; }
+  body { overflow-wrap: anywhere; }
+  #root { overflow-x: clip; }
+  img, video, iframe, canvas, svg { max-width: 100%; }
+  input, textarea, select, button { max-width: 100%; min-width: 0; }
+  p, span, a, h1, h2, h3, h4, label, li, div { overflow-wrap: anywhere; }
+  pre, code { white-space: pre-wrap; overflow-wrap: anywhere; }
+}
+@media (max-width: 640px) {
+  main, article, section, aside, form { min-width: 0; max-width: 100%; }
+  article { overflow-x: clip; }
+  button { white-space: normal; }
+}
