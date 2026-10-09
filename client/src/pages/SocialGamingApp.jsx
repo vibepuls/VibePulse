@@ -85,6 +85,7 @@ function SocialGamingApp() {
   const [adminTransactions, setAdminTransactions] = useState([]);
   const [notice, setNotice] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [stealCountdowns, setStealCountdowns] = useState({});
   const [busy, setBusy] = useState('');
   const [caption, setCaption] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -141,6 +142,11 @@ function SocialGamingApp() {
   }, [setUser]);
 
   useEffect(() => { loadCore(); }, [loadCore]);
+  useEffect(() => {
+    if (!Object.values(stealCountdowns).some((seconds) => seconds > 0)) return undefined;
+    const timer = window.setInterval(() => setStealCountdowns((old) => { const next = { ...old }; Object.keys(next).forEach((key) => { next[key] = Math.max(0, Number(next[key] || 0) - 1); }); return next; }), 1000);
+    return () => window.clearInterval(timer);
+  }, [stealCountdowns]);
 
   useEffect(() => {
     const postId = new URLSearchParams(location.search).get('post');
@@ -189,6 +195,7 @@ function SocialGamingApp() {
     setBusy(`steal:${post.id}`);
     try {
       const { data } = await api.post(`/posts/${encodeURIComponent(post.id)}/steal`);
+      setStealCountdowns((old) => ({ ...old, [post.author?.username]: 4 }));
       tell(`🥷 Took ${fmt(data.stolen)} points from @${post.author?.username}'s post and added them to your post.`);
       await Promise.all([refreshMe(), loadCore()]);
     } catch (e) { tell(errText(e, 'Point collection failed.'), 'error'); }
@@ -201,10 +208,10 @@ function SocialGamingApp() {
     if (!giftUsername.trim() || !Number.isInteger(amount) || amount < 1) return tell('Enter a username and a positive whole-number amount.', 'error');
     setBusy('gift');
     try {
-      await api.post('/points/gift', { username: giftUsername.trim(), amount });
-      tell(`🎁 ${fmt(amount)} points sent to @${giftUsername.trim()}.`);
+      const { data } = await api.post('/points/gift', { username: giftUsername.trim().replace(/^@/, ''), amount });
+      tell(`🎁 ${fmt(amount)} points sent. Remaining balance: ${fmt(data.balance)}.`);
       setGiftUsername('');
-      await loadCore();
+      await Promise.all([refreshMe(), loadCore()]);
     } catch (e) { tell(errText(e, 'Gift failed.'), 'error'); }
     finally { setBusy(''); }
   };
@@ -221,8 +228,8 @@ function SocialGamingApp() {
     }
     setBusy(`gift-post:${post.id}`);
     try {
-      await api.post('/points/gift', { username, amount });
-      tell(`🎁 ${fmt(amount)} points sent to @${username}.`);
+      const { data } = await api.post('/points/gift', { username: username.replace(/^@/, ''), amount });
+      tell(`🎁 ${fmt(amount)} points sent to @${username}. Remaining balance: ${fmt(data.balance)}.`);
       await Promise.all([refreshMe(), loadCore()]);
     } catch (e) {
       tell(errText(e, 'Gift failed.'), 'error');
@@ -241,16 +248,38 @@ function SocialGamingApp() {
         const uploaded = await api.post('/media/upload', data);
         finalUrl = uploaded.data.url;
       }
-      if (!finalUrl) return tell('Choose a photo or paste a direct image URL.', 'error');
-      await api.post('/posts', { imageUrl: finalUrl, caption: caption.trim(), privacy });
+      if (!finalUrl && !caption.trim()) return tell('Write something or choose a photo first.', 'error');
+      await api.post('/posts', { imageUrl: finalUrl || undefined, caption: caption.trim(), privacy });
       setCaption(''); setImageUrl(''); setImageFile(null);
       const fileInput = document.getElementById('arena-photo-file'); if (fileInput) fileInput.value = '';
-      tell('Photo published! Daily post rewards are limited to five posts.');
+      tell('Post published! The first five posts each UTC day can earn points.');
       await loadCore();
     } catch (e) { tell(errText(e, 'Could not publish photo. Image uploads require server-side Supabase Storage configuration.'), 'error'); }
     finally { setBusy(''); }
   };
 
+  const deletePost = async (post) => {
+    if (!window.confirm('Delete this post? This cannot be undone.')) return;
+    setBusy('delete:' + post.id);
+    try { await api.delete('/posts/' + encodeURIComponent(post.id)); setPosts((old) => old.filter((item) => item.id !== post.id)); setProfilePosts((old) => old.filter((item) => item.id !== post.id)); tell('Post deleted.'); await loadCore(); }
+    catch (e) { tell(errText(e, 'Could not delete post.'), 'error'); } finally { setBusy(''); }
+  };
+  const addPointsToPost = async (post) => {
+    const raw = window.prompt('Add points from your wallet. Available: ' + fmt(me?.points) + ' points.', '10');
+    if (raw === null) return; const amount = Number(raw);
+    if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000) return tell('Enter a whole number from 1 to 1,000,000.', 'error');
+    if (amount > Number(me?.points || 0)) return tell('You do not have enough points.', 'error');
+    setBusy('invest:' + post.id);
+    try { const { data } = await api.post('/posts/' + encodeURIComponent(post.id) + '/invest', { amount }); tell('Added ' + fmt(amount) + ' points to your post. Post total: ' + fmt(data.postPoints) + '.'); await Promise.all([refreshMe(), loadCore()]); }
+    catch (e) { tell(errText(e, 'Could not add points to post.'), 'error'); } finally { setBusy(''); }
+  };
+  const openConversation = async (username) => {
+    const target = String(username || '').trim().replace(/^@/, '');
+    if (!target || target.toLowerCase() === String(me?.username || '').toLowerCase()) return tell('Choose another user to message.', 'error');
+    setMessageTarget(target); setSection('messages');
+    try { const { data } = await api.get('/messages/' + encodeURIComponent(target)); setMessages(Array.isArray(data) ? data : []); }
+    catch (e) { setMessages([]); tell(errText(e, 'Could not open chat with @' + target + '.'), 'error'); }
+  };
   const editOwnPost = async (post) => {
     const editLabel = editCooldownLabel(post.lastEditedAt);
     if (editLabel !== 'Edit photo/caption') return tell(`This post can be edited again in ${editLabel.replace('Edit in ', '')}.`, 'error');
@@ -317,10 +346,12 @@ function SocialGamingApp() {
     if (!messageTarget.trim() || !messageText.trim()) return;
     setBusy('message');
     try {
-      await api.post('/messages', { toUsername: messageTarget.trim(), body: messageText.trim() });
+      const target = messageTarget.trim().replace(/^@/, '');
+      const { data: sent } = await api.post('/messages', { toUsername: target, body: messageText.trim() });
+      if (!sent?.id) throw new Error('The server did not confirm the message. Please try again.');
       setMessageText('');
-      const { data } = await api.get(`/messages/${encodeURIComponent(messageTarget.trim())}`);
-      setMessages(data); tell('Message sent.');
+      const { data } = await api.get('/messages/' + encodeURIComponent(target));
+      setMessages(Array.isArray(data) ? data : []); tell('Message sent.');
     } catch (e) { tell(errText(e), 'error'); }
     finally { setBusy(''); }
   };
@@ -541,21 +572,21 @@ function SocialGamingApp() {
       </nav></aside>
       <main className="min-w-0 space-y-5">
       <Notice notice={notice} onClose={() => setNotice(null)}/>
-      {loading && <div className="flex items-center gap-2 text-sm text-slate-400"><LoaderCircle size={16} className="animate-spin"/> Syncing your account…</div>}
+      {loading && !me && <div className="flex items-center gap-2 text-sm text-slate-400"><LoaderCircle size={16} className="animate-spin"/> Loading your feed…</div>}
 
       {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
           <section className="rounded-3xl border border-sky-300/15 bg-gradient-to-br from-sky-600/20 via-slate-900 to-sky-500/10 p-5 sm:p-7">
             <div className="flex flex-wrap items-end justify-between gap-4"><div><div className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">Post → Earn → Steal → Gift → Battle → Rank</div><h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">Your next rank starts here.</h1><p className="mt-2 max-w-2xl text-sm text-slate-400">Publish a photo, earn verified points, compete fairly, and climb the community leaderboard.</p></div><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><div className="text-xs text-slate-400">Your rank</div><div className="mt-1 text-3xl font-black text-white">{myRank ? `#${myRank}` : '—'}</div></div></div>
           </section>
-          <Panel title="Publish a photo" subtitle="Photo post reward: +10 points, limited to five rewarded posts per UTC day.">
+          <Panel title="Create post" subtitle="Share a thought or add a photo.">
             <form onSubmit={createPost} className="space-y-3">
-              <textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="Write a caption or add #hashtags…" className={`${inputClass} min-h-20 resize-y`}/>
+              <textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-20 resize-y`}/>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs font-semibold text-slate-400">Photo file (up to 5 MB)
+                <label className="text-xs font-semibold text-slate-400">Add photo (optional, up to 5 MB)
                   <input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/>
                 </label>
-                <label className="text-xs font-semibold text-slate-400">Or direct image URL
+                <label className="text-xs font-semibold text-slate-400">Or paste a photo link (optional)
                   <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/photo.jpg" className={inputClass}/>
                 </label>
               </div>
@@ -581,7 +612,7 @@ function SocialGamingApp() {
                     {post.author?.username !== me?.username && <><button disabled={Boolean(busy)} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3 from post</>}</button><button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}>{busy === `gift-post:${post.id}` ? '…' : <><Gift size={15} className="mr-1 inline"/>Gift points</>}</button></>}
                     <button onClick={() => sharePost(post)} className={secondaryButton}><Share2 size={15} className="mr-1 inline"/>Share</button>
                     <button onClick={() => setReportTarget({ type: 'POST', id: post.id })} className={secondaryButton}>Report</button>
-                    {post.author?.username && <button onClick={() => { setMessageTarget(post.author.username); setSection('messages'); }} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>}
+                    {post.author?.username && <button onClick={() => openConversation(post.author.username)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>}
                   </div>
                   <form onSubmit={(event) => addComment(event, post.id)} className="mt-3 flex gap-2">
                     <input value={commentDrafts[post.id] || ''} onChange={(event) => setCommentDrafts((old) => ({ ...old, [post.id]: event.target.value }))} maxLength={1000} placeholder="Write a comment…" className={inputClass}/>
@@ -651,7 +682,7 @@ function SocialGamingApp() {
 
       {section === 'notifications' && <Panel title="Notifications" subtitle="Point transfers, follows, battle invitations and system notices."><div className="space-y-2">{notifications.map((n) => <div key={n.id} className={`flex items-start gap-3 rounded-xl p-3 ${n.readAt ? 'bg-slate-950/30' : 'bg-sky-500/10'}`}><Bell size={17} className="mt-1 shrink-0 text-sky-300"/><div className="min-w-0 flex-1"><p className="text-sm text-slate-200">{n.text}</p><p className="mt-1 text-xs text-slate-500">{dateText(n.createdAt)}</p></div>{!n.readAt && <button onClick={() => markNotification(n)} className="text-xs font-semibold text-sky-300">Mark read</button>}</div>)}{notifications.length === 0 && <p className="py-6 text-sm text-slate-500">No notifications yet.</p>}</div></Panel>}
 
-      {section === 'profile' && <div className="grid gap-5 xl:grid-cols-[360px_1fr]"><Panel title="Profile" subtitle="Your account information and public stats."><form onSubmit={async (event) => { event.preventDefault(); try { const {data} = await api.patch('/me/profile',{displayName,bio,avatarUrl}); setMe(data); setUser(data); tell('Profile saved.'); } catch(e) { tell(errText(e),'error'); } }} className="space-y-3"><div className="flex items-center gap-3"><Avatar user={profileUsername ? profile : me} size="lg"/><div><div className="font-bold text-white">@{profileUsername || me?.username}</div><div className="text-sm text-slate-500">{fmt((profileUsername ? profile?.points : me?.points) || 0)} points</div></div></div>{(!profileUsername || profileUsername === me?.username) ? <><label className="block text-xs text-slate-400">Display name<input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} className={inputClass}/></label><label className="block text-xs text-slate-400">Bio<textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} className={inputClass}/></label><label className="block text-xs text-slate-400">Avatar image URL<input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} type="url" placeholder="https://…" className={inputClass}/></label><button className={primaryButton}>Save profile</button></> : <><p className="text-sm text-slate-400">{profile?.bio || 'No bio yet.'}</p><div className="text-sm text-slate-400">Followers: {profile?.followers || 0} · Following: {profile?.following || 0} · Posts: {profile?.postCount || 0}</div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => toggleFollow(profileUsername)} className={primaryButton}>Follow / Unfollow</button><button type="button" onClick={() => { setMessageTarget(profileUsername); setSection('messages'); }} className={secondaryButton}>Message</button></div></>}</form></Panel><Panel title={profileUsername === me?.username ? 'Your posts' : `@${profileUsername} posts`} subtitle="Photo posts"><div className="grid gap-3 sm:grid-cols-2">{(profileUsername === me?.username ? posts.filter((p) => p.author?.username === me?.username) : profilePosts).map((post) => <div key={post.id} className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">{post.imageUrl && <img src={post.imageUrl} alt="" className="aspect-[4/3] w-full object-cover"/>}<div className="p-3 text-sm"><p className="text-slate-200">{post.caption}</p><p className="mt-2 font-bold text-amber-200">{fmt(post.points)} points</p></div></div>)}</div></Panel></div>}
+      {section === 'profile' && <div className="grid gap-5 xl:grid-cols-[360px_1fr]"><Panel title="Profile" subtitle="Your account information and public stats."><form onSubmit={async (event) => { event.preventDefault(); try { const {data} = await api.patch('/me/profile',{displayName,bio,avatarUrl}); setMe(data); setUser(data); tell('Profile saved.'); } catch(e) { tell(errText(e),'error'); } }} className="space-y-3"><div className="flex items-center gap-3"><Avatar user={profileUsername ? profile : me} size="lg"/><div><div className="font-bold text-white">@{profileUsername || me?.username}</div><div className="text-sm text-slate-500">{fmt((profileUsername ? profile?.points : me?.points) || 0)} points</div></div></div>{(!profileUsername || profileUsername === me?.username) ? <><label className="block text-xs text-slate-400">Display name<input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} className={inputClass}/></label><label className="block text-xs text-slate-400">Bio<textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} className={inputClass}/></label><label className="block text-xs text-slate-400">Avatar image URL<input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} type="url" placeholder="https://…" className={inputClass}/></label><button className={primaryButton}>Save profile</button></> : <><p className="text-sm text-slate-400">{profile?.bio || 'No bio yet.'}</p><div className="text-sm text-slate-400">Followers: {profile?.followers || 0} · Following: {profile?.following || 0} · Posts: {profile?.postCount || 0}</div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => toggleFollow(profileUsername)} className={primaryButton}>Follow / Unfollow</button><button type="button" onClick={() => openConversation(profileUsername)} className={secondaryButton}>Message</button></div></>}</form></Panel><Panel title={profileUsername === me?.username ? 'Your posts' : `@${profileUsername} posts`} subtitle="Photo posts"><div className="grid gap-3 sm:grid-cols-2">{(profileUsername === me?.username ? posts.filter((p) => p.author?.username === me?.username) : profilePosts).map((post) => <div key={post.id} className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">{post.imageUrl && <img src={post.imageUrl} alt="" className="aspect-[4/3] w-full object-cover"/>}<div className="p-3 text-sm"><p className="text-slate-200">{post.caption}</p><p className="mt-2 font-bold text-amber-200">{fmt(post.points)} points</p></div></div>)}</div></Panel></div>}
 
       {section === 'search' && <Panel title="Find players" subtitle="Search by username or display name."><form onSubmit={findUsers} className="mb-4 flex gap-2"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search username…" className={inputClass}/><button className={primaryButton}><Search size={16}/></button></form><div className="space-y-2">{users.map((player) => <div key={player.id} className="flex items-center gap-3 rounded-xl bg-slate-950/50 p-3"><Avatar user={player}/><div className="min-w-0 flex-1"><button onClick={() => { setProfileUsername(player.username); loadProfile(player.username); setSection('profile'); }} className="font-bold text-white">@{player.username}</button><div className="text-xs text-slate-500">{player.displayName} · {fmt(player.points)} points</div></div>{player.username !== me?.username && <button onClick={() => toggleFollow(player.username)} className={secondaryButton}>Follow</button>}</div>)}</div></Panel>}
 
