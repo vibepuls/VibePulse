@@ -15,3 +15,11 @@
 .transaction .positive{color:#0a9b69}
 .transaction .negative{color:#d34b60}
 .notification .textbtn{display:block;margin-top:8px}
+
+.mission{padding:16px 0;border-bottom:1px solid var(--line,#e6e8ef)}
+.mission:last-child{border-bottom:0}
+.missionhead,.missionfoot{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.missionhead small{display:block;color:var(--muted,#687085);font-size:.82rem;margin-top:4px}
+.missionbar{height:7px;background:#eceef5;border-radius:99px;overflow:hidden;margin:12px 0}
+.missionbar span{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:99px}
+.missionfoot small{color:var(--muted,#687085);font-size:.8rem}
