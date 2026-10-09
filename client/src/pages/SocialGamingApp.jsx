@@ -530,17 +530,20 @@ function SocialGamingApp() {
           <button className={secondaryButton} title="Log out" onClick={() => { logout(); navigate('/login'); }}><LogOut size={17}/></button>
         </div>
       </div>
-      <nav className="mx-auto flex max-w-[1500px] gap-1 overflow-x-auto px-3 pb-3 sm:px-6">
-        {menu.map(([key, label, Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${section === key ? 'bg-sky-500 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}><Icon size={16}/><span>{label}</span>{key === 'notifications' && unreadCount > 0 && <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] text-white">{unreadCount}</span>}</button>)}
-        {me?.role === 'ADMIN' && <button onClick={() => navTo('admin')} className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ${section === 'admin' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}><Shield size={16}/>Admin</button>}
-      </nav>
+      
     </header>
 
-    <main className="mx-auto max-w-[1500px] space-y-5 px-4 py-6 sm:px-6">
+    <div className="mx-auto grid max-w-[1380px] grid-cols-1 gap-5 px-3 pb-24 pt-5 sm:px-5 lg:grid-cols-[220px_minmax(0,650px)_minmax(240px,300px)] lg:gap-7">
+      <aside className="hidden lg:block"><nav className="sticky top-24 space-y-1">
+        {menu.map(([key, label, Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-base font-semibold transition ${section === key ? 'bg-sky-500/15 text-sky-300' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}><Icon size={21}/><span>{label}</span>{key === 'notifications' && unreadCount > 0 && <span className="ml-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs text-white">{unreadCount}</span>}</button>)}
+        {me?.role === 'ADMIN' && <button onClick={() => navTo('admin')} className="flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-slate-300 hover:bg-white/10"><Shield size={21}/>Admin</button>}
+        <button onClick={() => { logout(); navigate('/login'); }} className="mt-4 flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-slate-400 hover:bg-white/10"><LogOut size={20}/>Log out</button>
+      </nav></aside>
+      <main className="min-w-0 space-y-5">
       <Notice notice={notice} onClose={() => setNotice(null)}/>
       {loading && <div className="flex items-center gap-2 text-sm text-slate-400"><LoaderCircle size={16} className="animate-spin"/> Syncing your account…</div>}
 
-      {section === 'home' && <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.8fr)]">
+      {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
           <section className="rounded-3xl border border-sky-300/15 bg-gradient-to-br from-sky-600/20 via-slate-900 to-sky-500/10 p-5 sm:p-7">
             <div className="flex flex-wrap items-end justify-between gap-4"><div><div className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">Post → Earn → Steal → Gift → Battle → Rank</div><h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">Your next rank starts here.</h1><p className="mt-2 max-w-2xl text-sm text-slate-400">Publish a photo, earn verified points, compete fairly, and climb the community leaderboard.</p></div><div className="rounded-2xl border border-white/10 bg-black/20 p-4"><div className="text-xs text-slate-400">Your rank</div><div className="mt-1 text-3xl font-black text-white">{myRank ? `#${myRank}` : '—'}</div></div></div>
@@ -565,9 +568,9 @@ function SocialGamingApp() {
             </form>
           </Panel>
           <Panel title="Community feed" subtitle="Live posts from the database." action={<button onClick={loadCore} className={secondaryButton}><RefreshCw size={15} className="mr-2 inline"/>Refresh</button>}>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1">
               {posts.map((post) => <article id={"post-" + post.id} key={post.id} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
-                {post.imageUrl && <img src={post.imageUrl} alt={post.caption || 'Community photo'} loading="lazy" className="aspect-[4/3] w-full object-cover"/>}
+                {post.imageUrl && <img src={post.imageUrl} alt={post.caption || 'Community photo'} loading="lazy" className="mt-3 max-h-[620px] w-full rounded-2xl border border-white/10 bg-black object-contain"/>}
                 <div className="space-y-3 p-4">
                   <div className="flex items-center gap-3"><Avatar user={post.author}/><button onClick={() => { setProfileUsername(post.author?.username); loadProfile(post.author?.username); setSection('profile'); }} className="min-w-0 text-left"><div className="truncate text-sm font-bold text-white">{post.author?.displayName || post.author?.username}</div><div className="text-xs text-slate-500">@{post.author?.username}</div></button><span className="ml-auto text-sm font-black text-amber-200">⚡ {fmt(post.points)}</span></div>
                   {post.caption && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{post.caption}</p>}
@@ -663,7 +666,15 @@ function SocialGamingApp() {
       </div>}
 
       {reportTarget && <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"><form onSubmit={submitReport} className="w-full max-w-md space-y-3 rounded-2xl border border-white/10 bg-slate-900 p-5"><h2 className="text-xl font-bold text-white">Report content</h2><select value={reportCategory} onChange={(e) => setReportCategory(e.target.value)} className={inputClass}>{['SPAM','HARASSMENT','FAKE_ACCOUNT','ILLEGAL_CONTENT','COPYRIGHT','ABUSE','OTHER'].map((value) => <option key={value}>{value}</option>)}</select><textarea value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} maxLength={1000} placeholder="Details (optional)" className={inputClass}/><div className="flex gap-2"><button type="button" onClick={() => setReportTarget(null)} className={secondaryButton}>Cancel</button><button disabled={busy === 'report'} className={primaryButton}>Submit report</button></div></form></div>}
-    </main>
+      </main>
+      <aside className="hidden space-y-4 lg:block">
+        <section className="sticky top-24 rounded-2xl border border-white/10 bg-white/[0.04] p-4"><h2 className="mb-3 font-bold text-white">Quick guide</h2><p className="text-sm leading-6 text-slate-400">Share a photo, follow people, like and comment on posts, or open Messages to chat privately.</p><button onClick={() => navTo('search')} className="mt-4 w-full rounded-full bg-sky-500 px-4 py-2.5 text-sm font-bold text-white">Find people</button><button onClick={() => navTo('messages')} className="mt-2 w-full rounded-full border border-white/15 px-4 py-2.5 text-sm font-semibold text-white">Open messages</button></section>
+      </aside>
+      <aside className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-black/95 px-1 py-2 backdrop-blur lg:hidden"><nav className="mx-auto flex max-w-xl items-center justify-around gap-1">
+        {menu.filter(([key]) => ['home','search','messages','notifications','profile'].includes(key)).map(([key,label,Icon]) => <button key={key} onClick={() => navTo(key)} className={`relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-semibold ${section === key ? 'text-sky-300' : 'text-slate-400'}`}><Icon size={21}/><span>{label === 'Find Players' ? 'Search' : label === 'Notifications' ? 'Alerts' : label}</span>{key === 'notifications' && unreadCount > 0 && <span className="absolute right-4 top-0 h-2 w-2 rounded-full bg-rose-500"/>}</button>)}
+        <button onClick={() => { logout(); navigate('/login'); }} className="flex min-w-0 flex-1 flex-col items-center gap-1 py-1.5 text-[10px] text-slate-400"><LogOut size={21}/><span>Logout</span></button>
+      </nav></aside>
+    </div>
   </div>;
 }
 
