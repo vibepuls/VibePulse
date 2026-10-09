@@ -10,6 +10,13 @@ import api from '../services/api';
 
 const fmt = (n) => new Intl.NumberFormat().format(Number(n || 0));
 const dateText = (value) => value ? new Date(value).toLocaleString() : '';
+const editCooldownLabel = (lastEditedAt) => {
+  if (!lastEditedAt) return 'Edit photo/caption';
+  const remaining = new Date(lastEditedAt).getTime() + 4 * 60 * 60 * 1000 - Date.now();
+  if (remaining <= 0) return 'Edit photo/caption';
+  const minutes = Math.ceil(remaining / 60000);
+  return `Edit in ${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+};
 const errText = (e, fallback = 'Something went wrong. Please try again.') => e?.response?.data?.error || e?.message || fallback;
 const menu = [
   ['home', 'Home', Activity], ['search', 'Find Players', Search], ['ranking', 'Ranking', Trophy], ['wallet', 'Wallet', Wallet],
@@ -82,6 +89,7 @@ function SocialGamingApp() {
   const [imageFile, setImageFile] = useState(null);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState(user?.bio || '');
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const [giftUsername, setGiftUsername] = useState('');
   const [giftAmount, setGiftAmount] = useState('100');
   const [teamName, setTeamName] = useState('');
@@ -121,7 +129,7 @@ function SocialGamingApp() {
       if (jobs[i].status === 'fulfilled') setter(jobs[i].value.data);
       else if (fallback !== undefined) setter(fallback);
     };
-    take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); }, null);
+    take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); setAvatarUrl(value.avatarUrl || ''); }, null);
     take(1, setPosts, []); take(2, setLeaderboard, []); take(3, setMissions, []);
     take(4, setAchievements, []); take(5, setBattles, []); take(6, setTeams, []);
     take(7, setNotifications, []); take(8, setTransactions, []); take(9, setReferral, null);
@@ -207,6 +215,20 @@ function SocialGamingApp() {
       tell('Photo published! Daily post rewards are limited to five posts.');
       await loadCore();
     } catch (e) { tell(errText(e, 'Could not publish photo. Image uploads require server-side Supabase Storage configuration.'), 'error'); }
+    finally { setBusy(''); }
+  };
+
+  const editOwnPost = async (post) => {
+    const editLabel = editCooldownLabel(post.lastEditedAt);
+    if (editLabel !== 'Edit photo/caption') return tell(`This post can be edited again in ${editLabel.replace('Edit in ', '')}.`, 'error');
+    const nextCaption = window.prompt('Edit caption', post.caption || '');
+    if (nextCaption === null) return;
+    const nextImageUrl = window.prompt('Photo URL (HTTPS)', post.imageUrl || '');
+    if (nextImageUrl === null) return;
+    if (!nextImageUrl.trim()) return tell('A photo URL is required.', 'error');
+    setBusy('edit:' + post.id);
+    try { await api.patch(`/posts/${post.id}`, { caption: nextCaption, imageUrl: nextImageUrl.trim(), privacy: post.privacy || 'PUBLIC' }); tell('Post updated. The next edit is available after four hours.'); await loadCore(); }
+    catch (e) { tell(errText(e), 'error'); }
     finally { setBusy(''); }
   };
 
@@ -501,6 +523,7 @@ function SocialGamingApp() {
                   {post.caption && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{post.caption}</p>}
                   <div className="flex flex-wrap gap-2 text-xs text-slate-500"><span>{post._count?.likes || 0} likes</span><span>•</span><span>{post._count?.comments || 0} comments</span><span className="ml-auto">{dateText(post.createdAt)}</span></div>
                   <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
+                    {post.author?.username === me?.username && <button disabled={Boolean(busy) || editCooldownLabel(post.lastEditedAt) !== 'Edit photo/caption'} title={editCooldownLabel(post.lastEditedAt)} onClick={() => editOwnPost(post)} className={secondaryButton}>{busy === `edit:${post.id}` ? 'Saving…' : editCooldownLabel(post.lastEditedAt)}</button>}
                     <button disabled={Boolean(busy)} onClick={() => likePost(post.id)} className={secondaryButton}>{busy === `like:${post.id}` ? '…' : <><Heart size={15} className="mr-1 inline"/>Like</>}</button>
                     {post.author?.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectPoints(post.author?.username)} className={secondaryButton}>{busy === `steal:${post.author?.username}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3</>}</button>}
                     <button onClick={() => setReportTarget({ type: 'POST', id: post.id })} className={secondaryButton}>Report</button>
@@ -565,7 +588,7 @@ function SocialGamingApp() {
 
       {section === 'notifications' && <Panel title="Notifications" subtitle="Point transfers, follows, battle invitations and system notices."><div className="space-y-2">{notifications.map((n) => <div key={n.id} className={`flex items-start gap-3 rounded-xl p-3 ${n.readAt ? 'bg-slate-950/30' : 'bg-violet-500/10'}`}><Bell size={17} className="mt-1 shrink-0 text-violet-300"/><div className="min-w-0 flex-1"><p className="text-sm text-slate-200">{n.text}</p><p className="mt-1 text-xs text-slate-500">{dateText(n.createdAt)}</p></div>{!n.readAt && <button onClick={() => markNotification(n)} className="text-xs font-semibold text-violet-300">Mark read</button>}</div>)}{notifications.length === 0 && <p className="py-6 text-sm text-slate-500">No notifications yet.</p>}</div></Panel>}
 
-      {section === 'profile' && <div className="grid gap-5 xl:grid-cols-[360px_1fr]"><Panel title="Profile" subtitle="Your account information and public stats."><form onSubmit={async (event) => { event.preventDefault(); try { const {data} = await api.patch('/me/profile',{displayName,bio,avatarUrl:me?.avatarUrl||''}); setMe(data); setUser(data); tell('Profile saved.'); } catch(e) { tell(errText(e),'error'); } }} className="space-y-3"><div className="flex items-center gap-3"><Avatar user={profileUsername ? profile : me} size="lg"/><div><div className="font-bold text-white">@{profileUsername || me?.username}</div><div className="text-sm text-slate-500">{fmt((profileUsername ? profile?.points : me?.points) || 0)} points</div></div></div>{(!profileUsername || profileUsername === me?.username) ? <><label className="block text-xs text-slate-400">Display name<input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} className={inputClass}/></label><label className="block text-xs text-slate-400">Bio<textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} className={inputClass}/></label><button className={primaryButton}>Save profile</button></> : <><p className="text-sm text-slate-400">{profile?.bio || 'No bio yet.'}</p><div className="text-sm text-slate-400">Followers: {profile?.followers || 0} · Following: {profile?.following || 0} · Posts: {profile?.postCount || 0}</div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => toggleFollow(profileUsername)} className={primaryButton}>Follow / Unfollow</button><button type="button" onClick={() => { setMessageTarget(profileUsername); setSection('messages'); }} className={secondaryButton}>Message</button></div></>}</form></Panel><Panel title={profileUsername === me?.username ? 'Your posts' : `@${profileUsername} posts`} subtitle="Photo posts"><div className="grid gap-3 sm:grid-cols-2">{(profileUsername === me?.username ? posts.filter((p) => p.author?.username === me?.username) : profilePosts).map((post) => <div key={post.id} className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">{post.imageUrl && <img src={post.imageUrl} alt="" className="aspect-[4/3] w-full object-cover"/>}<div className="p-3 text-sm"><p className="text-slate-200">{post.caption}</p><p className="mt-2 font-bold text-amber-200">{fmt(post.points)} points</p></div></div>)}</div></Panel></div>}
+      {section === 'profile' && <div className="grid gap-5 xl:grid-cols-[360px_1fr]"><Panel title="Profile" subtitle="Your account information and public stats."><form onSubmit={async (event) => { event.preventDefault(); try { const {data} = await api.patch('/me/profile',{displayName,bio,avatarUrl}); setMe(data); setUser(data); tell('Profile saved.'); } catch(e) { tell(errText(e),'error'); } }} className="space-y-3"><div className="flex items-center gap-3"><Avatar user={profileUsername ? profile : me} size="lg"/><div><div className="font-bold text-white">@{profileUsername || me?.username}</div><div className="text-sm text-slate-500">{fmt((profileUsername ? profile?.points : me?.points) || 0)} points</div></div></div>{(!profileUsername || profileUsername === me?.username) ? <><label className="block text-xs text-slate-400">Display name<input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} className={inputClass}/></label><label className="block text-xs text-slate-400">Bio<textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={500} className={inputClass}/></label><label className="block text-xs text-slate-400">Avatar image URL<input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} type="url" placeholder="https://…" className={inputClass}/></label><button className={primaryButton}>Save profile</button></> : <><p className="text-sm text-slate-400">{profile?.bio || 'No bio yet.'}</p><div className="text-sm text-slate-400">Followers: {profile?.followers || 0} · Following: {profile?.following || 0} · Posts: {profile?.postCount || 0}</div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => toggleFollow(profileUsername)} className={primaryButton}>Follow / Unfollow</button><button type="button" onClick={() => { setMessageTarget(profileUsername); setSection('messages'); }} className={secondaryButton}>Message</button></div></>}</form></Panel><Panel title={profileUsername === me?.username ? 'Your posts' : `@${profileUsername} posts`} subtitle="Photo posts"><div className="grid gap-3 sm:grid-cols-2">{(profileUsername === me?.username ? posts.filter((p) => p.author?.username === me?.username) : profilePosts).map((post) => <div key={post.id} className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">{post.imageUrl && <img src={post.imageUrl} alt="" className="aspect-[4/3] w-full object-cover"/>}<div className="p-3 text-sm"><p className="text-slate-200">{post.caption}</p><p className="mt-2 font-bold text-amber-200">{fmt(post.points)} points</p></div></div>)}</div></Panel></div>}
 
       {section === 'search' && <Panel title="Find players" subtitle="Search by username or display name."><form onSubmit={findUsers} className="mb-4 flex gap-2"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search username…" className={inputClass}/><button className={primaryButton}><Search size={16}/></button></form><div className="space-y-2">{users.map((player) => <div key={player.id} className="flex items-center gap-3 rounded-xl bg-slate-950/50 p-3"><Avatar user={player}/><div className="min-w-0 flex-1"><button onClick={() => { setProfileUsername(player.username); loadProfile(player.username); setSection('profile'); }} className="font-bold text-white">@{player.username}</button><div className="text-xs text-slate-500">{player.displayName} · {fmt(player.points)} points</div></div>{player.username !== me?.username && <button onClick={() => toggleFollow(player.username)} className={secondaryButton}>Follow</button>}</div>)}</div></Panel>}
 
