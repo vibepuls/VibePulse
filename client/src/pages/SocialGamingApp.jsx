@@ -88,6 +88,7 @@ function SocialGamingApp() {
   const [stealCountdowns, setStealCountdowns] = useState({});
   const [busy, setBusy] = useState('');
   const [caption, setCaption] = useState('');
+  const [composeOpen, setComposeOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [privacy, setPrivacy] = useState('PUBLIC');
   const [imageFile, setImageFile] = useState(null);
@@ -577,25 +578,28 @@ function SocialGamingApp() {
       {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
           <section className="flex items-center justify-between border-b border-white/10 pb-3"><div><h1 className="text-xl font-extrabold text-white">Home</h1><p className="mt-1 text-sm text-slate-400">Your community, all in one place.</p></div><div className="rounded-full bg-sky-500/10 px-3 py-2 text-sm font-bold text-sky-200">Rank {myRank ? `#${myRank}` : "—"}</div></section>
-          <Panel title="Create post" subtitle="Share a thought or add a photo.">
-            <form onSubmit={createPost} className="space-y-3">
-              <textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-20 resize-y`}/>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs font-semibold text-slate-400">Add photo (optional, up to 5 MB)
-                  <input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/>
-                </label>
-                <label className="text-xs font-semibold text-slate-400">Or paste a photo link (optional)
-                  <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/photo.jpg" className={inputClass}/>
-                </label>
-              </div>
+          <section className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <Avatar user={me}/>
+              <button type="button" onClick={() => setComposeOpen(true)} className="min-w-0 flex-1 rounded-full bg-white/[0.07] px-4 py-3 text-left text-sm text-slate-400 hover:bg-white/10">What’s on your mind, {me?.displayName || me?.username || 'there'}?</button>
+              <button type="button" title="Add photo" onClick={() => { setComposeOpen(true); window.setTimeout(() => document.getElementById('arena-photo-file')?.click(), 0); }} className="rounded-lg p-1.5 text-emerald-400 hover:bg-white/10"><ImagePlus size={23}/></button>
+              <button type="button" title="Create post" onClick={() => setComposeOpen(true)} className="rounded-lg p-1.5 text-rose-400 hover:bg-white/10"><Camera size={23}/></button>
+            </div>
+            {composeOpen && <form onSubmit={createPost} className="mt-3 space-y-3 border-t border-white/10 pt-3">
+              <textarea autoFocus value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-20 resize-y`}/>
+              <label className="block text-xs font-semibold text-slate-400">Add photo (optional, up to 5 MB)
+                <input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/>
+              </label>
+              <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Photo link (optional)" className={inputClass}/>
+              {imageFile && <p className="text-xs text-emerald-300">Selected: {imageFile.name}</p>}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <select value={privacy} onChange={(e) => setPrivacy(e.target.value)} className={inputClass + ' max-w-48'}>
                   <option value="PUBLIC">Public</option><option value="FOLLOWERS">Followers</option><option value="PRIVATE">Private</option>
                 </select>
-                <button disabled={busy === 'post'} className={primaryButton}>{busy === 'post' ? 'Publishing…' : <><ImagePlus size={16} className="mr-2 inline"/>Publish photo</>}</button>
+                <div className="flex gap-2"><button type="button" onClick={() => setComposeOpen(false)} className={secondaryButton}>Cancel</button><button disabled={busy === 'post'} className={primaryButton}>{busy === 'post' ? 'Posting…' : 'Post'}</button></div>
               </div>
-            </form>
-          </Panel>
+            </form>}
+          </section>
           <Panel title="Community feed" subtitle="Live posts from the database." action={<button onClick={loadCore} className={secondaryButton}><RefreshCw size={15} className="mr-2 inline"/>Refresh</button>}>
             <div className="grid gap-4 grid-cols-1">
               {posts.map((post) => <article id={"post-" + post.id} key={post.id} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
