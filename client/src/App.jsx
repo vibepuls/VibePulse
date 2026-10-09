@@ -15,6 +15,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <Register />} />
+      <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <Login />} />
       <Route path="/*" element={isAuthenticated ? <SocialGamingApp /> : <Login />} />
     </Routes>
   );
