@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    api.get('/auth/me')
+    api.get('/me')
       .then((res) => {
         setUser(res.data);
         localStorage.setItem('user', JSON.stringify(res.data));

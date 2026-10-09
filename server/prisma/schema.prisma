@@ -19,6 +19,21 @@ model User {
  shieldUntil DateTime?
  createdAt DateTime @default(now())
  posts Post[]
+ referralsSent Referral[] @relation("ReferralReferrer")
+ referralReceived Referral? @relation("ReferralReferred")
+ referralShareClaims ReferralShareClaim[]
+ mysteryRewardClaims MysteryRewardClaim[]
+ missionProgress MissionProgress[]
+ battlesCreated Battle[] @relation("BattleCreator")
+ battlesAsChallenger Battle[] @relation("BattleChallenger")
+ battlesAsOpponent Battle[] @relation("BattleOpponent")
+ battlesWon Battle[] @relation("BattleWinner")
+ battleVotes BattleVote[]
+ gameSessions GameSession[]
+ achievements UserAchievement[]
+ createdTeams Team[] @relation("TeamCreator")
+ teamMemberships TeamMember[]
+ adminActions AdminAction[] @relation("AdminActor")
  sentTransactions PointTransaction[] @relation("Sender")
  receivedTransactions PointTransaction[] @relation("Receiver")
  sentMessages Message[]
@@ -33,6 +48,7 @@ model Post {
  authorId String
  imageUrl String
  caption String @default("")
+ privacy String @default("PUBLIC")
  points Int @default(0)
  hidden Boolean @default(false)
  lastEditedAt DateTime?
@@ -42,6 +58,8 @@ model Post {
  likes Like[]
  @@index([createdAt])
  @@index([points])
+ battlesAsChallengerPost Battle[] @relation("BattleChallengerPost")
+ battlesAsOpponentPost Battle[] @relation("BattleOpponentPost")
 }
 model Comment {
  id String @id @default(cuid())
@@ -129,5 +147,159 @@ model Battle {
  id String @id @default(cuid())
  title String
  status String @default("OPEN")
+ creatorId String?
+ challengerId String?
+ opponentId String?
+ challengerPostId String?
+ opponentPostId String?
+ winnerId String?
+ challengerVotes Int @default(0)
+ opponentVotes Int @default(0)
+ reward Int @default(100)
+ endsAt DateTime?
  createdAt DateTime @default(now())
+ creator User? @relation("BattleCreator", fields:[creatorId], references:[id], onDelete:SetNull)
+ challenger User? @relation("BattleChallenger", fields:[challengerId], references:[id], onDelete:SetNull)
+ opponent User? @relation("BattleOpponent", fields:[opponentId], references:[id], onDelete:SetNull)
+ winner User? @relation("BattleWinner", fields:[winnerId], references:[id], onDelete:SetNull)
+ challengerPost Post? @relation("BattleChallengerPost", fields:[challengerPostId], references:[id], onDelete:SetNull)
+ opponentPost Post? @relation("BattleOpponentPost", fields:[opponentPostId], references:[id], onDelete:SetNull)
+ votes BattleVote[]
+ @@index([status,endsAt])
+}
+
+model BattleVote {
+ id String @id @default(cuid())
+ battleId String
+ userId String
+ choice String
+ createdAt DateTime @default(now())
+ battle Battle @relation(fields:[battleId], references:[id], onDelete:Cascade)
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([battleId,userId])
+}
+
+model Referral {
+ id String @id @default(cuid())
+ referrerId String
+ referredId String @unique
+ createdAt DateTime @default(now())
+ referrer User @relation("ReferralReferrer", fields:[referrerId], references:[id], onDelete:Cascade)
+ referred User @relation("ReferralReferred", fields:[referredId], references:[id], onDelete:Cascade)
+ @@index([referrerId,createdAt])
+}
+
+model AdminAction {
+ id String @id @default(cuid())
+ actorId String
+ action String
+ targetType String
+ targetId String
+ details String @default("")
+ createdAt DateTime @default(now())
+ actor User @relation("AdminActor", fields:[actorId], references:[id], onDelete:Restrict)
+ @@index([createdAt])
+ @@index([targetType,targetId])
+}
+
+model ReferralShareClaim {
+ id String @id @default(cuid())
+ userId String
+ periodKey String
+ createdAt DateTime @default(now())
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([userId,periodKey])
+}
+
+model DailyMission {
+ id String @id @default(cuid())
+ key String @unique
+ title String
+ description String
+ actionType String
+ target Int @default(1)
+ reward Int @default(100)
+ rewardType String @default("POINTS")
+ active Boolean @default(true)
+ createdAt DateTime @default(now())
+ progress MissionProgress[]
+}
+
+model MissionProgress {
+ id String @id @default(cuid())
+ userId String
+ missionId String
+ periodKey String
+ progress Int @default(0)
+ completed Boolean @default(false)
+ claimed Boolean @default(false)
+ updatedAt DateTime @updatedAt
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ mission DailyMission @relation(fields:[missionId], references:[id], onDelete:Cascade)
+ @@unique([userId,missionId,periodKey])
+ @@index([userId,periodKey])
+}
+
+model GameSession {
+ id String @id @default(cuid())
+ userId String
+ startedAt DateTime @default(now())
+ endsAt DateTime
+ claimedAt DateTime?
+ score Int?
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@index([userId,startedAt])
+}
+
+model Achievement {
+ id String @id @default(cuid())
+ key String @unique
+ title String
+ description String
+ metric String
+ target Int
+ active Boolean @default(true)
+ users UserAchievement[]
+}
+
+model UserAchievement {
+ id String @id @default(cuid())
+ userId String
+ achievementId String
+ unlockedAt DateTime @default(now())
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ achievement Achievement @relation(fields:[achievementId], references:[id], onDelete:Cascade)
+ @@unique([userId,achievementId])
+}
+
+model Team {
+ id String @id @default(cuid())
+ name String @unique
+ description String @default("")
+ creatorId String
+ createdAt DateTime @default(now())
+ creator User @relation("TeamCreator", fields:[creatorId], references:[id], onDelete:Cascade)
+ members TeamMember[]
+}
+
+model TeamMember {
+ id String @id @default(cuid())
+ teamId String
+ userId String
+ joinedAt DateTime @default(now())
+ team Team @relation(fields:[teamId], references:[id], onDelete:Cascade)
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([teamId,userId])
+ @@index([userId])
+}
+
+model MysteryRewardClaim {
+ id String @id @default(cuid())
+ userId String
+ periodKey String
+ rewardType String
+ amount Int @default(0)
+ createdAt DateTime @default(now())
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@unique([userId,periodKey])
 }

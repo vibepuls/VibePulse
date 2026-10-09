@@ -5,7 +5,7 @@ import api from '../services/api';
 
 export default function Register() {
   const [form, setForm] = useState({
-    full_name: '',
+    displayName: '',
     username: '',
     email: '',
     password: ''
@@ -16,6 +16,8 @@ export default function Register() {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const referral = new URLSearchParams(window.location.search).get('ref');
+  const loginPath = referral ? `/login?ref=${encodeURIComponent(referral)}` : '/login';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,9 +26,12 @@ export default function Register() {
     setLoading(true);
 
     try {
+      const referralUsername = new URLSearchParams(window.location.search).get('ref');
       const res = await api.post('/auth/register', form);
-
       login(res.data);
+      if (referralUsername) {
+        try { await api.post('/referrals/claim', { referrerUsername: referralUsername }); } catch (referralError) { console.warn('Referral was not applied:', referralError.response?.data?.error || referralError.message); }
+      }
       navigate('/');
     } catch (err) {
       console.error('REGISTER ERROR:', err);
@@ -64,9 +69,9 @@ export default function Register() {
             type="text"
             placeholder="Full Name"
             className="input"
-            value={form.full_name}
+            value={form.displayName}
             onChange={(e) =>
-              setForm({ ...form, full_name: e.target.value })
+              setForm({ ...form, displayName: e.target.value })
             }
             required
           />
@@ -76,6 +81,7 @@ export default function Register() {
             placeholder="Username"
             className="input"
             value={form.username}
+            autoComplete="username"
             onChange={(e) =>
               setForm({ ...form, username: e.target.value })
             }
@@ -87,6 +93,7 @@ export default function Register() {
             placeholder="Email"
             className="input"
             value={form.email}
+            autoComplete="email"
             onChange={(e) =>
               setForm({ ...form, email: e.target.value })
             }
@@ -98,6 +105,7 @@ export default function Register() {
             placeholder="Password (min 8 chars)"
             className="input"
             value={form.password}
+            autoComplete="new-password"
             onChange={(e) =>
               setForm({ ...form, password: e.target.value })
             }
@@ -117,7 +125,7 @@ export default function Register() {
         <p className="text-center mt-4 text-sm text-gray-600">
           Already have an account?{' '}
           <Link
-            to="/login"
+            to={loginPath}
             className="text-blue-600 hover:underline"
           >
             Sign in
