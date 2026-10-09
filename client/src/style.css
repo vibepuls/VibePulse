@@ -56,3 +56,10 @@
 
 .ranking-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
 .ranking-growth{font-size:.72rem;color:#0a9b69;white-space:nowrap}
+
+.profile-avatar{width:76px;height:76px;object-fit:cover;border-radius:50%;border:3px solid rgba(124,58,237,.28);flex-shrink:0}
+.profile-edit{display:grid;gap:12px;margin:22px 0;padding:16px;border:1px solid var(--line,#e6e8ef);border-radius:16px}
+.profile-edit h3{font-weight:800;margin:0}
+.profile-edit label{display:grid;gap:6px;font-size:.82rem;font-weight:700}
+.profile-edit input,.profile-edit textarea{width:100%;min-width:0}
+.profile-edit textarea{min-height:84px;resize:vertical}
