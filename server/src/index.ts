@@ -47,7 +47,7 @@ async function recordMissionProgress(tx:any,userId:string,actionType:string,amou
     else await tx.missionProgress.create({ data: { userId, missionId: mission.id, periodKey, ...values } });
   }
 }
-app.post('/api/media/upload', auth, upload.single('file'), async (req:any, res) => {
+app.post('/api/media/upload', auth, (req:any,res:any,next:any)=>upload.single('file')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid image upload'});next();}), async (req:any, res) => {
   const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '');
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'vibepulse-media';
