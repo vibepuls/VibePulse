@@ -563,7 +563,7 @@ app.get('/api/referrals/me', auth, async (req:any, res) => {
     prisma.user.findUnique({ where: { id: req.user.id }, select: { username: true } })
   ]);
   const base = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').replace(/\/+$/, '');
-  res.json({ username: user?.username, referralCount: sent, referralUrl: `${base}/register?ref=${encodeURIComponent(user?.username || '')}` });
+  res.json({ username: user?.username, referralCount: sent, referralUrl: `${base}/?ref=${encodeURIComponent(user?.username || '')}#auth` });
 });
 
 app.post('/api/referrals/share-reward', auth, async (req:any, res) => {
