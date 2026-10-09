@@ -7,11 +7,30 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import multer from 'multer';
+import { randomUUID } from 'node:crypto';
 
 const app = express(); const prisma = new PrismaClient();
 const PORT = Number(process.env.PORT || 4000); const AUTH_SECRET = process.env.AUTH_SECRET || 'development-only-change-this-secret-please';
 app.use(helmet()); app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' })); app.use(express.json({ limit: '1mb' }));
 app.use('/api', rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false }));
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Only JPG, PNG, WEBP, or GIF images are allowed'));
+    cb(null, true);
+  }
+});
+function hasValidImageSignature(buffer:Buffer) {
+  const png = buffer.length >= 8 && buffer.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+  const jpeg = buffer.length >= 3 && buffer[0]===255 && buffer[1]===216 && buffer[2]===255;
+  const gif = buffer.length >= 6 && ['GIF87a','GIF89a'].includes(buffer.subarray(0,6).toString('ascii'));
+  const webp = buffer.length >= 12 && buffer.subarray(0,4).toString('ascii')==='RIFF' && buffer.subarray(8,12).toString('ascii')==='WEBP';
+  return png || jpeg || gif || webp;
+}
+
 function auth(req:any,res:any,next:any){const h=req.headers.authorization; if(!h?.startsWith('Bearer ')) return res.status(401).json({error:'Please log in'}); try {req.user=jwt.verify(h.slice(7),AUTH_SECRET) as any; next();} catch{return res.status(401).json({error:'Invalid or expired session'});}}
 function admin(req:any,res:any,next:any){if(req.user?.role!=='ADMIN') return res.status(403).json({error:'Admin access required'}); next();}
 const safeUser=(u:any)=>({id:u.id,username:u.username,displayName:u.displayName,bio:u.bio,avatarUrl:u.avatarUrl,points:u.points,role:u.role,createdAt:u.createdAt});
@@ -28,6 +47,32 @@ async function recordMissionProgress(tx:any,userId:string,actionType:string,amou
     else await tx.missionProgress.create({ data: { userId, missionId: mission.id, periodKey, ...values } });
   }
 }
+app.post('/api/media/upload', auth, upload.single('file'), async (req:any, res) => {
+  const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '');
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'vibepulse-media';
+  if (!supabaseUrl || !serviceKey) return res.status(503).json({ error: 'Image uploads are not configured on the API yet' });
+  if (!req.file || !hasValidImageSignature(req.file.buffer)) return res.status(400).json({ error: 'Choose a valid image file (JPG, PNG, WEBP, or GIF)' });
+  const extension:any = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+  const objectPath = `${req.user.id}/${randomUUID()}.${extension[req.file.mimetype]}`;
+  const encodedPath = objectPath.split('/').map((part:string) => encodeURIComponent(part)).join('/');
+  try {
+    const response = await fetch(`${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${encodedPath}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': req.file.mimetype, 'x-upsert': 'false' },
+      body: req.file.buffer
+    });
+    if (!response.ok) {
+      console.error('Supabase Storage upload failed:', response.status, await response.text());
+      return res.status(502).json({ error: 'Image storage rejected the upload. Check the storage bucket settings.' });
+    }
+    res.status(201).json({ url: `${supabaseUrl}/storage/v1/object/public/${encodeURIComponent(bucket)}/${encodedPath}` });
+  } catch (error) {
+    console.error('Image upload failed:', error);
+    res.status(502).json({ error: 'Image upload failed. Please try again.' });
+  }
+});
+
 app.get('/api/health',(_req,res)=>res.json({ok:true,service:'VibePulse API'}));
 app.post('/api/auth/register',async(req,res)=>{try{const data=z.object({username:z.string().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/),displayName:z.string().min(1).max(60),email:z.string().email().optional().or(z.literal('')),password:z.string().min(8).max(100)}).parse(req.body); const username=data.username.toLowerCase(); const hash=await bcrypt.hash(data.password,12); const user=await prisma.user.create({data:{username,displayName:data.displayName,email:data.email||null,passwordHash:hash}}); const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'}); res.status(201).json({token,user:safeUser(user)});}catch(e:any){res.status(e?.code==='P2002'?409:400).json({error:e?.code==='P2002'?'Username or email already exists':e.message||'Registration failed'});}});
 app.post('/api/auth/login',async(req,res)=>{const data=z.object({username:z.string(),password:z.string()}).safeParse(req.body);if(!data.success)return res.status(400).json({error:'Username and password required'});const user=await prisma.user.findUnique({where:{username:data.data.username.toLowerCase()}});if(!user||!(await bcrypt.compare(data.data.password,user.passwordHash)))return res.status(401).json({error:'Incorrect username or password'});if(user.status!=='ACTIVE')return res.status(403).json({error:'Account is not active'});const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'});res.json({token,user:safeUser(user)});});
