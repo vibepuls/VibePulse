@@ -59,6 +59,9 @@ function SocialGamingApp() {
   const [posts, setPosts] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({});
   const [leaderboard, setLeaderboard] = useState([]);
+  const [dailyLeaderboard, setDailyLeaderboard] = useState([]);
+  const [trending, setTrending] = useState([]);
+  const [risingUsers, setRisingUsers] = useState([]);
   const [period, setPeriod] = useState('overall');
   const [transactions, setTransactions] = useState([]);
   const [missions, setMissions] = useState([]);
@@ -123,7 +126,7 @@ function SocialGamingApp() {
     const jobs = await Promise.allSettled([
       api.get('/me'), api.get('/posts?page=1'), api.get('/leaderboard'), api.get('/missions'),
       api.get('/achievements/me'), api.get('/battles'), api.get('/teams'), api.get('/notifications'),
-      api.get('/points/transactions?limit=50'), api.get('/referrals/me')
+      api.get('/points/transactions?limit=50'), api.get('/referrals/me'), api.get('/leaderboard/daily'), api.get('/trending'), api.get('/rising-users')
     ]);
     const take = (i, setter, fallback) => {
       if (jobs[i].status === 'fulfilled') setter(jobs[i].value.data);
@@ -133,6 +136,7 @@ function SocialGamingApp() {
     take(1, setPosts, []); take(2, setLeaderboard, []); take(3, setMissions, []);
     take(4, setAchievements, []); take(5, setBattles, []); take(6, setTeams, []);
     take(7, setNotifications, []); take(8, setTransactions, []); take(9, setReferral, null);
+    take(10, setDailyLeaderboard, []); take(11, setTrending, []); take(12, setRisingUsers, []);
     setLoading(false);
   }, [setUser]);
 
@@ -542,6 +546,15 @@ function SocialGamingApp() {
         <aside className="space-y-5">
           <Panel title="Top players" subtitle="Overall point ranking" action={<button onClick={() => navTo('ranking')} className="text-sm font-semibold text-violet-300">View all <ChevronRight size={14} className="inline"/></button>}>
             <div className="space-y-3">{leaderboard.slice(0, 5).map((player) => <div key={player.id} className="flex items-center gap-3"><span className={`grid h-8 w-8 place-items-center rounded-lg text-xs font-black ${player.rank === 1 ? 'bg-amber-300 text-slate-950' : 'bg-white/5 text-slate-400'}`}>{player.rank}</span><Avatar user={player}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-white">@{player.username}</div><div className="text-xs text-slate-500">{player.displayName}</div></div><span className="text-sm font-bold text-amber-200">{fmt(player.points)}</span></div>)}</div>
+          </Panel>
+          <Panel title="Today's Champion" subtitle="Top net point movement today.">
+            {dailyLeaderboard[0] ? <div className="flex items-center gap-3 rounded-xl bg-amber-300/10 p-4"><span className="text-3xl">👑</span><Avatar user={dailyLeaderboard[0]} size="lg"/><div className="min-w-0 flex-1"><div className="font-black text-white">@{dailyLeaderboard[0].username}</div><div className="text-xs text-slate-400">{dailyLeaderboard[0].displayName}</div></div><div className="text-right"><div className="font-black text-amber-200">+{fmt(dailyLeaderboard[0].periodPoints)}</div><div className="text-[10px] text-slate-500">today</div></div></div> : <p className="text-sm text-slate-500">No champion data yet.</p>}
+          </Panel>
+          <Panel title="Trending Now" subtitle="Posts with recent engagement and point activity.">
+            <div className="space-y-3">{trending.slice(0,4).map((post) => <div key={post.id} className="flex items-center gap-3"><img src={post.imageUrl} alt="" className="h-12 w-12 rounded-lg object-cover"/><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-white">@{post.author?.username}</div><div className="truncate text-xs text-slate-500">{post.caption || 'Photo post'}</div></div><div className="text-right"><div className="text-sm font-bold text-amber-200">{fmt(post.hotScore)}</div>{post.isHot && <span className="text-[10px] font-bold text-rose-300">🔥 HOT</span>}</div></div>)}{trending.length===0 && <p className="text-sm text-slate-500">No trending posts yet.</p>}</div>
+          </Panel>
+          <Panel title="Rising Users" subtitle="Newer players to discover.">
+            <div className="space-y-3">{risingUsers.slice(0,5).map((player) => <div key={player.id} className="flex items-center gap-3"><Avatar user={player}/><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-white">@{player.username}</div><div className="truncate text-xs text-slate-500">{player.displayName}</div></div><span className="text-sm font-bold text-amber-200">{fmt(player.points)}</span><button onClick={() => toggleFollow(player.username)} className="text-xs font-semibold text-violet-300">Follow</button></div>)}</div>
           </Panel>
           <Panel title="Send point gift" subtitle="Gift points from your available balance.">
             <form onSubmit={giftPoints} className="space-y-3"><label className="block text-xs text-slate-400">Recipient username<input value={giftUsername} onChange={(e) => setGiftUsername(e.target.value)} placeholder="e.g. rahim" className={inputClass}/></label><label className="block text-xs text-slate-400">Amount<input type="number" min="1" max="1000000" step="1" value={giftAmount} onChange={(e) => setGiftAmount(e.target.value)} className={inputClass}/></label><button disabled={busy === 'gift'} className={primaryButton}><Gift size={15} className="mr-2 inline"/>Send gift</button></form>
