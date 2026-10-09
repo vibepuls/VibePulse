@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Activity, ArrowDownRight, Bell, Camera, Check, ChevronRight, Crown, Gift,
   Gamepad2, Heart, ImagePlus, LoaderCircle, LogOut, MessageCircle, Plus,
-  RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap
+  RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap, Sun, Moon, Languages, MoreHorizontal
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -55,6 +55,10 @@ function SocialGamingApp() {
   const location = useLocation();
   const params = useParams();
   const [section, setSection] = useState('home');
+  const [theme, setTheme] = useState(() => window.localStorage.getItem('vibepulse-theme') || 'dark');
+  const [language, setLanguage] = useState(() => window.localStorage.getItem('vibepulse-language') || 'en');
+  const [openPostMenu, setOpenPostMenu] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
   const [me, setMe] = useState(user);
   const [posts, setPosts] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({});
@@ -143,9 +147,12 @@ function SocialGamingApp() {
   }, [setUser]);
 
   useEffect(() => { loadCore(); }, [loadCore]);
+  useEffect(() => { window.localStorage.setItem('vibepulse-theme', theme); }, [theme]);
+  useEffect(() => { window.localStorage.setItem('vibepulse-language', language); }, [language]);
+  const bn = language === 'bn';
   useEffect(() => {
     if (!Object.values(stealCountdowns).some((seconds) => seconds > 0)) return undefined;
-    const timer = window.setInterval(() => setStealCountdowns((old) => { const next = { ...old }; Object.keys(next).forEach((key) => { next[key] = Math.max(0, Number(next[key] || 0) - 1); }); return next; }), 1000);
+    const timer = window.setInterval(() => setStealCountdowns((old) => { const next = { ...old }; Object.keys(next).forEach((key) => { next[key] = Math.max(0, Number(next[key] || 0) - 1); if (next[key] === 0) delete next[key]; }); return next; }), 1000);
     return () => window.clearInterval(timer);
   }, [stealCountdowns]);
 
@@ -196,7 +203,7 @@ function SocialGamingApp() {
     setBusy(`steal:${post.id}`);
     try {
       const { data } = await api.post(`/posts/${encodeURIComponent(post.id)}/steal`);
-      setStealCountdowns((old) => ({ ...old, [post.author?.username]: 4 }));
+      setStealCountdowns((old) => ({ ...old, [post.id]: 4 }));
       tell(`🥷 Took ${fmt(data.stolen)} points from @${post.author?.username}'s post and added them to your post.`);
       await Promise.all([refreshMe(), loadCore()]);
     } catch (e) { tell(errText(e, 'Point collection failed.'), 'error'); }
@@ -549,13 +556,15 @@ function SocialGamingApp() {
   const secondaryButton = 'rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 disabled:opacity-50';
   const inputClass = 'mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-sky-400/70';
 
-  return <div className="min-h-screen bg-black text-slate-100">
+  return <div className={theme === "dark" ? "min-h-screen bg-black text-slate-100" : "light-mode min-h-screen bg-slate-50 text-slate-900"}>
+      <style>{`.light-mode .bg-black,.light-mode .bg-black\\/95{background:#fff!important}.light-mode .text-white{color:#111827!important}.light-mode .text-slate-100,.light-mode .text-slate-200,.light-mode .text-slate-300{color:#1f2937!important}.light-mode .text-slate-400,.light-mode .text-slate-500{color:#64748b!important}.light-mode .bg-slate-950\\/50,.light-mode .bg-slate-950\\/60,.light-mode .bg-slate-950\\/70{background:#f1f5f9!important}.light-mode .border-white\\/10{border-color:#dbe2ea!important}.light-mode .bg-white\\/\\[0\\.045\\],.light-mode .bg-white\\/5{background:#fff!important}.light-mode input,.light-mode textarea,.light-mode select{background:#fff!important;color:#111827!important;border-color:#cbd5e1!important}`}</style>
     <header className="sticky top-0 z-40 border-b border-white/10 bg-black/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <button onClick={() => navTo('home')} className="flex items-center gap-2 text-left">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-500"><Zap size={21} className="text-white"/></span>
           <span><span className="block text-lg font-black tracking-tight text-white">VibePulse</span><span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-sky-300">Social network</span></span>
         </button>
+        <div className="flex items-center gap-1"><button title="Light/dark mode" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className={secondaryButton}>{theme === "dark" ? <Sun size={17}/> : <Moon size={17}/>}</button><button title="Language" onClick={() => setLanguage(bn ? "en" : "bn")} className={secondaryButton}><Languages size={16}/>{bn ? " EN" : " বাংলা"}</button></div>
         <div className="flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2"><Zap size={16} className="text-amber-200"/><span className="text-sm font-black text-amber-100">{fmt(me?.points)}</span><span className="hidden text-xs text-amber-200/70 sm:inline">POINTS</span></div>
         <div className="flex items-center gap-2">
           <button className={secondaryButton} onClick={() => { setProfileUsername(me?.username || ''); loadProfile(me?.username); setSection('profile'); }}><Avatar user={me}/><span className="ml-2 hidden sm:inline">@{me?.username}</span></button>
@@ -567,7 +576,7 @@ function SocialGamingApp() {
 
     <div className="mx-auto grid max-w-[1380px] grid-cols-1 gap-5 px-3 pb-24 pt-5 sm:px-5 lg:grid-cols-[220px_minmax(0,650px)_minmax(240px,300px)] lg:gap-7">
       <aside className="hidden lg:block"><nav className="sticky top-24 space-y-1">
-        {menu.map(([key, label, Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-base font-semibold transition ${section === key ? 'bg-sky-500/15 text-sky-300' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}><Icon size={21}/><span>{label}</span>{key === 'notifications' && unreadCount > 0 && <span className="ml-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs text-white">{unreadCount}</span>}</button>)}
+        {menu.map(([key, label, Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-base font-semibold transition ${section === key ? 'bg-sky-500/15 text-sky-300' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}><Icon size={21}/><span>{bn ? ({home:'হোম',search:'মানুষ খুঁজুন',ranking:'র‍্যাঙ্কিং',wallet:'ওয়ালেট',missions:'মিশন',battles:'ছবি ব্যাটল',games:'গেম',teams:'টিম',referrals:'রেফারেল',messages:'মেসেজ',notifications:'নোটিফিকেশন',profile:'প্রোফাইল'}[key] || label) : label}</span>{key === 'notifications' && unreadCount > 0 && <span className="ml-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs text-white">{unreadCount}</span>}</button>)}
         {me?.role === 'ADMIN' && <button onClick={() => navTo('admin')} className="flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-slate-300 hover:bg-white/10"><Shield size={21}/>Admin</button>}
         <button onClick={() => { logout(); navigate('/login'); }} className="mt-4 flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-slate-400 hover:bg-white/10"><LogOut size={20}/>Log out</button>
       </nav></aside>
@@ -615,7 +624,7 @@ function SocialGamingApp() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 pt-1">
                     {post.author?.username !== me?.username && <>
-                      <button disabled={Boolean(busy) || (stealCountdowns[post.author?.username] || 0) > 0} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === "steal:" + post.id ? "Working…" : (stealCountdowns[post.author?.username] || 0) > 0 ? "Steal in " + stealCountdowns[post.author?.username] : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3</>}</button>
+                      <button disabled={busy === `steal:${post.id}` || (stealCountdowns[post.id] || 0) > 0} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? (bn ? 'নিচ্ছে…' : 'Stealing…') : (stealCountdowns[post.id] || 0) > 0 ? (bn ? `আবার ${stealCountdowns[post.id]}s` : `Steal in ${stealCountdowns[post.id]}s`) : <><ArrowDownRight size={15} className="mr-1 inline"/>{bn ? '৩ পয়েন্ট নাও' : 'Steal 3'}</>}</button>
                       <button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}><Gift size={15} className="mr-1 inline"/>Gift points</button>
                       <button onClick={() => openConversation(post.author.username)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>
                       <button onClick={() => setReportTarget({ type: "POST", id: post.id })} className={secondaryButton}>Report</button>
