@@ -7,7 +7,6 @@ const API_URL = configuredApiUrl.replace(/\/+$/, '').endsWith('/api')
 
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
   timeout: 20000
 });
 
@@ -45,7 +44,7 @@ api.interceptors.response.use(
 
     try {
       if (!refreshPromise) {
-        refreshPromise = axios.post(`${API_URL}/auth/refresh`, { refreshToken }, { withCredentials: true })
+        refreshPromise = axios.post(`${API_URL}/auth/refresh`, { refreshToken })
           .then((res) => {
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('refreshToken', res.data.refreshToken);
