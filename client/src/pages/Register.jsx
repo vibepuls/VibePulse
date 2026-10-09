@@ -16,6 +16,8 @@ export default function Register() {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const referral = new URLSearchParams(window.location.search).get('ref');
+  const loginPath = referral ? `/login?ref=${encodeURIComponent(referral)}` : '/login';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -123,7 +125,7 @@ export default function Register() {
         <p className="text-center mt-4 text-sm text-gray-600">
           Already have an account?{' '}
           <Link
-            to={`/login${new URLSearchParams(window.location.search).get('ref') ? `?ref=${encodeURIComponent(new URLSearchParams(window.location.search).get('ref'))}` : ''}`}
+            to={loginPath}
             className="text-blue-600 hover:underline"
           >
             Sign in
