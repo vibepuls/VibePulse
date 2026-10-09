@@ -63,6 +63,110 @@ app.post('/api/posts/:id/like',auth,async(req:any,res)=>{try{const like=await pr
 app.post('/api/posts/:id/comments',auth,async(req:any,res)=>{const body=z.string().trim().min(1).max(1000).safeParse(req.body.body);if(!body.success)return res.status(400).json({error:'Comment must be 1–1000 characters'});const comment=await prisma.$transaction(async tx=>{const created=await tx.comment.create({data:{postId:req.params.id,authorId:req.user.id,body:body.data},include:{author:{select:{username:true,displayName:true}}}});await recordMissionProgress(tx,req.user.id,'COMMENT',1);return created;});res.status(201).json(comment);});
 app.post('/api/points/steal/:targetUsername',auth,async(req:any,res)=>{const thiefId=req.user.id;const target=await prisma.user.findUnique({where:{username:String(req.params.targetUsername).toLowerCase()}});if(!target)return res.status(404).json({error:'User not found'});if(target.id===thiefId)return res.status(400).json({error:'You cannot steal from yourself'});if(target.shieldUntil&&target.shieldUntil>new Date())return res.status(409).json({error:'This user is protected by a shield'});try{const result=await prisma.$transaction(async tx=>{const now=new Date();const prior=await tx.stealCooldown.findUnique({where:{thiefId_targetId:{thiefId,targetId:target.id}}});if(prior){const claimed=await tx.stealCooldown.updateMany({where:{id:prior.id,lastAt:{lte:new Date(now.getTime()-4000)}},data:{lastAt:now}});if(!claimed.count)throw new Error('COOLDOWN');}else{await tx.stealCooldown.create({data:{thiefId,targetId:target.id,lastAt:now}});}const debit=await tx.user.updateMany({where:{id:target.id,points:{gte:3}},data:{points:{decrement:3}}});if(!debit.count)throw new Error('LOW_BALANCE');const me=await tx.user.update({where:{id:thiefId},data:{points:{increment:3}}});await tx.pointTransaction.create({data:{senderId:target.id,receiverId:thiefId,amount:3,type:'STEAL',note:'Points stolen'}});await tx.notification.create({data:{userId:target.id,text:`@${req.user.username} stole 3 points from you.`}});return me;});res.json({success:true,stolen:3,balance:result.points});}catch(e:any){const msg=e.message==='COOLDOWN'||e?.code==='P2002'?'Wait 4 seconds before stealing from this user again':e.message==='LOW_BALANCE'?'This user does not have enough points':e.message;res.status(409).json({error:msg});}});
 app.post('/api/points/gift',auth,async(req:any,res)=>{const d=z.object({username:z.string(),amount:z.number().int().min(1).max(1000000)}).safeParse(req.body);if(!d.success)return res.status(400).json({error:'Invalid gift amount or recipient'});const target=await prisma.user.findUnique({where:{username:d.data.username.toLowerCase()}});if(!target||target.id===req.user.id)return res.status(400).json({error:'Invalid recipient'});try{const updated=await prisma.$transaction(async tx=>{const debit=await tx.user.updateMany({where:{id:req.user.id,points:{gte:d.data.amount}},data:{points:{decrement:d.data.amount}}});if(!debit.count)throw new Error('NOT_ENOUGH');const sender=await tx.user.findUniqueOrThrow({where:{id:req.user.id}});const receiver=await tx.user.update({where:{id:target.id},data:{points:{increment:d.data.amount}}});await tx.pointTransaction.create({data:{senderId:sender.id,receiverId:receiver.id,amount:d.data.amount,type:'GIFT',note:'User gift'}});await tx.notification.create({data:{userId:receiver.id,text:`@${sender.username} sent you ${d.data.amount.toLocaleString()} points.`}});return {balance:sender.points};});res.json({success:true,...updated});}catch(e:any){res.status(409).json({error:e.message==='NOT_ENOUGH'?'Not enough points': 'Gift could not be completed'});}});
+app.get('/api/battles', async (_req, res) => {
+  const battles = await prisma.battle.findMany({
+    include: {
+      challenger: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+      opponent: { select: { id: true, username: true, displayName: true, avatarUrl: true } },
+      challengerPost: { select: { id: true, imageUrl: true, caption: true } },
+      opponentPost: { select: { id: true, imageUrl: true, caption: true } },
+      _count: { select: { votes: true } }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50
+  });
+  res.json(battles);
+});
+
+app.post('/api/battles', auth, async (req:any, res) => {
+  const parsed = z.object({
+    opponentUsername: z.string().min(3).max(24),
+    challengerPostId: z.string().min(1),
+    opponentPostId: z.string().min(1),
+    title: z.string().max(120).optional()
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Choose an opponent and one photo from each player' });
+  const opponent = await prisma.user.findUnique({ where: { username: parsed.data.opponentUsername.toLowerCase() } });
+  if (!opponent || opponent.status !== 'ACTIVE') return res.status(404).json({ error: 'Opponent not found' });
+  if (opponent.id === req.user.id) return res.status(400).json({ error: 'You cannot battle yourself' });
+  const [myPost, opponentPost] = await Promise.all([
+    prisma.post.findUnique({ where: { id: parsed.data.challengerPostId } }),
+    prisma.post.findUnique({ where: { id: parsed.data.opponentPostId } })
+  ]);
+  if (!myPost || myPost.authorId !== req.user.id) return res.status(400).json({ error: 'Choose one of your own photo posts' });
+  if (!opponentPost || opponentPost.authorId !== opponent.id || opponentPost.hidden) return res.status(400).json({ error: 'Opponent photo is invalid or hidden' });
+  const battle = await prisma.$transaction(async (tx) => {
+    const created = await tx.battle.create({
+      data: {
+        title: parsed.data.title?.trim() || `@${req.user.username} vs @${opponent.username}`,
+        status: 'OPEN',
+        creatorId: req.user.id,
+        challengerId: req.user.id,
+        opponentId: opponent.id,
+        challengerPostId: myPost.id,
+        opponentPostId: opponentPost.id,
+        reward: 100,
+        endsAt: new Date(Date.now() + 10 * 60 * 1000)
+      }
+    });
+    await tx.notification.create({ data: { userId: opponent.id, text: `@${req.user.username} challenged you to a photo battle. Voting closes in 10 minutes.` } });
+    return created;
+  });
+  res.status(201).json(battle);
+});
+
+app.post('/api/battles/:id/vote', auth, async (req:any, res) => {
+  const parsed = z.object({ choice: z.enum(['CHALLENGER', 'OPPONENT']) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Choose a battle photo to vote for' });
+  const battle = await prisma.battle.findUnique({ where: { id: req.params.id } });
+  if (!battle || !battle.challengerId || !battle.opponentId) return res.status(404).json({ error: 'Battle not found' });
+  if (battle.status !== 'OPEN' || !battle.endsAt || battle.endsAt <= new Date()) return res.status(409).json({ error: 'Voting has closed for this battle' });
+  if (battle.challengerId === req.user.id || battle.opponentId === req.user.id) return res.status(403).json({ error: 'Battle participants cannot vote in their own battle' });
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.battleVote.create({ data: { battleId: battle.id, userId: req.user.id, choice: parsed.data.choice } });
+      return tx.battle.update({
+        where: { id: battle.id },
+        data: parsed.data.choice === 'CHALLENGER' ? { challengerVotes: { increment: 1 } } : { opponentVotes: { increment: 1 } }
+      });
+    });
+    res.json({ success: true, challengerVotes: updated.challengerVotes, opponentVotes: updated.opponentVotes });
+  } catch (error:any) {
+    if (error?.code === 'P2002') return res.status(409).json({ error: 'You have already voted in this battle' });
+    res.status(400).json({ error: 'Vote could not be saved' });
+  }
+});
+
+app.post('/api/battles/:id/finish', auth, async (req:any, res) => {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const battle = await tx.battle.findUnique({ where: { id: req.params.id } });
+      if (!battle) throw new Error('NOT_FOUND');
+      if (battle.status !== 'OPEN') return { status: battle.status, winnerId: battle.winnerId, alreadyFinished: true };
+      if (!battle.endsAt || battle.endsAt > new Date()) throw new Error('TOO_EARLY');
+      const locked = await tx.battle.updateMany({ where: { id: battle.id, status: 'OPEN', endsAt: { lte: new Date() } }, data: { status: 'FINISHING' } });
+      if (!locked.count) {
+        const current = await tx.battle.findUniqueOrThrow({ where: { id: battle.id } });
+        return { status: current.status, winnerId: current.winnerId, alreadyFinished: true };
+      }
+      const winnerId = battle.challengerVotes === battle.opponentVotes ? null : battle.challengerVotes > battle.opponentVotes ? battle.challengerId : battle.opponentId;
+      const status = winnerId ? 'FINISHED' : 'TIED';
+      await tx.battle.update({ where: { id: battle.id }, data: { status, winnerId } });
+      if (winnerId) {
+        await tx.user.update({ where: { id: winnerId }, data: { points: { increment: battle.reward } } });
+        await tx.pointTransaction.create({ data: { receiverId: winnerId, amount: battle.reward, type: 'BATTLE', note: `Won photo battle: ${battle.title}` } });
+        await tx.notification.create({ data: { userId: winnerId, text: `You won the photo battle “${battle.title}” and earned ${battle.reward} points.` } });
+      }
+      return { status, winnerId, reward: winnerId ? battle.reward : 0 };
+    });
+    res.json(result);
+  } catch (error:any) {
+    if (error.message === 'NOT_FOUND') return res.status(404).json({ error: 'Battle not found' });
+    if (error.message === 'TOO_EARLY') return res.status(409).json({ error: 'This battle is still accepting votes' });
+    res.status(400).json({ error: 'Battle could not be finished' });
+  }
+});
+
 app.get('/api/missions', auth, async (req:any, res) => {
   const defaults = [
     { key: 'daily-post', title: 'Photo starter', description: 'Publish one photo post today.', actionType: 'POST', target: 1, reward: 100, active: true },
