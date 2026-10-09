@@ -36,6 +36,7 @@ function admin(req:any,res:any,next:any){if(req.user?.role!=='ADMIN') return res
 const safeUser=(u:any)=>({id:u.id,username:u.username,displayName:u.displayName,bio:u.bio,avatarUrl:u.avatarUrl,points:u.points,role:u.role,createdAt:u.createdAt});
 const dayKey = () => new Date().toISOString().slice(0, 10);
 async function recordMissionProgress(tx:any,userId:string,actionType:string,amount=1) {
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}), hashtext(${actionType}))`;
   const missions = await tx.dailyMission.findMany({ where: { actionType, active: true } });
   const periodKey = dayKey();
   for (const mission of missions) {
@@ -150,8 +151,10 @@ app.post('/api/posts',auth,async(req:any,res)=>{
   if(!d.success)return res.status(400).json({error:'A valid image URL and caption are required'});
   try {
     const result = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${req.user.id}), hashtext('daily-post-reward'))`;
       const now = new Date();
-      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dayStart = new Date(now);
+      dayStart.setUTCHours(0, 0, 0, 0);
       const postsToday = await tx.post.count({ where: { authorId: req.user.id, createdAt: { gte: dayStart } } });
       const post = await tx.post.create({data:{authorId:req.user.id,...d.data},include:{author:{select:{username:true,displayName:true,avatarUrl:true}}}});
       await recordMissionProgress(tx, req.user.id, 'POST', 1);
@@ -476,7 +479,8 @@ app.post('/api/missions/:id/claim', auth, async (req:any, res) => {
         include: { mission: true }
       });
       if (!progress || !progress.completed || progress.claimed) throw new Error('NOT_READY');
-      await tx.missionProgress.update({ where: { id: progress.id }, data: { claimed: true } });
+      const claimLock = await tx.missionProgress.updateMany({ where: { id: progress.id, completed: true, claimed: false }, data: { claimed: true } });
+      if (!claimLock.count) throw new Error('NOT_READY');
       let user:any;
       if (progress.mission.rewardType === 'SHIELD') {
         const shieldUntil = new Date(Date.now() + 30 * 60 * 1000);
