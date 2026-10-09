@@ -187,7 +187,7 @@ app.post('/api/games/quick-tap/start', auth, async (req:any, res) => {
 app.post('/api/games/quick-tap/:id/tap', auth, async (req:any, res) => {
   const now = new Date();
   const updated = await prisma.gameSession.updateMany({
-    where: { id: req.params.id, userId: req.user.id, claimedAt: null, endsAt: { gt: now }, score: { lt: 120 } },
+    where: { id: req.params.id, userId: req.user.id, claimedAt: null, endsAt: { gt: now }, score: { lt: 100 } },
     data: { score: { increment: 1 } }
   });
   if (!updated.count) return res.status(409).json({ error: 'This game is not active or the tap limit was reached' });
@@ -201,7 +201,7 @@ app.post('/api/games/quick-tap/:id/finish', auth, async (req:any, res) => {
   if (session.claimedAt) return res.status(409).json({ error: 'This game reward was already claimed' });
   const now = new Date();
   if (now < session.endsAt) return res.status(409).json({ error: 'Finish the full 10-second round before claiming points' });
-  const score = Math.max(0, Math.min(120, Number(session.score || 0)));
+  const score = Math.max(0, Math.min(100, Number(session.score || 0)));
   try {
     const result = await prisma.$transaction(async (tx) => {
       const claimed = await tx.gameSession.updateMany({
