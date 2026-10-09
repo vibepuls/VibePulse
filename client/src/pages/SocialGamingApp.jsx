@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Activity, ArrowDownRight, Bell, Camera, Check, ChevronRight, Crown, Gift,
   Gamepad2, Heart, ImagePlus, LoaderCircle, LogOut, MessageCircle, Plus,
-  RefreshCw, Search, Send, Shield, Swords, Trophy, Users, Wallet, Zap
+  RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -143,6 +143,13 @@ function SocialGamingApp() {
   useEffect(() => { loadCore(); }, [loadCore]);
 
   useEffect(() => {
+    const postId = new URLSearchParams(location.search).get('post');
+    if (!postId) return undefined;
+    const timer = window.setTimeout(() => document.getElementById('post-' + postId)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    return () => window.clearTimeout(timer);
+  }, [posts, location.search]);
+
+  useEffect(() => {
     const username = params.username;
     if (location.pathname.startsWith('/profile/') && username) {
       setSection('profile');
@@ -234,6 +241,17 @@ function SocialGamingApp() {
     try { await api.patch(`/posts/${post.id}`, { caption: nextCaption, imageUrl: nextImageUrl.trim(), privacy: post.privacy || 'PUBLIC' }); tell('Post updated. The next edit is available after four hours.'); await loadCore(); }
     catch (e) { tell(errText(e), 'error'); }
     finally { setBusy(''); }
+  };
+
+  const sharePost = async (post) => {
+    const url = new URL(window.location.origin);
+    url.searchParams.set('post', post.id);
+    try {
+      if (navigator.share) await navigator.share({ title: 'VibePulse photo', text: post.caption || ('Photo by @' + post.author?.username), url: url.toString() });
+      else { await navigator.clipboard.writeText(url.toString()); tell('Post link copied.'); }
+    } catch (e) {
+      if (e?.name !== 'AbortError') tell('Could not share this post from the browser.', 'error');
+    }
   };
 
   const likePost = async (postId) => {
@@ -526,7 +544,7 @@ function SocialGamingApp() {
           </Panel>
           <Panel title="Community feed" subtitle="Live posts from the database." action={<button onClick={loadCore} className={secondaryButton}><RefreshCw size={15} className="mr-2 inline"/>Refresh</button>}>
             <div className="grid gap-4 md:grid-cols-2">
-              {posts.map((post) => <article key={post.id} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
+              {posts.map((post) => <article id={"post-" + post.id} key={post.id} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
                 {post.imageUrl && <img src={post.imageUrl} alt={post.caption || 'Community photo'} loading="lazy" className="aspect-[4/3] w-full object-cover"/>}
                 <div className="space-y-3 p-4">
                   <div className="flex items-center gap-3"><Avatar user={post.author}/><button onClick={() => { setProfileUsername(post.author?.username); loadProfile(post.author?.username); setSection('profile'); }} className="min-w-0 text-left"><div className="truncate text-sm font-bold text-white">{post.author?.displayName || post.author?.username}</div><div className="text-xs text-slate-500">@{post.author?.username}</div></button><span className="ml-auto text-sm font-black text-amber-200">⚡ {fmt(post.points)}</span></div>
@@ -536,6 +554,7 @@ function SocialGamingApp() {
                     {post.author?.username === me?.username && <button disabled={Boolean(busy) || editCooldownLabel(post.lastEditedAt) !== 'Edit photo/caption'} title={editCooldownLabel(post.lastEditedAt)} onClick={() => editOwnPost(post)} className={secondaryButton}>{busy === `edit:${post.id}` ? 'Saving…' : editCooldownLabel(post.lastEditedAt)}</button>}
                     <button disabled={Boolean(busy)} onClick={() => likePost(post.id)} className={secondaryButton}>{busy === `like:${post.id}` ? '…' : <><Heart size={15} className="mr-1 inline"/>Like</>}</button>
                     {post.author?.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectPoints(post.author?.username)} className={secondaryButton}>{busy === `steal:${post.author?.username}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3</>}</button>}
+                    <button onClick={() => sharePost(post)} className={secondaryButton}><Share2 size={15} className="mr-1 inline"/>Share</button>
                     <button onClick={() => setReportTarget({ type: 'POST', id: post.id })} className={secondaryButton}>Report</button>
                     {post.author?.username && <button onClick={() => { setMessageTarget(post.author.username); setSection('messages'); }} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>}
                   </div>
