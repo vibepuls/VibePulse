@@ -229,7 +229,6 @@ app.post('/api/teams', auth, async (req:any, res) => {
     const team = await prisma.$transaction(async (tx) => {
       const created = await tx.team.create({ data: { name: parsed.data.name, description: parsed.data.description || '', creatorId: req.user.id } });
       await tx.teamMember.create({ data: { teamId: created.id, userId: req.user.id } });
-      await tx.adminAction.create({ data: { actorId: req.user.id, action: 'TEAM_CREATED', targetType: 'TEAM', targetId: created.id, details: created.name } }).catch(() => null);
       return created;
     });
     res.status(201).json(team);
