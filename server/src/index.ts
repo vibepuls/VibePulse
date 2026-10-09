@@ -79,6 +79,26 @@ app.post('/api/auth/login',async(req,res)=>{const data=z.object({username:z.stri
 app.get('/api/me',auth,async(req:any,res)=>{const u=await prisma.user.findUnique({where:{id:req.user.id}});if(!u)return res.status(404).json({error:'User not found'});res.json(safeUser(u));});
 app.get('/api/users',async(req,res)=>{const q=String(req.query.q||'').slice(0,40);const users=await prisma.user.findMany({where:{status:'ACTIVE',OR:[{username:{contains:q,mode:'insensitive'}},{displayName:{contains:q,mode:'insensitive'}}]},select:{id:true,username:true,displayName:true,avatarUrl:true,points:true},take:20,orderBy:{points:'desc'}});res.json(users);});
 app.get('/api/leaderboard',async(_req,res)=>{const users=await prisma.user.findMany({where:{status:'ACTIVE'},select:{id:true,username:true,displayName:true,avatarUrl:true,points:true},orderBy:{points:'desc'},take:50});res.json(users.map((u,i)=>({...u,rank:i+1})));});
+app.get('/api/leaderboard/:period', async (req, res) => {
+  const period = String(req.params.period).toLowerCase();
+  if (!['daily', 'weekly'].includes(period)) return res.status(404).json({ error: 'Leaderboard period not found' });
+  const now = new Date();
+  const start = new Date(now);
+  if (period === 'daily') start.setUTCHours(0, 0, 0, 0);
+  else start.setUTCDate(start.getUTCDate() - 7);
+  const [users, transactions] = await Promise.all([
+    prisma.user.findMany({ where: { status: 'ACTIVE' }, select: { id: true, username: true, displayName: true, avatarUrl: true, points: true } }),
+    prisma.pointTransaction.findMany({ where: { createdAt: { gte: start } }, select: { senderId: true, receiverId: true, amount: true } })
+  ]);
+  const net = new Map<string, number>();
+  for (const tx of transactions) {
+    if (tx.receiverId) net.set(tx.receiverId, (net.get(tx.receiverId) || 0) + tx.amount);
+    if (tx.senderId) net.set(tx.senderId, (net.get(tx.senderId) || 0) - tx.amount);
+  }
+  users.sort((a:any, b:any) => (net.get(b.id) || 0) - (net.get(a.id) || 0) || b.points - a.points);
+  res.json(users.slice(0, 50).map((user:any, index:number) => ({ ...user, rank: index + 1, periodPoints: net.get(user.id) || 0 })));
+});
+
 app.get('/api/posts',async(req,res)=>{const page=Math.max(1,Number(req.query.page)||1);const posts=await prisma.post.findMany({where:{hidden:false},include:{author:{select:{username:true,displayName:true,avatarUrl:true}},_count:{select:{likes:true,comments:true}}},orderBy:[{points:'desc'},{createdAt:'desc'}],skip:(page-1)*20,take:20});res.json(posts);});
 app.post('/api/posts',auth,async(req:any,res)=>{
   const d=z.object({imageUrl:z.string().url().max(2000),caption:z.string().max(2000).default('')}).safeParse(req.body);
