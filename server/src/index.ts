@@ -204,6 +204,60 @@ app.post('/api/battles/:id/finish', auth, async (req:any, res) => {
   }
 });
 
+app.get('/api/teams', async (_req, res) => {
+  const teams = await prisma.team.findMany({
+    include: {
+      creator: { select: { username: true, displayName: true } },
+      members: { include: { user: { select: { id: true, username: true, displayName: true, points: true } } } },
+      _count: { select: { members: true } }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 100
+  });
+  res.json(teams.map((team:any) => ({
+    id: team.id, name: team.name, description: team.description, creator: team.creator,
+    memberCount: team._count.members,
+    totalPoints: team.members.reduce((sum:number, member:any) => sum + member.user.points, 0),
+    members: team.members.map((member:any) => member.user)
+  })));
+});
+
+app.post('/api/teams', auth, async (req:any, res) => {
+  const parsed = z.object({ name: z.string().trim().min(3).max(40), description: z.string().max(300).optional() }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Team name must be 3–40 characters' });
+  try {
+    const team = await prisma.$transaction(async (tx) => {
+      const created = await tx.team.create({ data: { name: parsed.data.name, description: parsed.data.description || '', creatorId: req.user.id } });
+      await tx.teamMember.create({ data: { teamId: created.id, userId: req.user.id } });
+      await tx.adminAction.create({ data: { actorId: req.user.id, action: 'TEAM_CREATED', targetType: 'TEAM', targetId: created.id, details: created.name } }).catch(() => null);
+      return created;
+    });
+    res.status(201).json(team);
+  } catch (error:any) {
+    res.status(error?.code === 'P2002' ? 409 : 400).json({ error: error?.code === 'P2002' ? 'A team with that name already exists' : 'Could not create team' });
+  }
+});
+
+app.post('/api/teams/:id/join', auth, async (req:any, res) => {
+  const team = await prisma.team.findUnique({ where: { id: req.params.id } });
+  if (!team) return res.status(404).json({ error: 'Team not found' });
+  try {
+    await prisma.teamMember.create({ data: { teamId: team.id, userId: req.user.id } });
+    res.json({ joined: true });
+  } catch (error:any) {
+    if (error?.code === 'P2002') return res.status(409).json({ error: 'You are already on this team' });
+    res.status(400).json({ error: 'Could not join team' });
+  }
+});
+
+app.post('/api/teams/:id/leave', auth, async (req:any, res) => {
+  const team = await prisma.team.findUnique({ where: { id: req.params.id } });
+  if (!team) return res.status(404).json({ error: 'Team not found' });
+  if (team.creatorId === req.user.id) return res.status(400).json({ error: 'Team creator cannot leave; create another team or ask an admin to transfer ownership' });
+  await prisma.teamMember.deleteMany({ where: { teamId: team.id, userId: req.user.id } });
+  res.json({ joined: false });
+});
+
 app.get('/api/achievements/me', auth, async (req:any, res) => {
   const defaults = [
     { key: 'first-post', title: 'First Photo', description: 'Publish your first photo post.', metric: 'POSTS', target: 1, active: true },
