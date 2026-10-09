@@ -447,6 +447,26 @@ app.get('/api/users/:username/profile', async (req, res) => {
   res.json({ ...user, followers: user._count.followsIn, following: user._count.followsOut, postCount: user._count.posts, _count: undefined });
 });
 
+app.get('/api/users/:username/posts', async (req:any, res) => {
+  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() }, select: { id: true, status: true } });
+  if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
+  let viewerId:string|null = null;
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) { try { const payload = jwt.verify(header.slice(7), AUTH_SECRET) as any; viewerId = String(payload.id); } catch {} }
+  const isFollowing = viewerId && viewerId !== target.id ? await prisma.follow.findUnique({ where: { followerId_followingId: { followerId: viewerId, followingId: target.id } } }) : null;
+  const privacy:any = viewerId === target.id
+    ? { OR: [{ privacy: 'PUBLIC' }, { privacy: 'FOLLOWERS' }, { privacy: 'PRIVATE' }] }
+    : isFollowing
+      ? { OR: [{ privacy: 'PUBLIC' }, { privacy: 'FOLLOWERS' }] }
+      : { privacy: 'PUBLIC' };
+  const posts = await prisma.post.findMany({
+    where: { authorId: target.id, hidden: false, ...privacy },
+    include: { author: { select: { username: true, displayName: true, avatarUrl: true } }, _count: { select: { likes: true, comments: true } } },
+    orderBy: { createdAt: 'desc' }, take: 50
+  });
+  res.json(posts);
+});
+
 app.post('/api/follows/:username', auth, async (req:any, res) => {
   const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() } });
   if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
