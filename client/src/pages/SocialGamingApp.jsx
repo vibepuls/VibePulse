@@ -12,7 +12,7 @@ const fmt = (n) => new Intl.NumberFormat().format(Number(n || 0));
 const dateText = (value) => value ? new Date(value).toLocaleString() : '';
 const errText = (e, fallback = 'Something went wrong. Please try again.') => e?.response?.data?.error || e?.message || fallback;
 const menu = [
-  ['home', 'Home', Activity], ['ranking', 'Ranking', Trophy], ['wallet', 'Wallet', Wallet],
+  ['home', 'Home', Activity], ['search', 'Find Players', Search], ['ranking', 'Ranking', Trophy], ['wallet', 'Wallet', Wallet],
   ['missions', 'Missions', Zap], ['battles', 'Photo Battles', Swords], ['games', 'Mini Games', Gamepad2],
   ['teams', 'Teams', Users], ['referrals', 'Referral', Gift], ['messages', 'Messages', MessageCircle],
   ['notifications', 'Notifications', Bell], ['profile', 'My Profile', Shield]
@@ -50,6 +50,7 @@ function SocialGamingApp() {
   const [section, setSection] = useState('home');
   const [me, setMe] = useState(user);
   const [posts, setPosts] = useState([]);
+  const [commentDrafts, setCommentDrafts] = useState({});
   const [leaderboard, setLeaderboard] = useState([]);
   const [period, setPeriod] = useState('overall');
   const [transactions, setTransactions] = useState([]);
@@ -68,6 +69,7 @@ function SocialGamingApp() {
   const [messageTarget, setMessageTarget] = useState('');
   const [messageText, setMessageText] = useState('');
   const [adminUsers, setAdminUsers] = useState([]);
+  const [adminPosts, setAdminPosts] = useState([]);
   const [reports, setReports] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [adminTransactions, setAdminTransactions] = useState([]);
@@ -205,6 +207,23 @@ function SocialGamingApp() {
       tell('Photo published! Daily post rewards are limited to five posts.');
       await loadCore();
     } catch (e) { tell(errText(e, 'Could not publish photo. Image uploads require server-side Supabase Storage configuration.'), 'error'); }
+    finally { setBusy(''); }
+  };
+
+  const likePost = async (postId) => {
+    setBusy('like:' + postId);
+    try { await api.post(`/posts/${postId}/like`); tell('Liked the photo. +1 point was awarded by the server.'); await loadCore(); }
+    catch (e) { tell(errText(e), 'error'); }
+    finally { setBusy(''); }
+  };
+
+  const addComment = async (event, postId) => {
+    event.preventDefault();
+    const body = (commentDrafts[postId] || '').trim();
+    if (!body) return;
+    setBusy('comment:' + postId);
+    try { await api.post(`/posts/${postId}/comments`, { body }); setCommentDrafts((old) => ({ ...old, [postId]: '' })); tell('Comment posted.'); await loadCore(); }
+    catch (e) { tell(errText(e), 'error'); }
     finally { setBusy(''); }
   };
 
@@ -432,7 +451,7 @@ function SocialGamingApp() {
         </div>
       </div>
       <nav className="mx-auto flex max-w-[1500px] gap-1 overflow-x-auto px-3 pb-3 sm:px-6">
-        {menu.filter(([key]) => key !== 'profile' || Boolean(me)).filter(([key]) => key !== 'profile' || true).map(([key, label, Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${section === key ? 'bg-violet-500 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}><Icon size={16}/><span>{label}</span>{key === 'notifications' && unreadCount > 0 && <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] text-white">{unreadCount}</span>}</button>)}
+        {menu.map(([key, label, Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${section === key ? 'bg-violet-500 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}><Icon size={16}/><span>{label}</span>{key === 'notifications' && unreadCount > 0 && <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] text-white">{unreadCount}</span>}</button>)}
         {me?.role === 'ADMIN' && <button onClick={() => navTo('admin')} className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ${section === 'admin' ? 'bg-violet-500 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}><Shield size={16}/>Admin</button>}
       </nav>
     </header>
@@ -474,10 +493,15 @@ function SocialGamingApp() {
                   {post.caption && <p className="whitespace-pre-wrap break-words text-sm text-slate-300">{post.caption}</p>}
                   <div className="flex flex-wrap gap-2 text-xs text-slate-500"><span>{post._count?.likes || 0} likes</span><span>•</span><span>{post._count?.comments || 0} comments</span><span className="ml-auto">{dateText(post.createdAt)}</span></div>
                   <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
+                    <button disabled={Boolean(busy)} onClick={() => likePost(post.id)} className={secondaryButton}>{busy === `like:${post.id}` ? '…' : <><Heart size={15} className="mr-1 inline"/>Like</>}</button>
                     {post.author?.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectPoints(post.author?.username)} className={secondaryButton}>{busy === `steal:${post.author?.username}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3</>}</button>}
                     <button onClick={() => setReportTarget({ type: 'POST', id: post.id })} className={secondaryButton}>Report</button>
                     {post.author?.username && <button onClick={() => { setMessageTarget(post.author.username); setSection('messages'); }} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>}
                   </div>
+                  <form onSubmit={(event) => addComment(event, post.id)} className="mt-3 flex gap-2">
+                    <input value={commentDrafts[post.id] || ''} onChange={(event) => setCommentDrafts((old) => ({ ...old, [post.id]: event.target.value }))} maxLength={1000} placeholder="Write a comment…" className={inputClass}/>
+                    <button disabled={busy === `comment:${post.id}`} className={secondaryButton}><Send size={15}/></button>
+                  </form>
                 </div>
               </article>)}
               {posts.length === 0 && <p className="py-8 text-center text-sm text-slate-500 md:col-span-2">No posts yet. Publish the first photo to start the arena.</p>}
@@ -540,7 +564,7 @@ function SocialGamingApp() {
       {section === 'admin' && me?.role === 'ADMIN' && <div className="space-y-5">
         <Panel title="Admin point adjustment" subtitle="Every adjustment is recorded in the audit log."><form onSubmit={adjustPoints} className="grid gap-3 md:grid-cols-4"><input value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} placeholder="Username" className={inputClass}/><input type="number" step="1" value={adminAmount} onChange={(e) => setAdminAmount(e.target.value)} className={inputClass}/><input value={adminNote} onChange={(e) => setAdminNote(e.target.value)} className={inputClass}/><button disabled={busy === 'admin-points'} className={primaryButton}>Adjust points</button></form></Panel>
         <Panel title="User moderation" subtitle="Suspend, ban, or reactivate accounts."><div className="space-y-2">{adminUsers.map((player) => <div key={player.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-950/50 p-3"><div className="min-w-0 flex-1"><div className="font-bold text-white">@{player.username}</div><div className="text-xs text-slate-500">{player.status} · {fmt(player.points)} points</div></div><button onClick={() => changeStatus(player.username, player.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')} className={secondaryButton}>{player.status === 'ACTIVE' ? 'Suspend' : 'Reactivate'}</button><button onClick={() => changeStatus(player.username, 'BANNED')} className={secondaryButton}>Ban</button></div>)}</div></Panel>
-        <Panel title="Post moderation" subtitle="Hide or restore community photos."><div className="space-y-2">{posts.map((post) => <div key={post.id} className="flex items-center gap-3 rounded-xl bg-slate-950/50 p-3"><div className="min-w-0 flex-1"><div className="font-bold text-white">{post.author?.username}</div><div className="truncate text-xs text-slate-500">{post.caption}</div></div><button onClick={() => moderatePost(post.id, !post.hidden)} className={secondaryButton}>{post.hidden ? 'Restore' : 'Hide'}</button></div>)}</div></Panel>
+        <Panel title="Post moderation" subtitle="Hide or restore community photos."><div className="space-y-2">{adminPosts.map((post) => <div key={post.id} className="flex items-center gap-3 rounded-xl bg-slate-950/50 p-3"><div className="min-w-0 flex-1"><div className="font-bold text-white">{post.author?.username}</div><div className="truncate text-xs text-slate-500">{post.caption}</div></div><button onClick={() => moderatePost(post.id, !post.hidden)} className={secondaryButton}>{post.hidden ? 'Restore' : 'Hide'}</button></div>)}</div></Panel>
         <Panel title="Reports" subtitle="Review user-submitted reports."><div className="space-y-2">{reports.map((report) => <div key={report.id} className="rounded-xl bg-slate-950/50 p-3"><div className="font-bold text-white">{report.category} · {report.targetType}</div><div className="text-xs text-slate-500">{report.details || report.targetId}</div><div className="mt-2 flex gap-2">{['REVIEWING','RESOLVED','DISMISSED'].map((status) => <button key={status} onClick={() => updateReport(report.id,status)} className={secondaryButton}>{status}</button>)}</div></div>)}</div></Panel>
         <Panel title="Global notification" subtitle="Send an announcement to all active users."><form onSubmit={sendGlobalNotice} className="space-y-3"><textarea value={globalText} onChange={(e) => setGlobalText(e.target.value)} maxLength={500} className={inputClass} placeholder="Announcement…"/><button className={primaryButton}>Send notification</button></form></Panel>
         <Panel title="Latest audit logs" subtitle="Administrative changes"><div className="space-y-2">{auditLogs.map((log) => <div key={log.id} className="rounded-lg bg-slate-950/50 p-3 text-sm"><strong>{log.action}</strong> · {log.actor?.username} · {log.details}<div className="text-xs text-slate-500">{dateText(log.createdAt)}</div></div>)}</div></Panel>
