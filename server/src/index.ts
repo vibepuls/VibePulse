@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import multer from 'multer';
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 
 const app = express(); const prisma = new PrismaClient();
 const PORT = Number(process.env.PORT || 4000); const AUTH_SECRET = process.env.AUTH_SECRET || 'development-only-change-this-secret-please';
@@ -365,6 +365,45 @@ app.post('/api/teams/:id/leave', auth, async (req:any, res) => {
   if (team.creatorId === req.user.id) return res.status(400).json({ error: 'Team creator cannot leave; create another team or ask an admin to transfer ownership' });
   await prisma.teamMember.deleteMany({ where: { teamId: team.id, userId: req.user.id } });
   res.json({ joined: false });
+});
+
+app.post('/api/rewards/mystery', auth, async (req:any, res) => {
+  const periodKey = dayKey();
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const [missionDone, gameDone] = await Promise.all([
+    prisma.missionProgress.findFirst({ where: { userId: req.user.id, periodKey, completed: true } }),
+    prisma.gameSession.findFirst({ where: { userId: req.user.id, startedAt: { gte: startOfDay }, claimedAt: { not: null } } })
+  ]);
+  if (!missionDone && !gameDone) return res.status(403).json({ error: 'Complete a daily mission or a skill game first' });
+  const rewards = [
+    { rewardType: 'POINTS', amount: 50 },
+    { rewardType: 'POINTS', amount: 100 },
+    { rewardType: 'POINTS', amount: 200 },
+    { rewardType: 'SHIELD', amount: 0 }
+  ];
+  const chosen = rewards[randomInt(rewards.length)];
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.mysteryRewardClaim.create({ data: { userId: req.user.id, periodKey, rewardType: chosen.rewardType, amount: chosen.amount } });
+      let balance = (await tx.user.findUniqueOrThrow({ where: { id: req.user.id }, select: { points: true } })).points;
+      let shieldUntil:Date|null = null;
+      if (chosen.rewardType === 'POINTS') {
+        const user = await tx.user.update({ where: { id: req.user.id }, data: { points: { increment: chosen.amount } } });
+        balance = user.points;
+        await tx.pointTransaction.create({ data: { receiverId: user.id, amount: chosen.amount, type: 'MYSTERY_REWARD', note: 'Free daily mystery reward' } });
+      } else {
+        shieldUntil = new Date(Date.now() + 30 * 60 * 1000);
+        await tx.user.update({ where: { id: req.user.id }, data: { shieldUntil } });
+      }
+      await tx.notification.create({ data: { userId: req.user.id, text: chosen.rewardType === 'SHIELD' ? 'Mystery reward unlocked: 30-minute point shield.' : `Mystery reward unlocked: +${chosen.amount} points.` } });
+      return { ...chosen, balance, shieldUntil };
+    });
+    res.json({ success: true, ...result });
+  } catch (error:any) {
+    if (error?.code === 'P2002') return res.status(409).json({ error: 'You already opened today’s mystery reward' });
+    res.status(400).json({ error: 'Mystery reward could not be opened' });
+  }
 });
 
 app.get('/api/achievements/me', auth, async (req:any, res) => {
