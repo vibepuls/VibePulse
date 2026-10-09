@@ -59,6 +59,7 @@ function SocialGamingApp() {
   const [language, setLanguage] = useState(() => window.localStorage.getItem('vibepulse-language') || 'en');
   const [openPostMenu, setOpenPostMenu] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
+  const avatarPickerRef = useRef(null);
   const [me, setMe] = useState(user);
   const [posts, setPosts] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({});
@@ -80,6 +81,8 @@ function SocialGamingApp() {
   const [profilePosts, setProfilePosts] = useState([]);
   const [profileUsername, setProfileUsername] = useState('');
   const [messages, setMessages] = useState([]);
+  const [inbox, setInbox] = useState([]);
+  const [inboxSearch, setInboxSearch] = useState('');
   const [messageTarget, setMessageTarget] = useState('');
   const [messageText, setMessageText] = useState('');
   const [adminUsers, setAdminUsers] = useState([]);
@@ -149,6 +152,9 @@ function SocialGamingApp() {
   useEffect(() => { loadCore(); }, [loadCore]);
   useEffect(() => { window.localStorage.setItem('vibepulse-theme', theme); }, [theme]);
   useEffect(() => { window.localStorage.setItem('vibepulse-language', language); }, [language]);
+  const loadInbox = useCallback(async () => { try { const { data } = await api.get('/messages/inbox'); setInbox(Array.isArray(data) ? data : []); } catch {} }, []);
+  useEffect(() => { const refresh = async () => { try { const { data } = await api.get('/notifications'); setNotifications(Array.isArray(data) ? data : []); } catch {} }; refresh(); const timer = window.setInterval(refresh, 10000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => { if (section !== 'messages') return undefined; loadInbox(); const timer = window.setInterval(() => { loadInbox(); if (messageTarget) api.get('/messages/' + encodeURIComponent(messageTarget)).then(({data}) => setMessages(Array.isArray(data) ? data : [])).catch(() => {}); }, 3000); return () => window.clearInterval(timer); }, [section, messageTarget, loadInbox]);
   const bn = language === 'bn';
   useEffect(() => {
     if (!Object.values(stealCountdowns).some((seconds) => seconds > 0)) return undefined;
