@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function Login() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -27,12 +27,12 @@ export default function Login() {
         <h1 className="text-2xl font-bold text-center mb-6">Sign In</h1>
         {error && <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" placeholder="Email" className="input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
+          <input type="text" placeholder="Username" className="input" value={form.username} onChange={e => setForm({...form, username: e.target.value})} required autoComplete="username" />
           <input type="password" placeholder="Password" className="input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required />
           <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>
         <p className="text-center mt-3 text-sm"><Link to="/forgot-password" className="text-blue-600 hover:underline">Forgot password?</Link></p>
-        <p className="text-center mt-4 text-sm text-gray-600">Don't have an account? <Link to="/register" className="text-blue-600 hover:underline">Sign up</Link></p>
+        <p className="text-center mt-4 text-sm text-gray-600">Don't have an account? <Link to={`/register${new URLSearchParams(window.location.search).get('ref') ? `?ref=${encodeURIComponent(new URLSearchParams(window.location.search).get('ref'))}` : ''}` className="text-blue-600 hover:underline">Sign up</Link></p>
       </div>
     </div>
   );
