@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../services/api';
 import {
   ArrowDownRight,
@@ -46,6 +46,11 @@ function ReactionPractice() {
   const [remaining, setRemaining] = useState(10);
   const [taps, setTaps] = useState(0);
   const [best, setBest] = useState(0);
+  const tapsRef = useRef(0);
+
+  useEffect(() => {
+    tapsRef.current = taps;
+  }, [taps]);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -54,16 +59,17 @@ function ReactionPractice() {
         if (time <= 1) {
           window.clearInterval(interval);
           setActive(false);
-          setBest((previous) => Math.max(previous, taps));
+          setBest((previous) => Math.max(previous, tapsRef.current));
           return 0;
         }
         return time - 1;
       });
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [active, taps]);
+  }, [active]);
 
   const start = () => {
+    tapsRef.current = 0;
     setTaps(0);
     setRemaining(10);
     setActive(true);
