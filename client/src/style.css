@@ -63,3 +63,9 @@
 .profile-edit label{display:grid;gap:6px;font-size:.82rem;font-weight:700}
 .profile-edit input,.profile-edit textarea{width:100%;min-width:0}
 .profile-edit textarea{min-height:84px;resize:vertical}
+
+.wallet-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:20px}
+.wallet-summary>div{border:1px solid var(--line,#e6e8ef);border-radius:12px;padding:12px;min-width:0}
+.wallet-summary p{grid-column:1/-1;color:var(--muted,#687085);font-size:.75rem;margin:0}
+.wallet-summary small{display:block;color:var(--muted,#687085);font-size:.73rem}
+.wallet-summary b{display:block;margin-top:5px;font-size:1.05rem;overflow-wrap:anywhere}
