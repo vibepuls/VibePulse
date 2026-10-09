@@ -23,3 +23,18 @@
 .missionbar{height:7px;background:#eceef5;border-radius:99px;overflow:hidden;margin:12px 0}
 .missionbar span{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border-radius:99px}
 .missionfoot small{color:var(--muted,#687085);font-size:.8rem}
+
+.battleform{display:grid;gap:12px;margin:18px 0 24px;padding:16px;border:1px solid var(--line,#e6e8ef);border-radius:16px}
+.battleform label{display:grid;gap:6px;font-size:.82rem;font-weight:700}
+.battleform input,.battleform select{width:100%;min-width:0}
+.battlecard{margin-top:16px;padding:16px;border:1px solid var(--line,#e6e8ef);border-radius:16px}
+.battleheading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.battleheading small{display:block;color:var(--muted,#687085);font-size:.75rem;margin-top:5px}
+.battlephotos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.battlephotos>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:10px;border-radius:12px;background:rgba(125,125,140,.06)}
+.battlephotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:9px;background:#e7e9f1}
+.battlephotos p{font-size:.82rem;color:var(--muted,#687085);overflow-wrap:anywhere}
+.battlephotos small{font-size:.75rem;color:var(--muted,#687085)}
+.battlephotos button{width:100%;margin-top:auto}
+.battlewinner{margin-top:12px;font-weight:800;color:#7c3aed}
+@media(max-width:520px){.battlephotos{grid-template-columns:1fr}.battleheading{flex-direction:column}}
