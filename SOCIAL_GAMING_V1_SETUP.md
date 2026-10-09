@@ -1,6 +1,6 @@
 # VibePulse Social Gaming V1 — Safe rollout notes
 
-This branch is a first real-backend slice of the Social Gaming Platform. It is intentionally separate from `main` so the current public deployment is not replaced unexpectedly.
+This branch contains the Social Gaming Arena MVP with the active React entry at `client/src/main.jsx` and dashboard in `client/src/pages/SocialGamingApp.jsx`. It is intentionally separate from `main` so the current public deployment is not replaced unexpectedly.
 
 ## Included in this slice
 
