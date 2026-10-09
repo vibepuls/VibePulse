@@ -32,7 +32,7 @@ This is an actively developed MVP, not yet a claim that every item in the full s
    npm --prefix client install
    ```
 
-3. Create `server/.env` using `server/.env.example`.
+3. Create `server/.env` using `server/.env.example` and `client/.env` using `client/.env.example`.
 4. Set `DATABASE_URL` to the Supabase PostgreSQL connection string. Keep it private.
 5. Set `AUTH_SECRET` to a unique, long random secret (32+ characters).
 6. Set `CLIENT_ORIGIN=http://localhost:5173`.
