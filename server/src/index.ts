@@ -497,7 +497,8 @@ app.get('/api/admin/posts', auth, admin, async (_req, res) => {
 });
 
 app.get('/api/points/transactions', auth, async (req:any, res) => {
-  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50));
+  const page = Math.max(1, Number(req.query.page) || 1);
   const transactions = await prisma.pointTransaction.findMany({
     where: { OR: [{ senderId: req.user.id }, { receiverId: req.user.id }] },
     include: {
@@ -505,6 +506,7 @@ app.get('/api/points/transactions', auth, async (req:any, res) => {
       receiver: { select: { username: true, displayName: true } }
     },
     orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * limit,
     take: limit
   });
   res.json(transactions.map((tx:any) => ({
