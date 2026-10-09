@@ -184,12 +184,14 @@ function SocialGamingApp() {
     catch (e) { tell(errText(e), 'error'); }
   };
 
-  const collectPoints = async (username) => {
-    if (!username || username === me?.username) return;
-    setBusy(`steal:${username}`);
+  const collectPoints = async (post) => {
+    if (!post?.id || post.author?.username === me?.username) return;
+    const ownPublicPost = posts.filter((item) => item.authorId === me?.id && item.privacy === 'PUBLIC' && !item.hidden);
+    if (!ownPublicPost.length) return tell('Publish a public post first so stolen points can be added to it.', 'error');
+    setBusy(`steal:${post.id}`);
     try {
-      const { data } = await api.post(`/points/steal/${encodeURIComponent(username)}`);
-      tell(`🥷 +${fmt(data.stolen)} points collected from @${username}.`);
+      const { data } = await api.post(`/posts/${encodeURIComponent(post.id)}/steal`);
+      tell(`🥷 Took ${fmt(data.stolen)} points from @${post.author?.username}'s post and added them to your post.`);
       await Promise.all([refreshMe(), loadCore()]);
     } catch (e) { tell(errText(e, 'Point collection failed.'), 'error'); }
     finally { setBusy(''); }
@@ -553,7 +555,7 @@ function SocialGamingApp() {
                   <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
                     {post.author?.username === me?.username && <button disabled={Boolean(busy) || editCooldownLabel(post.lastEditedAt) !== 'Edit photo/caption'} title={editCooldownLabel(post.lastEditedAt)} onClick={() => editOwnPost(post)} className={secondaryButton}>{busy === `edit:${post.id}` ? 'Saving…' : editCooldownLabel(post.lastEditedAt)}</button>}
                     <button disabled={Boolean(busy)} onClick={() => likePost(post.id)} className={secondaryButton}>{busy === `like:${post.id}` ? '…' : <><Heart size={15} className="mr-1 inline"/>Like</>}</button>
-                    {post.author?.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectPoints(post.author?.username)} className={secondaryButton}>{busy === `steal:${post.author?.username}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3</>}</button>}
+                    {post.author?.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? '…' : <><ArrowDownRight size={15} className="mr-1 inline"/>Steal 3 from post</>}</button>}
                     <button onClick={() => sharePost(post)} className={secondaryButton}><Share2 size={15} className="mr-1 inline"/>Share</button>
                     <button onClick={() => setReportTarget({ type: 'POST', id: post.id })} className={secondaryButton}>Report</button>
                     {post.author?.username && <button onClick={() => { setMessageTarget(post.author.username); setSection('messages'); }} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>Message</button>}
