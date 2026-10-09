@@ -565,7 +565,7 @@ function SocialGamingApp() {
   };
 
   const primaryButton = 'rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50';
-  const secondaryButton = 'rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10 disabled:opacity-50';
+  const secondaryButton = 'inline-flex max-w-full min-w-0 items-center justify-center whitespace-normal break-words rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10 disabled:opacity-50 sm:px-4 sm:py-2.5 sm:text-sm';
   const inputClass = 'mt-1 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-sky-400/70';
 
   return <div className={theme === "dark" ? "min-h-screen w-full max-w-full overflow-x-hidden bg-black text-slate-100" : "light-mode min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900"}>
@@ -586,13 +586,13 @@ function SocialGamingApp() {
       
     </header>
 
-    <div className="mx-auto grid max-w-[1380px] grid-cols-1 gap-5 px-3 pb-24 pt-5 sm:px-5 lg:grid-cols-[220px_minmax(0,650px)_minmax(240px,300px)] lg:gap-7">
+    <div className="mx-auto grid w-full min-w-0 max-w-[1380px] grid-cols-1 gap-4 overflow-x-clip px-2 pb-24 pt-3 sm:gap-5 sm:px-5 sm:pt-5 lg:grid-cols-[220px_minmax(0,650px)_minmax(240px,300px)] lg:gap-7">
       <aside className="hidden lg:block"><nav className="sticky top-24 space-y-1">
         {menu.map(([key, label, Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-base font-semibold transition ${section === key ? 'bg-sky-500/15 text-sky-300' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}><Icon size={21}/><span>{bn ? ({home:'হোম',search:'মানুষ খুঁজুন',ranking:'র‍্যাঙ্কিং',wallet:'ওয়ালেট',missions:'মিশন',battles:'ছবি ব্যাটল',games:'গেম',teams:'টিম',referrals:'রেফারেল',messages:'মেসেজ',notifications:'নোটিফিকেশন',profile:'প্রোফাইল'}[key] || label) : label}</span>{key === 'notifications' && unreadCount > 0 && <span className="ml-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs text-white">{unreadCount}</span>}</button>)}
         {me?.role === 'ADMIN' && <button onClick={() => navTo('admin')} className="flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-slate-300 hover:bg-white/10"><Shield size={21}/>Admin</button>}
         <button onClick={() => { logout(); navigate('/login'); }} className="mt-4 flex w-full items-center gap-4 rounded-full px-4 py-3 text-left text-slate-400 hover:bg-white/10"><LogOut size={20}/>Log out</button>
       </nav></aside>
-      <main className="min-w-0 space-y-5">
+      <main className="w-full min-w-0 max-w-full space-y-5">
       <Notice notice={notice} onClose={() => setNotice(null)}/>
       {loading && !me && <div className="flex items-center gap-2 text-sm text-slate-400"><LoaderCircle size={16} className="animate-spin"/> Loading your feed…</div>}
 
@@ -634,14 +634,14 @@ function SocialGamingApp() {
                     <button onClick={() => document.getElementById("comment-" + post.id)?.focus()} className="flex min-w-0 flex-wrap items-center justify-center gap-1 rounded-lg px-0.5 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 sm:gap-2 sm:px-2 sm:text-sm"><MessageCircle size={17}/>Comment</button>
                     <button onClick={() => sharePost(post)} className="flex min-w-0 flex-wrap items-center justify-center gap-1 rounded-lg px-0.5 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10 sm:gap-2 sm:px-2 sm:text-sm"><Share2 size={17}/>Share</button>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="flex w-full min-w-0 max-w-full flex-wrap items-center gap-1.5 pt-1">
                     {post.author?.username !== me?.username && <>
                       <button disabled={busy === `steal:${post.id}` || (stealCountdowns[post.id] || 0) > 0} onClick={() => collectPoints(post)} className={secondaryButton}>{busy === `steal:${post.id}` ? (bn ? 'নিচ্ছে…' : 'Stealing…') : (stealCountdowns[post.id] || 0) > 0 ? (bn ? `আবার ${stealCountdowns[post.id]}s` : `Steal in ${stealCountdowns[post.id]}s`) : <><ArrowDownRight size={15} className="mr-1 inline"/>{bn ? '৩ পয়েন্ট নাও' : 'Steal 3'}</>}</button>
                       <button type="button" disabled={Boolean(busy)} onClick={() => giftPostAuthor(post)} className={secondaryButton}><Gift size={15} className="mr-1 inline"/>{bn ? 'পয়েন্ট উপহার' : 'Gift points'}</button>
                       <button onClick={() => openConversation(post.author.username)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/>{bn ? 'মেসেজ' : 'Message'}</button>
                     </>}
                     {post.author?.username === me?.username && <button disabled={Boolean(busy)} onClick={() => addPointsToPost(post)} className={secondaryButton}><Plus size={15} className="mr-1 inline"/>{bn ? 'পয়েন্ট যোগ' : 'Add points'}</button>}
-                    <div className="relative ml-auto">
+                    <div className="relative ml-auto shrink-0">
                       <button type="button" aria-label="More post options" title="More options" onClick={() => setOpenPostMenu(openPostMenu === post.id ? null : post.id)} className={secondaryButton}><MoreHorizontal size={18}/></button>
                       {openPostMenu === post.id && <div className="absolute right-0 top-full z-30 mt-1 min-w-44 rounded-xl border border-white/10 bg-slate-900 p-1 shadow-2xl">
                         {post.author?.username === me?.username ? <>
