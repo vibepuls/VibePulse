@@ -88,6 +88,18 @@ app.post('/api/follows/:username', auth, async (req:any, res) => {
   res.json({ following: true });
 });
 
+app.get('/api/follows/me', auth, async (req:any, res) => {
+  const follows = await prisma.follow.findMany({ where: { followerId: req.user.id }, include: { following: { select: { username: true } } } });
+  res.json(follows.map((item:any) => item.following.username));
+});
+
+app.get('/api/admin/posts', auth, admin, async (_req, res) => {
+  res.json(await prisma.post.findMany({
+    include: { author: { select: { username: true, displayName: true } } },
+    orderBy: { createdAt: 'desc' }, take: 100
+  }));
+});
+
 app.get('/api/points/transactions', auth, async (req:any, res) => {
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
   const transactions = await prisma.pointTransaction.findMany({
