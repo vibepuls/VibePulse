@@ -4,11 +4,13 @@ This branch is a first real-backend slice of the Social Gaming Platform. It is i
 
 ## Included in this slice
 
-- Live React/Vite arena reads the signed-in user, photo posts, and leaderboard from the Express/Prisma API.
-- Photo post reward: +10 points for up to five posts per user per calendar day. Additional posts publish without that reward.
-- Point stealing: server-side 3-point transfer and 4-second per-target cooldown.
-- Point gifting and point transaction history.
-- Follow/unfollow and notifications.
+- Live React/Vite arena reads signed-in users, profiles, photo posts, and rankings from the Express/Prisma API.
+- Public/follower/private post visibility, profile editing, image upload to Supabase Storage, and photo post rewards (+10 points for up to five posts per day).
+- Likes and comments award server-side post/author points and create notifications.
+- Point stealing: server-side 3-point transfer, 4-second per-target cooldown, non-negative balances, and a 200-steal daily cap.
+- Point gifting with atomic balance checks and paginated point transaction history.
+- Follow/unfollow, username search, text messaging, and notifications with read actions.
+- Overall/daily/weekly leaderboards, hot-post ranking, rising users, and today's champion.
 - Referral URL, successful-signup reward (+10,000 points to the referrer), and one daily +30 referral-sharing claim.
 - Notification read action.
 - Admin user status controls, point adjustments, report status, and post hide/restore endpoints, with admin action records.
@@ -17,6 +19,7 @@ This branch is a first real-backend slice of the Social Gaming Platform. It is i
 - Photo battles with opponent photo validation, one community vote per user, a 10-minute voting window, and a server-awarded winner reward.
 - Teams with join/leave controls and combined member-point rankings.
 - Quick Tap game with server-created sessions, a score cap, one-time reward claims, and five rewarded rounds per day.
+- One free daily mystery reward after completing a mission or game; possible outcomes are points or a 30-minute shield, with no purchase, entry fee, or wager.
 
 ## Important limits
 
