@@ -71,3 +71,7 @@
 .wallet-summary b{display:block;margin-top:5px;font-size:1.05rem;overflow-wrap:anywhere}
 
 .hot-badge{display:inline-block;margin-left:5px;padding:3px 6px;border-radius:6px;background:rgba(249,115,22,.12);color:#ea580c;font-size:.65rem;vertical-align:middle}
+
+.champion{border-color:rgba(234,179,8,.28)!important;background:linear-gradient(145deg,rgba(234,179,8,.08),rgba(124,58,237,.04))}
+.championname{font-size:1.25rem;font-weight:900;margin-top:8px;overflow-wrap:anywhere}
+.champion p{font-size:.83rem;color:var(--muted,#687085);margin:7px 0 12px}
