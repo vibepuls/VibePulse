@@ -172,7 +172,8 @@ app.get('/api/missions', auth, async (req:any, res) => {
     { key: 'daily-post', title: 'Photo starter', description: 'Publish one photo post today.', actionType: 'POST', target: 1, reward: 100, active: true },
     { key: 'follow-three', title: 'Meet the community', description: 'Follow three players today.', actionType: 'FOLLOW', target: 3, reward: 150, active: true },
     { key: 'comment-five', title: 'Join the conversation', description: 'Write five comments today.', actionType: 'COMMENT', target: 5, reward: 150, active: true },
-    { key: 'like-ten', title: 'Show appreciation', description: 'Like ten posts today.', actionType: 'LIKE', target: 10, reward: 100, active: true }
+    { key: 'like-ten', title: 'Show appreciation', description: 'Like ten posts today.', actionType: 'LIKE', target: 10, reward: 100, active: true },
+    { key: 'shield-posts', title: 'Protect your points', description: 'Publish three photo posts today to earn a 30-minute shield.', actionType: 'POST', target: 3, reward: 0, rewardType: 'SHIELD', active: true }
   ];
   for (const mission of defaults) await prisma.dailyMission.upsert({ where: { key: mission.key }, update: {}, create: mission });
   const rows = await prisma.dailyMission.findMany({
@@ -182,7 +183,7 @@ app.get('/api/missions', auth, async (req:any, res) => {
   });
   res.json(rows.map((mission:any) => {
     const progress = mission.progress[0];
-    return { id: mission.id, key: mission.key, title: mission.title, description: mission.description, target: mission.target, reward: mission.reward, progress: progress?.progress || 0, completed: Boolean(progress?.completed), claimed: Boolean(progress?.claimed) };
+    return { id: mission.id, key: mission.key, title: mission.title, description: mission.description, target: mission.target, reward: mission.reward, rewardType: mission.rewardType, progress: progress?.progress || 0, completed: Boolean(progress?.completed), claimed: Boolean(progress?.claimed) };
   }));
 });
 
@@ -195,7 +196,14 @@ app.post('/api/missions/:id/claim', auth, async (req:any, res) => {
       });
       if (!progress || !progress.completed || progress.claimed) throw new Error('NOT_READY');
       await tx.missionProgress.update({ where: { id: progress.id }, data: { claimed: true } });
-      const user = await tx.user.update({ where: { id: req.user.id }, data: { points: { increment: progress.mission.reward } } });
+      let user:any;
+      if (progress.mission.rewardType === 'SHIELD') {
+        const shieldUntil = new Date(Date.now() + 30 * 60 * 1000);
+        user = await tx.user.update({ where: { id: req.user.id }, data: { shieldUntil } });
+        await tx.notification.create({ data: { userId: user.id, text: `Mission complete: ${progress.mission.title}. Your points are protected for 30 minutes.` } });
+        return { reward: 0, balance: user.points, shieldUntil };
+      }
+      user = await tx.user.update({ where: { id: req.user.id }, data: { points: { increment: progress.mission.reward } } });
       await tx.pointTransaction.create({ data: { receiverId: user.id, amount: progress.mission.reward, type: 'MISSION', note: progress.mission.title } });
       await tx.notification.create({ data: { userId: user.id, text: `Mission complete: ${progress.mission.title}. +${progress.mission.reward} points.` } });
       return { reward: progress.mission.reward, balance: user.points };
