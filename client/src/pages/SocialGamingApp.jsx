@@ -55,8 +55,11 @@ function SocialGamingApp() {
   const location = useLocation();
   const params = useParams();
   const [section, setSection] = useState(() => {
-    const saved = window.sessionStorage.getItem('vibepulse-current-section');
-    return menu.some(([key]) => key === saved) || saved === 'admin' ? saved : 'home';
+    const routeSection = new URLSearchParams(window.location.search).get('section');
+    const routePath = window.location.pathname;
+    if (routePath.startsWith('/profile/')) return 'profile';
+    if (menu.some(([key]) => key === routeSection) || routeSection === 'admin') return routeSection;
+    return 'home';
   });
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedMedia, setExpandedMedia] = useState(null);
@@ -163,10 +166,19 @@ function SocialGamingApp() {
   }, [setUser]);
 
   useEffect(() => { loadCore(); }, [loadCore]);
-  // Preserve the currently open app section across browser refreshes in this tab.
+  // The URL is the source of truth so refreshing a section keeps the same page.
   useEffect(() => {
-    try { window.sessionStorage.setItem('vibepulse-current-section', section); } catch {}
-  }, [section]);
+    const routeSection = new URLSearchParams(location.search).get('section');
+    if (location.pathname.startsWith('/profile/')) {
+      if (section !== 'profile') setSection('profile');
+      return;
+    }
+    if (routeSection && (menu.some(([key]) => key === routeSection) || routeSection === 'admin')) {
+      if (section !== routeSection) setSection(routeSection);
+    } else if (!routeSection && section !== 'home') {
+      setSection('home');
+    }
+  }, [location.pathname, location.search]);
   useEffect(() => { window.localStorage.setItem('vibepulse-theme', theme); }, [theme]);
   useEffect(() => { window.localStorage.setItem('vibepulse-language', language); }, [language]);
   useEffect(() => { try { setDrafts(JSON.parse(window.localStorage.getItem(`vibepulse-drafts:${me?.username || user?.username || 'guest'}`) || '[]')); } catch { setDrafts([]); } }, [me?.username, user?.username]);
@@ -628,8 +640,17 @@ function SocialGamingApp() {
   const navTo = (key) => {
     setMenuOpen(false);
     setSection(key);
+    if (key === 'profile') {
+      const username = me?.username;
+      if (username) {
+        setProfileUsername(username);
+        navigate('/profile/' + encodeURIComponent(username));
+        loadProfile(username);
+      }
+    } else {
+      navigate('/?section=' + encodeURIComponent(key));
+    }
     if (key === 'ranking') loadLeaderboard('overall');
-    if (key === 'profile') { setProfileUsername(me?.username || ''); loadProfile(me?.username); }
     if (key === 'admin') loadAdmin();
   };
 
