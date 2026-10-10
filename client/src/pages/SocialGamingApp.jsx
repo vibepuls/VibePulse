@@ -94,6 +94,7 @@ function SocialGamingApp() {
   const [profileListModal, setProfileListModal] = useState('');
   const [profileListUsers, setProfileListUsers] = useState([]);
   const [profileListLoading, setProfileListLoading] = useState(false);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [followersVisibility, setFollowersVisibility] = useState('PUBLIC');
   const [followingVisibility, setFollowingVisibility] = useState('PUBLIC');
   const [profileUsername, setProfileUsername] = useState('');
@@ -874,7 +875,7 @@ function SocialGamingApp() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 pb-1">
-                {profileUsername === me?.username ? <button type="button" onClick={() => document.getElementById('profile-edit-details')?.scrollIntoView({behavior:'smooth',block:'center'})} className={primaryButton}><Camera size={15} className="mr-1 inline"/> Edit profile</button> : <><button type="button" disabled={busy === `follow:${profileUsername}`} onClick={() => toggleFollow(profileUsername)} className={primaryButton}>{followingUsers.includes(profileUsername) ? 'Following · Unfollow' : 'Follow'}</button><button type="button" onClick={() => openConversation(profileUsername)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/> Message</button><button type="button" onClick={() => setReportTarget({type:'USER',id:profile?.id})} className={secondaryButton}>Report</button></>}
+                {profileUsername === me?.username ? <button type="button" onClick={() => setProfileEditOpen(true)} className={primaryButton}><Camera size={15} className="mr-1 inline"/> Edit profile</button> : <><button type="button" disabled={busy === `follow:${profileUsername}`} onClick={() => toggleFollow(profileUsername)} className={primaryButton}>{followingUsers.includes(profileUsername) ? 'Following · Unfollow' : 'Follow'}</button><button type="button" onClick={() => openConversation(profileUsername)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/> Message</button><button type="button" onClick={() => setReportTarget({type:'USER',id:profile?.id})} className={secondaryButton}>Report</button></>}
               </div>
             </div>
             <p className="mt-3 max-w-3xl whitespace-pre-wrap break-words text-sm text-slate-300">{(profileUsername === me?.username ? me?.bio : profile?.bio) || 'No bio added yet.'}</p>
@@ -886,19 +887,6 @@ function SocialGamingApp() {
             </div>
           </div>
         </section>
-
-        {profileUsername === me?.username && <section id="profile-edit-details" className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5">
-          <details>
-            <summary className="cursor-pointer list-none font-bold text-white"><Camera size={17} className="mr-2 inline"/> Edit profile details <span className="float-right text-sm text-slate-400">Open / Close</span></summary>
-            <form onSubmit={async (event) => { event.preventDefault(); try { let nextAvatar = avatarUrl; if (avatarFile) { const uploadData = new FormData(); uploadData.append('file', avatarFile); const uploaded = await api.post('/media/upload', uploadData); nextAvatar = uploaded.data.url; setAvatarUrl(nextAvatar); setAvatarFile(null); } const {data} = await api.patch('/me/profile',{displayName,bio,avatarUrl:nextAvatar}); setMe(data); setUser(data); setProfile(data); setAvatarUrl(data.avatarUrl || ''); tell('Profile saved.'); } catch(e) { tell(errText(e),'error'); } }} className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="block text-xs font-semibold text-slate-400">Display name<input value={displayName} onChange={e=>setDisplayName(e.target.value)} maxLength={60} className={inputClass}/></label>
-              <label className="block text-xs font-semibold text-slate-400">Profile picture URL<input value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} type="url" placeholder="https://…" className={inputClass}/></label>
-              <label className="block text-xs font-semibold text-slate-400 sm:col-span-2">Bio<textarea value={bio} onChange={e=>setBio(e.target.value)} maxLength={500} className={inputClass}/></label>
-              <label className="block text-xs font-semibold text-slate-400 sm:col-span-2">Upload profile picture (max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>setAvatarFile(e.target.files?.[0]||null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-2 file:text-slate-800"/></label>
-              <div className="sm:col-span-2"><button className={primaryButton}>Save changes</button></div>
-            </form>
-          </details>
-        </section>}
 
         <section id="profile-posts-section" className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045]">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
@@ -939,6 +927,30 @@ function SocialGamingApp() {
         <Panel title="Global notification" subtitle="Send an announcement to all active users."><form onSubmit={sendGlobalNotice} className="space-y-3"><textarea value={globalText} onChange={(e) => setGlobalText(e.target.value)} maxLength={500} className={inputClass} placeholder="Announcement…"/><button className={primaryButton}>Send notification</button></form></Panel>
         <Panel title="Latest audit logs" subtitle="Administrative changes"><div className="space-y-2">{auditLogs.map((log) => <div key={log.id} className="rounded-lg bg-slate-950/50 p-3 text-sm"><strong>{log.action}</strong> · {log.actor?.username} · {log.details}<div className="text-xs text-slate-500">{dateText(log.createdAt)}</div></div>)}</div></Panel>
         <Panel title="Recent transactions" subtitle="Latest 200 point movements"><div className="space-y-2">{adminTransactions.map((tx) => <div key={tx.id} className="rounded-lg bg-slate-950/50 p-3 text-sm">{tx.type} · {fmt(tx.amount)} · @{tx.sender?.username || 'system'} → @{tx.receiver?.username || '—'}<div className="text-xs text-slate-500">{dateText(tx.createdAt)}</div></div>)}</div></Panel>
+      </div>}
+
+      {profileEditOpen && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/75 p-3" onClick={() => setProfileEditOpen(false)}>
+        <section role="dialog" aria-modal="true" onClick={event => event.stopPropagation()} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-slate-900 p-5">
+          <div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-bold text-white">Edit profile</h2><button type="button" onClick={() => setProfileEditOpen(false)} className={secondaryButton}><X size={18}/></button></div>
+          <form onSubmit={async event => {
+            event.preventDefault(); setBusy('profile-save');
+            try {
+              let nextAvatar = avatarUrl.trim(); let nextCover = coverUrl.trim();
+              if (avatarFile) { if (avatarFile.size > 5*1024*1024) throw new Error('Profile picture must be 5 MB or smaller.'); const fd = new FormData(); fd.append('file', avatarFile); const upload = await api.post('/media/upload', fd); nextAvatar = upload.data.url; }
+              if (coverFile) { if (coverFile.size > 5*1024*1024) throw new Error('Cover photo must be 5 MB or smaller.'); const fd = new FormData(); fd.append('file', coverFile); const upload = await api.post('/media/upload', fd); nextCover = upload.data.url; }
+              const {data} = await api.patch('/me/profile', {displayName:displayName.trim(), bio:bio.trim(), avatarUrl:nextAvatar, coverUrl:nextCover});
+              setMe(data); setUser(data); setProfile(data); setAvatarUrl(data.avatarUrl||''); setCoverUrl(data.coverUrl||''); setAvatarFile(null); setCoverFile(null); setProfileEditOpen(false); tell('Profile updated successfully.');
+            } catch(e) { tell(errText(e, 'Could not save profile. Check image storage configuration.'), 'error'); } finally { setBusy(''); }
+          }} className="grid gap-4">
+            <label className="text-sm text-slate-300">Display name<input required value={displayName} onChange={e=>setDisplayName(e.target.value)} maxLength={60} className={inputClass}/></label>
+            <label className="text-sm text-slate-300">Bio<textarea value={bio} onChange={e=>setBio(e.target.value)} maxLength={500} rows={3} className={inputClass}/></label>
+            <label className="text-sm text-slate-300">Profile picture<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>setAvatarFile(e.target.files?.[0]||null)} className="mt-2 block w-full text-xs text-slate-300"/></label>
+            <label className="text-sm text-slate-300">Cover photo<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>setCoverFile(e.target.files?.[0]||null)} className="mt-2 block w-full text-xs text-slate-300"/></label>
+            <label className="text-sm text-slate-300">Profile picture URL (optional)<input type="url" value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} placeholder="https://…" className={inputClass}/></label>
+            <label className="text-sm text-slate-300">Cover photo URL (optional)<input type="url" value={coverUrl} onChange={e=>setCoverUrl(e.target.value)} placeholder="https://…" className={inputClass}/></label>
+            <div className="flex justify-end gap-2"><button type="button" onClick={()=>setProfileEditOpen(false)} className={secondaryButton}>Cancel</button><button disabled={busy==='profile-save'} className={primaryButton}>{busy==='profile-save'?'Saving…':'Save changes'}</button></div>
+          </form>
+        </section>
       </div>}
 
       {profileListModal && <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4" onClick={() => setProfileListModal('')}>
