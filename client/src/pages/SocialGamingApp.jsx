@@ -71,7 +71,15 @@ function SocialGamingApp() {
   const avatarPickerRef = useRef(null);
   const coverPickerRef = useRef(null);
   const [me, setMe] = useState(user);
-  const [posts, setPosts] = useState([]);
+  // Restore the last visible feed immediately after refresh; the API may take
+  // several seconds to wake up on the free hosting plan.
+  const [posts, setPosts] = useState(() => {
+    try {
+      const key = `vibepulse-feed:${user?.username || 'guest'}`;
+      const cached = JSON.parse(window.localStorage.getItem(key) || '[]');
+      return Array.isArray(cached) ? cached : [];
+    } catch { return []; }
+  });
   const [commentDrafts, setCommentDrafts] = useState({});
   const [leaderboard, setLeaderboard] = useState([]);
   const [dailyLeaderboard, setDailyLeaderboard] = useState([]);
@@ -179,6 +187,14 @@ function SocialGamingApp() {
   }, [setUser]);
 
   useEffect(() => { loadCore(); }, [loadCore]);
+  // Keep a small per-account feed cache so a reload never shows an empty feed
+  // while the server is waking up or returning a temporary empty response.
+  useEffect(() => {
+    const key = `vibepulse-feed:${me?.username || user?.username || 'guest'}`;
+    try {
+      if (posts.length > 0) window.localStorage.setItem(key, JSON.stringify(posts.slice(0, 50)));
+    } catch { /* Storage can be unavailable or full; the live feed still works. */ }
+  }, [posts, me?.username, user?.username]);
   // The URL is the source of truth so refreshing a section keeps the same page.
   useEffect(() => {
     const routeSection = new URLSearchParams(location.search).get('section');
