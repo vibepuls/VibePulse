@@ -749,7 +749,7 @@ function SocialGamingApp() {
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg">
           <div className="relative h-40 bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-56">
             <div className="absolute inset-0 opacity-25" style={{backgroundImage:'radial-gradient(circle at 20% 30%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 25%)'}} />
-            {profileUsername === me?.username && <button type="button" onClick={() => avatarPickerRef.current?.click()} className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit profile photo</button>}
+            {profileUsername === me?.username && <button type="button" onClick={() => document.getElementById('profile-edit-details')?.scrollIntoView({behavior:'smooth',block:'center'})} className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit profile photo</button>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
             <div className="-mt-12 flex flex-col gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
