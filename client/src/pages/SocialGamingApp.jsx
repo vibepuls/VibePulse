@@ -952,7 +952,7 @@ function SocialGamingApp() {
             </div>
             <p className="mt-3 max-w-3xl whitespace-pre-wrap break-words text-sm text-slate-300">{(profileUsername === me?.username ? me?.bio : profile?.bio) || 'No bio added yet.'}</p>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-sm text-slate-400">
-              <button type="button" onClick={() => document.getElementById('profile-posts-section')?.scrollIntoView({behavior:'smooth',block:'start'})} className="rounded-lg px-1 py-1 text-left hover:bg-white/10"><strong className="text-white">{fmt((profileUsername === me?.username ? posts.filter(p=>p.author?.username===me?.username).length : profile?.postCount) || 0)}</strong> Posts</button>
+              <button type="button" onClick={() => document.getElementById('profile-posts-section')?.scrollIntoView({behavior:'smooth',block:'start'})} className="rounded-lg px-1 py-1 text-left hover:bg-white/10"><strong className="text-white">{fmt((profileUsername === me?.username ? profilePosts.length : profile?.postCount) || 0)}</strong> Posts</button>
               <button type="button" onClick={() => openProfileList('followers')} className="rounded-lg px-1 py-1 text-left hover:bg-white/10"><strong className="text-white">{fmt(profile?.followers || 0)}</strong> Followers</button>
               <button type="button" onClick={() => openProfileList('following')} className="rounded-lg px-1 py-1 text-left hover:bg-white/10"><strong className="text-white">{fmt(profile?.following || 0)}</strong> Following</button>
               <span className="rounded-lg px-1 py-1"><strong className="text-amber-300">{fmt((profileUsername === me?.username ? me?.points : profile?.points) || 0)}</strong> Points</span>
@@ -966,7 +966,7 @@ function SocialGamingApp() {
             {profileUsername === me?.username && <button type="button" onClick={() => {setSection('home');setComposeOpen(true);}} className={primaryButton}><Plus size={15} className="mr-1 inline"/> Create post</button>}
           </div>
           <div className="space-y-4 p-3 sm:p-5">
-            {(profileUsername === me?.username ? posts.filter(p=>p.author?.username===me?.username) : profilePosts).map(post => <article key={post.id} className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
+            {profilePosts.map(post => <article key={post.id} className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
               <div className="flex items-center gap-3 p-4">
                 <Avatar user={post.author || (profileUsername === me?.username ? me : profile)} />
                 <div className="min-w-0 flex-1"><div className="break-words font-bold text-white">{post.author?.displayName || post.author?.username || profile?.displayName || me?.displayName}</div><div className="text-xs text-slate-400">@{post.author?.username || profileUsername || me?.username} · {dateText(post.createdAt)}</div></div>
@@ -984,7 +984,7 @@ function SocialGamingApp() {
               {post.author?.username !== me?.username && <div className="flex flex-wrap gap-2 px-4 pt-3"><button type="button" disabled={busy===`steal:${post.id}`||(stealCountdowns[post.id]||0)>0} onClick={()=>collectPoints(post)} className={secondaryButton}>{(stealCountdowns[post.id]||0)>0?`Steal in ${stealCountdowns[post.id]}s`:'Steal 3'}</button><button type="button" onClick={()=>giftPostAuthor(post)} className={secondaryButton}><Gift size={14} className="mr-1 inline"/> Gift points</button><button type="button" onClick={()=>openConversation(post.author.username)} className={secondaryButton}>Message</button></div>}
               <form onSubmit={event=>addComment(event,post.id)} className="flex min-w-0 gap-2 p-4"><input id={'profile-comment-'+post.id} value={commentDrafts[post.id]||''} onChange={event=>setCommentDrafts(old=>({...old,[post.id]:event.target.value}))} maxLength={1000} placeholder="Write a comment…" className={inputClass+' min-w-0 flex-1'}/><button disabled={busy===`comment:${post.id}`} className={secondaryButton} aria-label="Send comment"><Send size={15}/></button></form>
             </article>)}
-            {(profileUsername === me?.username ? posts.filter(p=>p.author?.username===me?.username) : profilePosts).length === 0 && <div className="py-12 text-center"><ImagePlus size={38} className="mx-auto mb-3 text-slate-400"/><h3 className="font-bold text-white">No posts yet</h3><p className="mt-1 text-sm text-slate-400">Photos and updates will appear here.</p>{profileUsername === me?.username && <button type="button" onClick={()=>{setSection('home');setComposeOpen(true);}} className={primaryButton+' mt-4'}>Create your first post</button>}</div>}
+            {profilePosts.length === 0 && <div className="py-12 text-center"><ImagePlus size={38} className="mx-auto mb-3 text-slate-400"/><h3 className="font-bold text-white">No posts yet</h3><p className="mt-1 text-sm text-slate-400">Photos and updates will appear here.</p>{profileUsername === me?.username && <button type="button" onClick={()=>{setSection('home');setComposeOpen(true);}} className={primaryButton+' mt-4'}>Create your first post</button>}</div>}
           </div>
         </section>
       </div>}
