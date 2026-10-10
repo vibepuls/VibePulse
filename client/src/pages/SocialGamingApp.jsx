@@ -804,9 +804,18 @@ function SocialGamingApp() {
               {imageFile && <div className="flex items-center gap-3 rounded-xl border border-emerald-400/30 p-2"><span className="text-emerald-300">Photo selected</span><span className="min-w-0 flex-1 truncate text-xs text-slate-400">{imageFile.name}</span><button type="button" onClick={() => {setImageFile(null);const input=document.getElementById('arena-photo-file');if(input)input.value='';}} className="text-xs text-rose-300">Remove</button></div>}
               <label className="block rounded-xl border border-white/10 p-3 text-xs font-semibold text-slate-300">Add photo (JPG, PNG, WEBP, GIF; up to 5 MB)<input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/></label>
               <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Photo URL (optional)" className={inputClass}/>
-              <div className="rounded-xl border border-white/10 p-3">
-                <button type="button" onClick={() => { setComposeOpen(false); setComposerOption('battle'); setBattleTab('home'); navTo('battles'); window.setTimeout(() => document.getElementById('create-photo-battle')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 180); }} className={secondaryButton + ' w-full justify-center gap-2 py-3'}><Swords size={17}/> Create a Photo Battle</button>
-                <p className="mt-2 text-xs leading-5 text-slate-400">Photo Battles use two photos that are already posted. Publish your photo first, then choose your photo and an opponent’s public photo below to start a battle.</p>
+              <div id="inline-photo-battle" className="rounded-xl border border-white/10 p-3">
+                <button type="button" onClick={() => setComposerOption(composerOption === 'battle' ? '' : 'battle')} className={secondaryButton + ' w-full justify-center gap-2 py-3'}><Swords size={17}/> {composerOption === 'battle' ? 'Close Photo Battle' : 'Create a Photo Battle'}</button>
+                <p className="mt-2 text-xs leading-5 text-slate-400">Create the battle here without leaving Home. Your photo and the opponent’s photo must already be posted.</p>
+                {composerOption === 'battle' && <div className="mt-3 space-y-3 rounded-xl bg-slate-950/40 p-3">
+                  <label className="block text-xs text-slate-400">Opponent username<input value={opponentUsername} onChange={e => setOpponentUsername(e.target.value)} className={inputClass} placeholder="Enter username (without @)"/></label>
+                  <button type="button" onClick={loadOpponentPosts} className={secondaryButton}>Load photos</button>
+                  {myPosts.length > 0 && opponentPosts.length > 0 && <div className="space-y-3">
+                    <label className="block text-xs text-slate-400">Your photo<select value={myBattlePostId} onChange={e => setMyBattlePostId(e.target.value)} className={inputClass}>{myPosts.map(p => <option key={p.id} value={p.id}>{p.caption || 'Photo post'} · {p.id.slice(0,8)}</option>)}</select></label>
+                    <label className="block text-xs text-slate-400">Opponent photo<select value={opponentBattlePostId} onChange={e => setOpponentBattlePostId(e.target.value)} className={inputClass}>{opponentPosts.map(p => <option key={p.id} value={p.id}>{p.caption || 'Photo post'} · {p.id.slice(0,8)}</option>)}</select></label>
+                    <button type="button" disabled={busy === 'battle'} onClick={() => createBattle({ preventDefault: () => {} })} className={primaryButton}>{busy === 'battle' ? 'Creating battle…' : 'Challenge to battle'}</button>
+                  </div>}
+                </div>}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-400">Post visibility: {privacy==='PUBLIC'?'Everyone':privacy==='FOLLOWERS'?'Followers only':'Only you'}</div><div className="flex flex-wrap gap-2"><button type="button" onClick={saveDraft} className={secondaryButton}>Save draft</button><button type="button" onClick={() => {setComposeOpen(false);setComposerOption('');}} className={secondaryButton}>Close</button><button disabled={busy === 'post'} className={primaryButton}>{busy === 'post' ? 'Posting…' : 'Post'}</button></div></div>
             </form>}
@@ -1001,16 +1010,16 @@ function SocialGamingApp() {
 
       {section === 'profile' && <div className="mx-auto w-full max-w-5xl space-y-4">
         <section className="overflow-visible rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg">
-          <div className="relative z-0 h-44 overflow-hidden rounded-t-2xl bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-60">
+          <div className="relative h-44 overflow-hidden rounded-t-2xl bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-60">
             {(profileUsername === me?.username ? me?.coverUrl : profile?.coverUrl) && <img src={profileUsername === me?.username ? me.coverUrl : profile.coverUrl} alt="Cover photo" className="absolute inset-0 h-full w-full object-cover" />}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
             {profileUsername === me?.username && <button type="button" onClick={() => coverPickerRef.current?.click()} className="absolute bottom-3 right-3 z-30 rounded-full bg-black/70 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit cover photo</button>}
             {profileUsername === me?.username && <input ref={coverPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>5*1024*1024){tell('Cover photo must be 5 MB or smaller.','error');event.target.value='';return;} try {setBusy('cover-upload');const fd=new FormData();fd.append('file',file);const uploaded=await api.post('/media/upload',fd);const {data}=await api.patch('/me/profile',{coverUrl:uploaded.data.url});setMe(data);setUser(data);setProfile(data);setCoverUrl(data.coverUrl||uploaded.data.url);tell('Cover photo updated.');}catch(err){tell(errText(err,'Could not upload cover photo. Check that image storage is configured on the server.'),'error');}finally{setBusy('');event.target.value='';}}}/>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
-            <div className="relative z-30 -mt-12 flex flex-col gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+            <div className="relative z-20 -mt-12 flex flex-col gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 items-end gap-3">
-                <div className="relative z-40 shrink-0 rounded-full border-4 border-white bg-white shadow-xl ring-2 ring-black/10 dark:border-slate-900">
+                <div className="relative z-30 shrink-0 rounded-full border-4 border-white bg-white shadow-xl ring-2 ring-black/10 dark:border-slate-900">
                   {((profileUsername === me?.username ? me : profile)?.avatarUrl) ? <img src={(profileUsername === me?.username ? me : profile).avatarUrl} alt="" className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"/> : <div className="grid h-24 w-24 place-items-center rounded-full bg-sky-500 text-3xl font-black text-white sm:h-32 sm:w-32">{((profileUsername === me?.username ? me?.displayName : profile?.displayName) || profileUsername || 'U').slice(0,1).toUpperCase()}</div>}
                 </div>
                 <div className="min-w-0 pb-1">
