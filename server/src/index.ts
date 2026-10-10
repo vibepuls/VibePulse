@@ -52,7 +52,8 @@ async function recordMissionProgress(tx:any,userId:string,actionType:string,amou
   }
 }
 app.post('/api/media/upload', auth, (req:any,res:any,next:any)=>upload.single('file')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid image upload'});next();}), async (req:any, res) => {
-  const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/+$/, '');
+  // Accept the project root URL; trim accidental /rest/v1 or /storage/v1 suffixes from hosting settings.
+  const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, '').replace(/\/(?:rest\/v1|storage\/v1)$/i, '');
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'vibepulse-media';
   if (!supabaseUrl || !serviceKey) return res.status(503).json({ error: 'Image uploads are not configured on the API yet' });
