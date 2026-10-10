@@ -242,6 +242,21 @@ function SocialGamingApp() {
       setSection('home');
     }
   }, [location.pathname, location.search]);
+  // Keep the current section in the address bar even when a button changes section directly.
+  // This makes browser refresh/back-forward restore the page the user was viewing.
+  useEffect(() => {
+    if (location.pathname.startsWith('/profile/')) return;
+    const params = new URLSearchParams(location.search);
+    const currentSection = params.get('section') || 'home';
+    if (currentSection === section) return;
+    params.set('section', section);
+    if (section === 'profile') {
+      if (profileUsername) params.set('username', profileUsername);
+    } else {
+      params.delete('username');
+    }
+    navigate({ pathname: '/', search: params.toString() ? `?${params.toString()}` : '' }, { replace: true });
+  }, [section, profileUsername, location.pathname, location.search, navigate]);
   useEffect(() => { window.localStorage.setItem('vibepulse-theme', theme); }, [theme]);
   useEffect(() => { window.localStorage.setItem('vibepulse-language', language); }, [language]);
   useEffect(() => { try { setDrafts(JSON.parse(window.localStorage.getItem(`vibepulse-drafts:${me?.username || user?.username || 'guest'}`) || '[]')); } catch { setDrafts([]); } }, [me?.username, user?.username]);
