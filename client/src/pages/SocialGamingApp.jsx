@@ -162,7 +162,16 @@ function SocialGamingApp() {
       if (jobs[i].status === 'fulfilled') setter(jobs[i].value.data);
     };
     take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); setAvatarUrl(value.avatarUrl || ''); setCoverUrl(value.coverUrl || ''); });
-    take(1, setPosts); take(2, setLeaderboard); take(3, setMissions);
+    take(1, (value) => {
+      // Some API/proxy responses can briefly return an empty or wrapped feed while
+      // the database wakes up. Never blank an already-visible feed in that case.
+      const next = Array.isArray(value) ? value
+        : Array.isArray(value?.posts) ? value.posts
+        : Array.isArray(value?.items) ? value.items
+        : null;
+      if (next === null) return;
+      setPosts((current) => (next.length === 0 && current.length > 0 ? current : next));
+    }); take(2, setLeaderboard); take(3, setMissions);
     take(4, setAchievements); take(5, setBattles); take(6, setTeams);
     take(7, setNotifications); take(8, setTransactions); take(9, setReferral);
     take(10, setDailyLeaderboard); take(11, setTrending); take(12, setRisingUsers);
