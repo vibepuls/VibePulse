@@ -543,7 +543,7 @@ app.get('/api/users/:username/profile', async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { username },
     select: {
-      id: true, username: true, displayName: true, bio: true, avatarUrl: true,
+      id: true, username: true, displayName: true, bio: true, avatarUrl: true, coverUrl: true,
       followersVisibility: true, followingVisibility: true,
       points: true, role: true, status: true, createdAt: true,
       _count: { select: { followsIn: true, followsOut: true, posts: true } }
