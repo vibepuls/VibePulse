@@ -555,6 +555,28 @@ app.get('/api/users/:username/posts', async (req:any, res) => {
   res.json(posts);
 });
 
+app.get('/api/users/:username/followers', async (req:any, res) => {
+  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() }, select: { id: true, status: true } });
+  if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
+  const follows = await prisma.follow.findMany({
+    where: { followingId: target.id },
+    include: { follower: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+    orderBy: { createdAt: 'desc' }, take: 200
+  });
+  res.json(follows.map((item:any) => item.follower));
+});
+
+app.get('/api/users/:username/following', async (req:any, res) => {
+  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() }, select: { id: true, status: true } });
+  if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
+  const follows = await prisma.follow.findMany({
+    where: { followerId: target.id },
+    include: { following: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
+    orderBy: { createdAt: 'desc' }, take: 200
+  });
+  res.json(follows.map((item:any) => item.following));
+});
+
 app.post('/api/follows/:username', auth, async (req:any, res) => {
   const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() } });
   if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
