@@ -695,6 +695,19 @@ function SocialGamingApp() {
     catch (e) { tell(errText(e), 'error'); }
   };
 
+  // Home feed uses a Facebook-style relevance heuristic (freshness + engagement + followed creators), never point totals.
+  const homeFeedPosts = [...recentPosts].sort((a, b) => {
+    const score = (post) => {
+      const ageHours = Math.max(0, (Date.now() - new Date(post.createdAt || Date.now()).getTime()) / 3600000);
+      const freshness = 36 / Math.pow(ageHours + 2, 0.72);
+      const likes = Number(post._count?.likes || post.likesCount || 0);
+      const comments = Number(post._count?.comments || post.commentsCount || 0);
+      const fromFollowed = followingUsers.includes(post.author?.username) ? 5 : 0;
+      const ownPost = post.author?.username === me?.username ? 0.5 : 0;
+      return freshness + Math.log1p(likes) * 1.8 + Math.log1p(comments) * 3.2 + fromFollowed + ownPost;
+    };
+    return score(b) - score(a);
+  });
   const myRank = leaderboard.findIndex((item) => item.username === me?.username) + 1;
   const unreadCount = notifications.filter((item) => !item.readAt && !/new message|sent you a message|message from @|sent a message/i.test(item.text || "")).length;
   const unreadMessagesCount = inbox.reduce((sum, item) => sum + Number(item.unread || 0), 0);
@@ -751,7 +764,7 @@ function SocialGamingApp() {
 
       {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
-          <section className="space-y-3"><div className="flex items-center justify-between"><h1 className="text-xl font-extrabold text-white">Home</h1><button type="button" title="Refresh feed" aria-label="Refresh feed" onClick={loadCore} disabled={loading} className="rounded-full border border-white/10 p-2 text-slate-500 hover:bg-white/10 disabled:opacity-50"><RefreshCw size={16} className={loading?'animate-spin':''}/></button></div><div role="tablist" aria-label="Feed type" className="grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.04] p-1"><button type="button" role="tab" aria-selected={feedTab==='home'} onClick={()=>{setFeedTab('home');navigate('/?section=home&feed=home');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='home'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Home</button><button type="button" role="tab" aria-selected={feedTab==='ranking'} onClick={()=>{setFeedTab('ranking');navigate('/?section=home&feed=ranking');loadLeaderboard('overall');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='ranking'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Ranking</button></div><p className="text-xs text-slate-500">{feedTab==='home'?'Latest posts first':'Posts ordered by points'}</p></section>
+          <section className="space-y-3"><div className="flex items-center justify-between"><h1 className="text-xl font-extrabold text-white">Home</h1><button type="button" title="Refresh feed" aria-label="Refresh feed" onClick={loadCore} disabled={loading} className="rounded-full border border-white/10 p-2 text-slate-500 hover:bg-white/10 disabled:opacity-50"><RefreshCw size={16} className={loading?'animate-spin':''}/></button></div><div role="tablist" aria-label="Feed type" className="grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.04] p-1"><button type="button" role="tab" aria-selected={feedTab==='home'} onClick={()=>{setFeedTab('home');navigate('/?section=home&feed=home');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='home'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Home</button><button type="button" role="tab" aria-selected={feedTab==='ranking'} onClick={()=>{setFeedTab('ranking');navigate('/?section=home&feed=ranking');loadLeaderboard('overall');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='ranking'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Ranking</button></div><p className="text-xs text-slate-500">{feedTab==='home'?'Recommended for you · fresh posts, engagement and people you follow':'Posts ordered by points'}</p></section>
           <section className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 shadow-lg">
             <div className="flex items-center gap-3">
               <Avatar user={me}/>
@@ -777,7 +790,7 @@ function SocialGamingApp() {
           </section>
           <Panel title="" subtitle="">
             <div className="grid gap-4 grid-cols-1">
-              {(feedTab === 'home' ? recentPosts : posts).map((post) => <article id={"post-" + post.id} key={post.id} className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
+              {(feedTab === 'home' ? homeFeedPosts : posts).map((post) => <article id={"post-" + post.id} key={post.id} className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
                 {post.imageUrl && <button type="button" onClick={() => setExpandedMedia({url:post.imageUrl,caption:post.caption||'',author:post.author?.username||''})} className="mt-2 block w-full cursor-zoom-in sm:mt-3"><img src={post.imageUrl} alt={post.caption || 'Community photo'} loading="lazy" className="block h-auto max-h-[65vh] w-full max-w-full rounded-xl border border-white/10 bg-black object-contain sm:max-h-[620px] sm:rounded-2xl"/></button>}
                 <div className="min-w-0 space-y-3 p-2 sm:p-4">
                   <div className="flex items-center gap-3"><Avatar user={post.author}/><button onClick={() => { setProfileUsername(post.author?.username); loadProfile(post.author?.username); setSection('profile'); }} className="min-w-0 text-left"><div className="truncate text-sm font-bold text-white">{post.author?.displayName || post.author?.username}</div><div className="text-xs text-slate-500">@{post.author?.username}</div></button><span className="ml-auto text-sm font-black text-amber-200">⚡ {fmt(post.points)}</span></div>
@@ -811,7 +824,7 @@ function SocialGamingApp() {
                   </form>
                 </div>
               </article>)}
-              {(feedTab === 'home' ? recentPosts : posts).length === 0 && <p className="py-8 text-center text-sm text-slate-500 md:col-span-2">No posts yet. Publish the first photo to start the arena.</p>}
+              {(feedTab === 'home' ? homeFeedPosts : posts).length === 0 && <p className="py-8 text-center text-sm text-slate-500 md:col-span-2">No posts yet. Publish the first photo to start the arena.</p>}
             </div>
           </Panel>
         </div>
