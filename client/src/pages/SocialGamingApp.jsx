@@ -57,7 +57,7 @@ function SocialGamingApp() {
   const [section, setSection] = useState(() => {
     const routeSection = new URLSearchParams(window.location.search).get('section');
     const routePath = window.location.pathname;
-    if (routePath.startsWith('/profile/')) return 'profile';
+    if (routePath.startsWith('/profile/') || routeSection === 'profile') return 'profile';
     if (menu.some(([key]) => key === routeSection) || routeSection === 'admin') return routeSection;
     return 'home';
   });
@@ -202,13 +202,15 @@ function SocialGamingApp() {
   }, [posts, location.search]);
 
   useEffect(() => {
-    const username = params.username;
-    if (location.pathname.startsWith('/profile/') && username) {
+    const routeUsername = new URLSearchParams(location.search).get('username');
+    const routeSection = new URLSearchParams(location.search).get('section');
+    const username = params.username || routeUsername || (routeSection === 'profile' ? me?.username : '');
+    if ((location.pathname.startsWith('/profile/') || routeSection === 'profile') && username) {
       setSection('profile');
-      setProfileUsername(username);
+      if (profileUsername !== username) setProfileUsername(username);
       loadProfile(username);
     }
-  }, [location.pathname, params.username]);
+  }, [location.pathname, location.search, params.username, me?.username]);
 
   const openProfileList = async (kind) => {
     const username = profileUsername || me?.username;
@@ -644,7 +646,7 @@ function SocialGamingApp() {
       const username = me?.username;
       if (username) {
         setProfileUsername(username);
-        navigate('/profile/' + encodeURIComponent(username));
+        navigate('/?section=profile&username=' + encodeURIComponent(username));
         loadProfile(username);
       }
     } else {
@@ -778,7 +780,7 @@ function SocialGamingApp() {
       {section === 'ranking' && <div className="space-y-5">
         <div className="flex flex-wrap gap-2">{[['overall','Overall'],['daily','Today'],['weekly','This week']].map(([key,label]) => <button key={key} onClick={() => loadLeaderboard(key)} className={section === 'ranking' && period === key ? primaryButton : secondaryButton}>{label}</button>)}</div>
         <Panel title="Leaderboard" subtitle="Current points or net point movement for the selected period.">
-          <div className="space-y-2">{leaderboard.map((player) => <div key={player.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-950/50 p-3"><div className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-sm font-black">{player.rank}</div><Avatar user={player}/><div className="min-w-0 flex-1"><button onClick={() => { setProfileUsername(player.username); loadProfile(player.username); setSection('profile'); }} className="font-bold text-white">@{player.username}</button><div className="text-xs text-slate-500">{player.displayName}</div></div><div className="text-right"><div className="font-black text-amber-200">{fmt(player.points)} pts</div>{player.periodPoints !== undefined && <div className="text-xs text-slate-500">Period: {fmt(player.periodPoints)}</div>}</div>{player.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectFromPlayer(player.username)} className={secondaryButton}>{busy === `steal-player:${player.username}` || busy === `steal:${player.username}` ? '…' : 'Steal 3'}</button>}</div>)}</div>
+          <div className="space-y-2">{leaderboard.map((player) => <div key={player.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-950/50 p-3"><div className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-sm font-black">{player.rank}</div><Avatar user={player}/><div className="min-w-0 flex-1"><button onClick={() => { setProfileUsername(player.username); setSection('profile'); navigate('/?section=profile&username=' + encodeURIComponent(player.username)); loadProfile(player.username); }} className="font-bold text-white">@{player.username}</button><div className="text-xs text-slate-500">{player.displayName}</div></div><div className="text-right"><div className="font-black text-amber-200">{fmt(player.points)} pts</div>{player.periodPoints !== undefined && <div className="text-xs text-slate-500">Period: {fmt(player.periodPoints)}</div>}</div>{player.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectFromPlayer(player.username)} className={secondaryButton}>{busy === `steal-player:${player.username}` || busy === `steal:${player.username}` ? '…' : 'Steal 3'}</button>}</div>)}</div>
         </Panel>
       </div>}
 
@@ -933,7 +935,7 @@ function SocialGamingApp() {
         <section role="dialog" aria-modal="true" aria-label={profileListModal === 'followers' ? 'Followers' : 'Following'} onClick={event => event.stopPropagation()} className="max-h-[80vh] w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3"><h2 className="font-bold text-white">{profileListModal === 'followers' ? 'Followers' : 'Following'}</h2><button type="button" onClick={() => setProfileListModal('')} className="rounded-full p-2 text-slate-300 hover:bg-white/10" aria-label="Close"><X size={18}/></button></div>
           <div className="max-h-[65vh] space-y-2 overflow-y-auto p-3">
-            {profileListLoading ? <p className="p-5 text-center text-sm text-slate-400">Loading…</p> : profileListUsers.map((person, index) => <div key={person.id || person.username || index} className="flex items-center gap-3 rounded-xl p-3 hover:bg-white/5"><Avatar user={{...person, displayName:person.displayName || person.full_name, avatarUrl:person.avatarUrl || person.profile_picture}}/><div className="min-w-0 flex-1"><div className="break-words font-semibold text-white">{person.displayName || person.full_name || person.username}</div><div className="text-xs text-slate-400">@{person.username}</div></div>{person.username && person.username !== me?.username && <button type="button" onClick={() => { setProfileListModal(''); setProfileUsername(person.username); loadProfile(person.username); setSection('profile'); }} className={secondaryButton}>View profile</button>}</div>)}
+            {profileListLoading ? <p className="p-5 text-center text-sm text-slate-400">Loading…</p> : profileListUsers.map((person, index) => <div key={person.id || person.username || index} className="flex items-center gap-3 rounded-xl p-3 hover:bg-white/5"><Avatar user={{...person, displayName:person.displayName || person.full_name, avatarUrl:person.avatarUrl || person.profile_picture}}/><div className="min-w-0 flex-1"><div className="break-words font-semibold text-white">{person.displayName || person.full_name || person.username}</div><div className="text-xs text-slate-400">@{person.username}</div></div>{person.username && person.username !== me?.username && <button type="button" onClick={() => { setProfileListModal(''); setProfileUsername(person.username); setSection('profile'); navigate('/?section=profile&username=' + encodeURIComponent(person.username)); loadProfile(person.username); }} className={secondaryButton}>View profile</button>}</div>)}
             {!profileListLoading && profileListUsers.length === 0 && <p className="p-5 text-center text-sm text-slate-400">No {profileListModal} to show yet.</p>}
           </div>
         </section>
