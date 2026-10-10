@@ -836,7 +836,6 @@ function SocialGamingApp() {
       </aside>
       <aside className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-black/95 px-1 py-2 backdrop-blur lg:hidden"><nav className="mx-auto flex max-w-xl items-center justify-around gap-1">
         {menu.filter(([key]) => ['home','search','messages','notifications','profile'].includes(key)).map(([key,label,Icon]) => <button key={key} onClick={() => navTo(key)} className={`relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[10px] font-semibold ${section === key ? 'text-sky-300' : 'text-slate-400'}`}><Icon size={21}/><span>{label === 'Find Players' ? 'Search' : label === 'Notifications' ? 'Alerts' : label}</span>{key === 'notifications' && unreadCount > 0 && <span className="absolute right-4 top-0 h-2 w-2 rounded-full bg-rose-500"/>}{key === 'messages' && unreadMessagesCount > 0 && <span className="absolute right-4 top-0 h-2 w-2 rounded-full bg-sky-500"/>}</button>)}
-        <button onClick={() => { logout(); navigate('/login'); }} className="flex min-w-0 flex-1 flex-col items-center gap-1 py-1.5 text-[10px] text-slate-400"><LogOut size={21}/><span>Logout</span></button>
       </nav></aside>
     </div>
   </div>;
