@@ -74,7 +74,7 @@ function SocialGamingApp() {
   // Restore the last visible feed immediately after refresh; the API may take
   // several seconds to wake up on the free hosting plan.
   const [recentPosts, setRecentPosts] = useState([]);
-  const [feedTab, setFeedTab] = useState('home');
+  const [feedTab, setFeedTab] = useState(() => new URLSearchParams(window.location.search).get('feed') === 'ranking' ? 'ranking' : 'home');
   const [posts, setPosts] = useState(() => {
     try {
       const key = `vibepulse-feed:${user?.username || 'guest'}`;
@@ -722,7 +722,7 @@ function SocialGamingApp() {
 
       {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
-          <section className="space-y-3"><div className="flex items-center justify-between"><h1 className="text-xl font-extrabold text-white">Home</h1><button type="button" title="Refresh feed" aria-label="Refresh feed" onClick={loadCore} disabled={loading} className="rounded-full border border-white/10 p-2 text-slate-500 hover:bg-white/10 disabled:opacity-50"><RefreshCw size={16} className={loading?'animate-spin':''}/></button></div><div role="tablist" aria-label="Feed type" className="grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.04] p-1"><button type="button" role="tab" aria-selected={feedTab==='home'} onClick={()=>setFeedTab('home')} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='home'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Home</button><button type="button" role="tab" aria-selected={feedTab==='ranking'} onClick={()=>{setFeedTab('ranking');loadLeaderboard('overall');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='ranking'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Ranking</button></div><p className="text-xs text-slate-500">{feedTab==='home'?'Latest posts first':'Posts ordered by points'}</p></section>
+          <section className="space-y-3"><div className="flex items-center justify-between"><h1 className="text-xl font-extrabold text-white">Home</h1><button type="button" title="Refresh feed" aria-label="Refresh feed" onClick={loadCore} disabled={loading} className="rounded-full border border-white/10 p-2 text-slate-500 hover:bg-white/10 disabled:opacity-50"><RefreshCw size={16} className={loading?'animate-spin':''}/></button></div><div role="tablist" aria-label="Feed type" className="grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.04] p-1"><button type="button" role="tab" aria-selected={feedTab==='home'} onClick={()=>{setFeedTab('home');navigate('/?section=home&feed=home');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='home'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Home</button><button type="button" role="tab" aria-selected={feedTab==='ranking'} onClick={()=>{setFeedTab('ranking');navigate('/?section=home&feed=ranking');loadLeaderboard('overall');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='ranking'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Ranking</button></div><p className="text-xs text-slate-500">{feedTab==='home'?'Latest posts first':'Posts ordered by points'}</p></section>
           <section className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 shadow-lg">
             <div className="flex items-center gap-3">
               <Avatar user={me}/>
