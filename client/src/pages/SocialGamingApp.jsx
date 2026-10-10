@@ -197,7 +197,7 @@ function SocialGamingApp() {
     setProfileListLoading(true);
     try {
       const endpoint = kind === 'followers' ? 'followers' : 'following';
-      const { data } = await api.get(`/users/profile/${encodeURIComponent(username)}/${endpoint}`);
+      const { data } = await api.get(`/users/${encodeURIComponent(username)}/${endpoint}`);
       setProfileListUsers(Array.isArray(data) ? data : []);
     } catch (e) {
       tell(errText(e, 'Could not load this list.'), 'error');
@@ -767,14 +767,14 @@ function SocialGamingApp() {
 
       {section === 'profile' && <div className="mx-auto w-full max-w-5xl space-y-4">
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg">
-          <div className="relative z-0 h-40 bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-56">
+          <div className="relative isolate h-32 overflow-visible bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-44">
             <div className="absolute inset-0 opacity-25" style={{backgroundImage:'radial-gradient(circle at 20% 30%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 25%)'}} />
             {profileUsername === me?.username && <button type="button" onClick={() => document.getElementById('profile-edit-details')?.scrollIntoView({behavior:'smooth',block:'center'})} className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit profile photo</button>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
-            <div className="-mt-12 flex flex-col gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
+            <div className="relative z-10 -mt-8 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 items-end gap-3">
-                <div className="relative z-10 shrink-0 rounded-full border-4 border-white bg-white shadow-md dark:border-slate-900">
+                <div className="relative z-20 shrink-0 rounded-full border-4 border-white bg-white shadow-xl dark:border-slate-900">
                   {((profileUsername === me?.username ? me : profile)?.avatarUrl) ? <img src={(profileUsername === me?.username ? me : profile).avatarUrl} alt="" className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"/> : <div className="grid h-24 w-24 place-items-center rounded-full bg-sky-500 text-3xl font-black text-white sm:h-32 sm:w-32">{((profileUsername === me?.username ? me?.displayName : profile?.displayName) || profileUsername || 'U').slice(0,1).toUpperCase()}</div>}
                 </div>
                 <div className="min-w-0 pb-1">
