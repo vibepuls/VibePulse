@@ -54,7 +54,10 @@ function SocialGamingApp() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
-  const [section, setSection] = useState('home');
+  const [section, setSection] = useState(() => {
+    const saved = window.sessionStorage.getItem('vibepulse-current-section');
+    return menu.some(([key]) => key === saved) || saved === 'admin' ? saved : 'home';
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedMedia, setExpandedMedia] = useState(null);
   const [theme, setTheme] = useState(() => window.localStorage.getItem('vibepulse-theme') || 'light');
@@ -160,6 +163,10 @@ function SocialGamingApp() {
   }, [setUser]);
 
   useEffect(() => { loadCore(); }, [loadCore]);
+  // Preserve the currently open app section across browser refreshes in this tab.
+  useEffect(() => {
+    try { window.sessionStorage.setItem('vibepulse-current-section', section); } catch {}
+  }, [section]);
   useEffect(() => { window.localStorage.setItem('vibepulse-theme', theme); }, [theme]);
   useEffect(() => { window.localStorage.setItem('vibepulse-language', language); }, [language]);
   useEffect(() => { try { setDrafts(JSON.parse(window.localStorage.getItem(`vibepulse-drafts:${me?.username || user?.username || 'guest'}`) || '[]')); } catch { setDrafts([]); } }, [me?.username, user?.username]);
