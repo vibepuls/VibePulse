@@ -36,7 +36,7 @@ function hasValidImageSignature(buffer:Buffer) {
 
 async function auth(req:any,res:any,next:any){const h=req.headers.authorization;if(!h?.startsWith('Bearer '))return res.status(401).json({error:'Please log in'});try{const payload=jwt.verify(h.slice(7),AUTH_SECRET) as any;const current=await prisma.user.findUnique({where:{id:String(payload.id)},select:{id:true,username:true,role:true,status:true}});if(!current||current.status!=='ACTIVE')return res.status(403).json({error:'Account is not active'});req.user={id:current.id,username:current.username,role:current.role};next();}catch{return res.status(401).json({error:'Invalid or expired session'});}}
 function admin(req:any,res:any,next:any){if(req.user?.role!=='ADMIN') return res.status(403).json({error:'Admin access required'}); next();}
-const safeUser=(u:any)=>({id:u.id,username:u.username,displayName:u.displayName,bio:u.bio,avatarUrl:u.avatarUrl,points:u.points,role:u.role,createdAt:u.createdAt});
+const safeUser=(u:any)=>({id:u.id,username:u.username,displayName:u.displayName,bio:u.bio,avatarUrl:u.avatarUrl,coverUrl:u.coverUrl,points:u.points,role:u.role,createdAt:u.createdAt});
 const dayKey = () => new Date().toISOString().slice(0, 10);
 async function recordMissionProgress(tx:any,userId:string,actionType:string,amount=1) {
   await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${userId}), hashtext(${actionType}))`;
@@ -83,15 +83,18 @@ app.post('/api/auth/login',async(req,res)=>{const data=z.object({username:z.stri
 app.get('/api/me',auth,async(req:any,res)=>{const u=await prisma.user.findUnique({where:{id:req.user.id}});if(!u)return res.status(404).json({error:'User not found'});res.json(safeUser(u));});
 app.patch('/api/me/profile', auth, async (req:any, res) => {
   const parsed = z.object({
-    displayName: z.string().trim().min(1).max(60),
-    bio: z.string().max(500).default(''),
-    avatarUrl: z.string().url().max(2000).optional().or(z.literal(''))
+    displayName: z.string().trim().min(1).max(60).optional(),
+    bio: z.string().max(500).optional(),
+    avatarUrl: z.string().url().max(2000).optional().or(z.literal('')),
+    coverUrl: z.string().url().max(2000).optional().or(z.literal(''))
   }).safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: 'Display name, bio or avatar URL is invalid' });
-  const updated = await prisma.user.update({
-    where: { id: req.user.id },
-    data: { displayName: parsed.data.displayName, bio: parsed.data.bio, avatarUrl: parsed.data.avatarUrl || null }
-  });
+  if (!parsed.success || Object.keys(parsed.data).length === 0) return res.status(400).json({ error: 'Profile details are invalid' });
+  const data:any = {};
+  if (parsed.data.displayName !== undefined) data.displayName = parsed.data.displayName;
+  if (parsed.data.bio !== undefined) data.bio = parsed.data.bio;
+  if (parsed.data.avatarUrl !== undefined) data.avatarUrl = parsed.data.avatarUrl || null;
+  if (parsed.data.coverUrl !== undefined) data.coverUrl = parsed.data.coverUrl || null;
+  const updated = await prisma.user.update({ where: { id: req.user.id }, data });
   res.json(safeUser(updated));
 });
 app.get('/api/users',async(req,res)=>{const q=String(req.query.q||'').slice(0,40);const users=await prisma.user.findMany({where:{status:'ACTIVE',OR:[{username:{contains:q,mode:'insensitive'}},{displayName:{contains:q,mode:'insensitive'}}]},select:{id:true,username:true,displayName:true,avatarUrl:true,points:true},take:20,orderBy:{points:'desc'}});res.json(users);});
