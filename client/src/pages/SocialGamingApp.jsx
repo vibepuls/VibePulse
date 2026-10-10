@@ -131,6 +131,11 @@ function SocialGamingApp() {
   const [busy, setBusy] = useState('');
   const [caption, setCaption] = useState('');
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composerOption, setComposerOption] = useState('');
+  const [postTags, setPostTags] = useState('');
+  const [postLocation, setPostLocation] = useState('');
+  const [postFeeling, setPostFeeling] = useState('');
+  const [postEvent, setPostEvent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [privacy, setPrivacy] = useState('PUBLIC');
   const [imageFile, setImageFile] = useState(null);
@@ -414,8 +419,10 @@ function SocialGamingApp() {
         finalUrl = uploaded.data.url;
       }
       if (!finalUrl && !caption.trim()) return tell('Write something or choose a photo first.', 'error');
-      await api.post('/posts', { imageUrl: finalUrl || undefined, caption: caption.trim(), privacy });
-      setCaption(''); setImageUrl(''); setImageFile(null);
+      const details = [postTags.trim() ? `Tagged people: ${postTags.trim()}` : '', postLocation.trim() ? `Location: ${postLocation.trim()}` : '', postFeeling.trim() ? `Feeling: ${postFeeling.trim()}` : '', postEvent.trim() ? `Event: ${postEvent.trim()}` : ''].filter(Boolean);
+      const fullCaption = [caption.trim(), ...details].filter(Boolean).join('\n');
+      await api.post('/posts', { imageUrl: finalUrl || undefined, caption: fullCaption, privacy });
+      setCaption(''); setImageUrl(''); setImageFile(null); setPostTags(''); setPostLocation(''); setPostFeeling(''); setPostEvent(''); setComposerOption('');
       const fileInput = document.getElementById('arena-photo-file'); if (fileInput) fileInput.value = '';
       tell('Post published! The first five posts each UTC day can earn points.');
       await loadCore();
@@ -791,18 +798,25 @@ function SocialGamingApp() {
               <button type="button" title="Create post" onClick={() => setComposeOpen(true)} className="rounded-lg p-1.5 text-rose-400 hover:bg-white/10"><Camera size={23}/></button>
             </div>
             {composeOpen && <form onSubmit={createPost} className="mt-3 space-y-3 border-t border-white/10 pt-3">
-              <textarea autoFocus value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-20 resize-y`}/>
-              <label className="block text-xs font-semibold text-slate-400">Add photo (optional, up to 5 MB)
-                <input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/>
-              </label>
-              <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Photo link (optional)" className={inputClass}/>
-              {imageFile && <p className="text-xs text-emerald-300">Selected: {imageFile.name}</p>}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <select value={privacy} onChange={(e) => setPrivacy(e.target.value)} className={inputClass + ' max-w-48'}>
-                  <option value="PUBLIC">Public</option><option value="FOLLOWERS">Followers</option><option value="PRIVATE">Private</option>
-                </select>
-                <div className="flex flex-wrap gap-2"><button type="button" onClick={saveDraft} className={secondaryButton}>Save draft</button><button type="button" onClick={() => setComposeOpen(false)} className={secondaryButton}>Close</button><button disabled={busy === 'post'} className={primaryButton}>{busy === 'post' ? 'Posting…' : 'Post'}</button></div>
-              </div>
+              <div className="flex items-center gap-3"><Avatar user={me} /><div className="min-w-0"><p className="break-words font-bold text-white">{me?.displayName || me?.username}</p><select aria-label="Post audience" value={privacy} onChange={(e) => setPrivacy(e.target.value)} className="mt-1 rounded-full border border-white/10 bg-slate-900 px-3 py-1 text-xs text-slate-200"><option value="PUBLIC">🌐 Public</option><option value="FOLLOWERS">👥 Followers</option><option value="PRIVATE">🔒 Only me</option></select></div></div>
+              <textarea autoFocus value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-28 resize-y text-base`}/>
+              {imageFile && <div className="flex items-center gap-3 rounded-xl border border-emerald-400/30 p-2"><span className="text-emerald-300">Photo selected</span><span className="min-w-0 flex-1 truncate text-xs text-slate-400">{imageFile.name}</span><button type="button" onClick={() => {setImageFile(null);const input=document.getElementById('arena-photo-file');if(input)input.value='';}} className="text-xs text-rose-300">Remove</button></div>}
+              {composerOption === 'photo' && <label className="block rounded-xl border border-white/10 p-3 text-xs font-semibold text-slate-300">Photos (JPG, PNG, WEBP, GIF; up to 5 MB)<input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/></label>}
+              {composerOption === 'tag' && <input value={postTags} onChange={e=>setPostTags(e.target.value)} placeholder="People's usernames (comma separated)" className={inputClass}/>}
+              {composerOption === 'location' && <input value={postLocation} onChange={e=>setPostLocation(e.target.value)} placeholder="Add a location" maxLength={120} className={inputClass}/>}
+              {composerOption === 'feeling' && <input value={postFeeling} onChange={e=>setPostFeeling(e.target.value)} placeholder="What are you feeling or doing?" maxLength={120} className={inputClass}/>}
+              {composerOption === 'event' && <input value={postEvent} onChange={e=>setPostEvent(e.target.value)} placeholder="Event name" maxLength={120} className={inputClass}/>}
+              <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Photo URL (optional)" className={inputClass}/>
+              <div className="rounded-xl border border-white/10 p-3"><p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Add to your post</p><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <button type="button" onClick={() => {setComposerOption(composerOption==='photo'?'':'photo');if(composerOption!=='photo')window.setTimeout(()=>document.getElementById('arena-photo-file')?.click(),0);}} className={secondaryButton}>🖼️ Photos/Videos</button>
+                <button type="button" onClick={() => setComposerOption(composerOption==='tag'?'':'tag')} className={secondaryButton}>👥 Tag people</button>
+                <button type="button" onClick={() => setComposerOption(composerOption==='location'?'':'location')} className={secondaryButton}>📍 Add location</button>
+                <button type="button" onClick={() => setComposerOption(composerOption==='feeling'?'':'feeling')} className={secondaryButton}>🙂 Feeling/activity</button>
+                <button type="button" onClick={() => {setComposerOption('');navTo('messages');}} className={secondaryButton}>💬 Get messages</button>
+                <button type="button" onClick={() => setComposerOption(composerOption==='event'?'':'event')} className={secondaryButton}>📅 Create Event</button>
+                <button type="button" onClick={() => tell('Live video is not enabled on VibePulse yet.','error')} className={secondaryButton}>🔴 Go live</button>
+              </div></div>
+              <div className="flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-400">Post visibility: {privacy==='PUBLIC'?'Everyone':privacy==='FOLLOWERS'?'Followers only':'Only you'}</div><div className="flex flex-wrap gap-2"><button type="button" onClick={saveDraft} className={secondaryButton}>Save draft</button><button type="button" onClick={() => {setComposeOpen(false);setComposerOption('');}} className={secondaryButton}>Close</button><button disabled={busy === 'post'} className={primaryButton}>{busy === 'post' ? 'Posting…' : 'Post'}</button></div></div>
             </form>}
             {drafts.length > 0 && <div className="mt-3 border-t border-white/10 pt-3"><h3 className="mb-2 text-sm font-bold text-white">Saved drafts ({drafts.length})</h3><div className="space-y-2">{drafts.map((draft) => <div key={draft.id} className="flex items-center gap-2 rounded-xl bg-slate-950/40 p-2"><button type="button" onClick={() => { setCaption(draft.caption || ''); setImageUrl(draft.imageUrl || ''); setPrivacy(draft.privacy || 'PUBLIC'); setImageFile(null); setComposeOpen(true); }} className="min-w-0 flex-1 truncate text-left text-sm">{draft.caption || draft.imageUrl || 'Photo draft'}</button><button type="button" onClick={() => setDrafts((old) => old.filter((item) => item.id !== draft.id))} className="p-2 text-rose-300" aria-label="Delete draft"><Trash2 size={15}/></button></div>)}</div></div>}
           </section>
@@ -951,9 +965,9 @@ function SocialGamingApp() {
             {profileUsername === me?.username && <input ref={coverPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>5*1024*1024){tell('Cover photo must be 5 MB or smaller.','error');event.target.value='';return;} try {setBusy('cover-upload');const fd=new FormData();fd.append('file',file);const uploaded=await api.post('/media/upload',fd);const {data}=await api.patch('/me/profile',{coverUrl:uploaded.data.url});setMe(data);setUser(data);setProfile(data);setCoverUrl(data.coverUrl||uploaded.data.url);tell('Cover photo updated.');}catch(err){tell(errText(err,'Could not upload cover photo. Check that image storage is configured on the server.'),'error');}finally{setBusy('');event.target.value='';}}}/>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
-            <div className="relative z-30 -mt-3 flex flex-col gap-3 sm:-mt-8 sm:flex-row sm:items-end sm:justify-between">
+            <div className="relative z-30 -mt-12 flex flex-col gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 items-end gap-3">
-                <div className="relative z-30 shrink-0 rounded-full border-4 border-white bg-white shadow-xl ring-2 ring-black/10 dark:border-slate-900">
+                <div className="relative z-40 shrink-0 rounded-full border-4 border-white bg-white shadow-xl ring-2 ring-black/10 dark:border-slate-900">
                   {((profileUsername === me?.username ? me : profile)?.avatarUrl) ? <img src={(profileUsername === me?.username ? me : profile).avatarUrl} alt="" className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"/> : <div className="grid h-24 w-24 place-items-center rounded-full bg-sky-500 text-3xl font-black text-white sm:h-32 sm:w-32">{((profileUsername === me?.username ? me?.displayName : profile?.displayName) || profileUsername || 'U').slice(0,1).toUpperCase()}</div>}
                 </div>
                 <div className="min-w-0 pb-1">
