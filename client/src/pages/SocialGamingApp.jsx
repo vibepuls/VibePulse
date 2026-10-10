@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Activity, ArrowDownRight, Bell, Camera, Check, ChevronRight, Crown, Gift, Menu, X,
   Gamepad2, Heart, ImagePlus, LoaderCircle, LogOut, MessageCircle, Plus,
-  RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap, Sun, Moon, Languages, MoreHorizontal, Trash2
+  RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap, Sun, Moon, Languages, MoreHorizontal, Trash2, Settings
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -58,7 +58,7 @@ function SocialGamingApp() {
     const routeSection = new URLSearchParams(window.location.search).get('section');
     const routePath = window.location.pathname;
     if (routePath.startsWith('/profile/') || routeSection === 'profile') return 'profile';
-    if (menu.some(([key]) => key === routeSection) || routeSection === 'admin') return routeSection;
+    if (menu.some(([key]) => key === routeSection) || ['admin', 'privacy'].includes(routeSection)) return routeSection;
     return 'home';
   });
   const [menuOpen, setMenuOpen] = useState(false);
@@ -176,7 +176,7 @@ function SocialGamingApp() {
       if (section !== 'profile') setSection('profile');
       return;
     }
-    if (routeSection && (menu.some(([key]) => key === routeSection) || routeSection === 'admin')) {
+    if (routeSection && (menu.some(([key]) => key === routeSection) || ['admin', 'privacy'].includes(routeSection))) {
       if (section !== routeSection) setSection(routeSection);
     } else if (!routeSection && section !== 'home') {
       setSection('home');
@@ -680,7 +680,7 @@ function SocialGamingApp() {
       </div>
       
     </header>
-    {menuOpen && <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setMenuOpen(false)}><nav onClick={(e) => e.stopPropagation()} className="absolute left-0 top-0 h-full w-[min(86vw,320px)] overflow-y-auto border-r border-slate-200 bg-white p-4 pt-20 text-slate-900 shadow-2xl"><div className="mb-4 flex items-center justify-between"><strong className="text-lg">Menu & Settings</strong><button onClick={() => setMenuOpen(false)} className="rounded-lg p-2"><X size={20}/></button></div><div className="mb-4 flex gap-2"><button onClick={() => setTheme('light')} className="flex-1 rounded-xl border px-3 py-2 text-sm">☀ Light</button><button onClick={() => setTheme('dark')} className="flex-1 rounded-xl border px-3 py-2 text-sm">☾ Night</button><button onClick={() => setLanguage(bn ? 'en' : 'bn')} className="rounded-xl border px-3 py-2 text-sm">{bn ? 'EN' : 'বাংলা'}</button></div>{menu.map(([key,label,Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold ${section===key?'bg-sky-100 text-sky-800':'text-slate-700 hover:bg-slate-100'}`}><Icon size={19}/>{label}{key==='messages'&&unreadMessagesCount>0?<span className="ml-auto rounded-full bg-sky-600 px-2 text-white">{unreadMessagesCount}</span>:null}{key==='notifications'&&unreadCount>0?<span className="ml-auto rounded-full bg-rose-600 px-2 text-white">{unreadCount}</span>:null}</button>)}{me?.role==='ADMIN'&&<button onClick={()=>navTo('admin')} className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-slate-700"><Shield size={19}/>Admin</button>}<button onClick={()=>{logout();navigate('/login');}} className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-rose-700"><LogOut size={19}/>Log out</button></nav></div>}
+    {menuOpen && <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setMenuOpen(false)}><nav onClick={(e) => e.stopPropagation()} className="absolute left-0 top-0 h-full w-[min(86vw,320px)] overflow-y-auto border-r border-slate-200 bg-white p-4 pt-20 text-slate-900 shadow-2xl"><div className="mb-4 flex items-center justify-between"><strong className="text-lg">Menu & Settings</strong><button onClick={() => setMenuOpen(false)} className="rounded-lg p-2"><X size={20}/></button></div><div className="mb-4 flex gap-2"><button onClick={() => setTheme('light')} className="flex-1 rounded-xl border px-3 py-2 text-sm">☀ Light</button><button onClick={() => setTheme('dark')} className="flex-1 rounded-xl border px-3 py-2 text-sm">☾ Night</button><button onClick={() => setLanguage(bn ? 'en' : 'bn')} className="rounded-xl border px-3 py-2 text-sm">{bn ? 'EN' : 'বাংলা'}</button></div>{menu.map(([key,label,Icon]) => <button key={key} onClick={() => navTo(key)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold ${section===key?'bg-sky-100 text-sky-800':'text-slate-700 hover:bg-slate-100'}`}><Icon size={19}/>{label}{key==='messages'&&unreadMessagesCount>0?<span className="ml-auto rounded-full bg-sky-600 px-2 text-white">{unreadMessagesCount}</span>:null}{key==='notifications'&&unreadCount>0?<span className="ml-auto rounded-full bg-rose-600 px-2 text-white">{unreadCount}</span>:null}</button>)}{me?.role==='ADMIN'&&<button onClick={()=>navTo('admin')} className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-slate-700"><Shield size={19}/>Admin</button>}<button onClick={() => navTo('privacy')} className={`mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold ${section === 'privacy' ? 'bg-sky-100 text-sky-800' : 'text-slate-700 hover:bg-slate-100'}`}><Settings size={19}/>Privacy settings</button><button onClick={()=>{logout();navigate('/login');}} className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-rose-700"><LogOut size={19}/>Log out</button></nav></div>}
 
     <div className="mx-auto grid w-full min-w-0 max-w-[1380px] grid-cols-1 gap-4 overflow-x-clip px-2 pb-24 pt-3 sm:gap-5 sm:px-5 sm:pt-5 lg:grid-cols-[220px_minmax(0,650px)_minmax(240px,300px)] lg:gap-7">
       <aside className="hidden lg:block"><nav className="sticky top-24 space-y-1">
@@ -820,6 +820,38 @@ function SocialGamingApp() {
 <div className="flex-1 space-y-2 overflow-y-auto p-4">{messages.map(msg=><div key={msg.id} className={'flex min-w-0 max-w-full '+(msg.senderId===me?.id?'justify-end':'justify-start')}><div className={'w-fit min-w-0 max-w-[88%] overflow-hidden rounded-2xl px-3 py-2 text-sm '+(msg.senderId===me?.id?'bg-sky-600 text-white':'bg-slate-800 text-slate-100')}><div style={{overflowWrap:"anywhere",wordBreak:"break-word",whiteSpace:"pre-wrap",maxWidth:"100%"}} className="block min-w-0">{msg.body}</div><div className="mt-1 flex items-center justify-end gap-2 text-[10px] opacity-70"><span>{dateText(msg.createdAt)}</span>{msg.senderId===me?.id&&<button type="button" title="Delete message" aria-label="Delete message" onClick={async()=>{if(!window.confirm("Delete this sent message?"))return;try{await api.delete("/messages/"+msg.id);setMessages(old=>old.filter(x=>x.id!==msg.id));loadInbox();}catch(e){tell(errText(e,"Could not delete message."),"error");}}} className="rounded p-1 hover:bg-white/10"><Trash2 size={13}/></button>}</div></div></div>)}{messages.length===0&&<p className="py-8 text-center text-sm text-slate-500">Say hello to start chatting.</p>}</div>
 <form onSubmit={sendMessage} className="flex w-full min-w-0 gap-2 border-t border-white/10 p-3"><input value={messageText} onChange={e=>setMessageText(e.target.value)} maxLength={2000} placeholder="Aa" className={inputClass}/><button disabled={busy==='message'||!messageTarget} className={primaryButton} aria-label="Send message"><Send size={17}/></button></form></>:<div className="grid flex-1 place-items-center p-6 text-center"><div><MessageCircle size={42} className="mx-auto mb-3 text-slate-500"/><h3 className="font-bold text-white">Your messages</h3><p className="mt-1 text-sm text-slate-400">Choose a chat or start a new message.</p></div></div>}</section></div>}
 
+      {section === 'privacy' && <div className="mx-auto w-full max-w-3xl space-y-4">
+        <Panel title="Privacy settings" subtitle="Choose who can see your followers and following lists.">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5">
+          <h2 className="font-bold text-white">Privacy settings</h2>
+          <p className="mt-1 text-sm text-slate-400">Choose who can see your followers and following lists.</p>
+          <form onSubmit={async (event) => {
+            event.preventDefault();
+            try {
+              const { data } = await api.patch('/me/privacy', { followersVisibility, followingVisibility });
+              setFollowersVisibility(data.followersVisibility);
+              setFollowingVisibility(data.followingVisibility);
+              setProfile((old) => old ? { ...old, ...data } : old);
+              tell('Privacy settings saved.');
+            } catch (e) { tell(errText(e, 'Could not save privacy settings.'), 'error'); }
+          }} className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm text-slate-300">Who can see your followers
+              <select value={followersVisibility} onChange={(e) => setFollowersVisibility(e.target.value)} className={inputClass}>
+                <option value="PUBLIC">Everyone</option><option value="FOLLOWERS">Followers only</option><option value="PRIVATE">Only me</option>
+              </select>
+            </label>
+            <label className="block text-sm text-slate-300">Who can see your following
+              <select value={followingVisibility} onChange={(e) => setFollowingVisibility(e.target.value)} className={inputClass}>
+                <option value="PUBLIC">Everyone</option><option value="FOLLOWERS">Followers only</option><option value="PRIVATE">Only me</option>
+              </select>
+            </label>
+            <div className="sm:col-span-2"><button className={primaryButton}>Save privacy settings</button></div>
+          </form>
+        </section>
+
+        </Panel>
+      </div>}
+
       {section === 'notifications' && <Panel title="Notifications" subtitle="Point transfers, follows, battle invitations and system notices."><div className="space-y-2">{notifications.filter((n) => !/new message|sent you a message|message from @|sent a message/i.test(n.text || "")).map((n) => <div key={n.id} className={`flex items-start gap-3 rounded-xl p-3 ${n.readAt ? 'bg-slate-950/30' : 'bg-sky-500/10'}`}><Bell size={17} className="mt-1 shrink-0 text-sky-300"/><div className="min-w-0 flex-1"><p className="text-sm text-slate-200">{n.text}</p><p className="mt-1 text-xs text-slate-500">{dateText(n.createdAt)}</p></div>{!n.readAt && <button onClick={() => markNotification(n)} className="text-xs font-semibold text-sky-300">{bn ? "পড়া হয়েছে" : "Mark read"}</button>}</div>)}{notifications.length === 0 && <p className="py-6 text-sm text-slate-500">No notifications yet.</p>}</div></Panel>}
 
       {section === 'profile' && <div className="mx-auto w-full max-w-5xl space-y-4">
@@ -866,33 +898,6 @@ function SocialGamingApp() {
               <div className="sm:col-span-2"><button className={primaryButton}>Save changes</button></div>
             </form>
           </details>
-        </section>}
-
-        {profileUsername === me?.username && <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5">
-          <h2 className="font-bold text-white">Privacy settings</h2>
-          <p className="mt-1 text-sm text-slate-400">Choose who can see your followers and following lists.</p>
-          <form onSubmit={async (event) => {
-            event.preventDefault();
-            try {
-              const { data } = await api.patch('/me/privacy', { followersVisibility, followingVisibility });
-              setFollowersVisibility(data.followersVisibility);
-              setFollowingVisibility(data.followingVisibility);
-              setProfile((old) => old ? { ...old, ...data } : old);
-              tell('Privacy settings saved.');
-            } catch (e) { tell(errText(e, 'Could not save privacy settings.'), 'error'); }
-          }} className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm text-slate-300">Who can see your followers
-              <select value={followersVisibility} onChange={(e) => setFollowersVisibility(e.target.value)} className={inputClass}>
-                <option value="PUBLIC">Everyone</option><option value="FOLLOWERS">Followers only</option><option value="PRIVATE">Only me</option>
-              </select>
-            </label>
-            <label className="block text-sm text-slate-300">Who can see your following
-              <select value={followingVisibility} onChange={(e) => setFollowingVisibility(e.target.value)} className={inputClass}>
-                <option value="PUBLIC">Everyone</option><option value="FOLLOWERS">Followers only</option><option value="PRIVATE">Only me</option>
-              </select>
-            </label>
-            <div className="sm:col-span-2"><button className={primaryButton}>Save privacy settings</button></div>
-          </form>
         </section>}
 
         <section id="profile-posts-section" className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045]">
