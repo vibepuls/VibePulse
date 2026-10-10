@@ -67,7 +67,9 @@ function SocialGamingApp() {
   const [language, setLanguage] = useState(() => window.localStorage.getItem('vibepulse-language') || 'en');
   const [openPostMenu, setOpenPostMenu] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const avatarPickerRef = useRef(null);
+  const coverPickerRef = useRef(null);
   const [me, setMe] = useState(user);
   const [posts, setPosts] = useState([]);
   const [commentDrafts, setCommentDrafts] = useState({});
@@ -117,6 +119,7 @@ function SocialGamingApp() {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+  const [coverUrl, setCoverUrl] = useState(user?.coverUrl || '');
   const [giftUsername, setGiftUsername] = useState('');
   const [giftAmount, setGiftAmount] = useState('100');
   const [teamName, setTeamName] = useState('');
@@ -157,7 +160,7 @@ function SocialGamingApp() {
       // Do not replace the feed with an empty list during a slow/retrying request.
       if (jobs[i].status === 'fulfilled') setter(jobs[i].value.data);
     };
-    take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); setAvatarUrl(value.avatarUrl || ''); });
+    take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); setAvatarUrl(value.avatarUrl || ''); setCoverUrl(value.coverUrl || ''); });
     take(1, setPosts); take(2, setLeaderboard); take(3, setMissions);
     take(4, setAchievements); take(5, setBattles); take(6, setTeams);
     take(7, setNotifications); take(8, setTransactions); take(9, setReferral);
@@ -821,12 +824,14 @@ function SocialGamingApp() {
 
       {section === 'profile' && <div className="mx-auto w-full max-w-5xl space-y-4">
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg">
-          <div className="relative z-0 h-32 overflow-visible bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-44">
-            <div className="absolute inset-0 opacity-25" style={{backgroundImage:'radial-gradient(circle at 20% 30%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 25%)'}} />
-            {profileUsername === me?.username && <button type="button" onClick={() => document.getElementById('profile-edit-details')?.scrollIntoView({behavior:'smooth',block:'center'})} className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit profile</button>}
+          <div className="relative z-0 h-36 overflow-hidden bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-52">
+            {(profileUsername === me?.username ? me?.coverUrl : profile?.coverUrl) && <img src={profileUsername === me?.username ? me.coverUrl : profile.coverUrl} alt="Cover photo" className="absolute inset-0 h-full w-full object-cover" />}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+            {profileUsername === me?.username && <button type="button" onClick={() => coverPickerRef.current?.click()} className="absolute bottom-3 right-3 z-30 rounded-full bg-black/70 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit cover photo</button>}
+            {profileUsername === me?.username && <input ref={coverPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>5*1024*1024){tell('Cover photo must be 5 MB or smaller.','error');event.target.value='';return;} try {setBusy('cover-upload');const fd=new FormData();fd.append('file',file);const uploaded=await api.post('/media/upload',fd);const {data}=await api.patch('/me/profile',{coverUrl:uploaded.data.url});setMe(data);setUser(data);setProfile(data);setCoverUrl(data.coverUrl||uploaded.data.url);tell('Cover photo updated.');}catch(err){tell(errText(err,'Could not upload cover photo. Check that image storage is configured on the server.'),'error');}finally{setBusy('');event.target.value='';}}}/>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
-            <div className="relative z-10 -mt-8 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end sm:justify-between">
+            <div className="relative z-10 -mt-10 flex flex-col gap-3 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 items-end gap-3">
                 <div className="relative z-20 shrink-0 rounded-full border-4 border-white bg-white shadow-xl dark:border-slate-900">
                   {((profileUsername === me?.username ? me : profile)?.avatarUrl) ? <img src={(profileUsername === me?.username ? me : profile).avatarUrl} alt="" className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"/> : <div className="grid h-24 w-24 place-items-center rounded-full bg-sky-500 text-3xl font-black text-white sm:h-32 sm:w-32">{((profileUsername === me?.username ? me?.displayName : profile?.displayName) || profileUsername || 'U').slice(0,1).toUpperCase()}</div>}
@@ -853,11 +858,11 @@ function SocialGamingApp() {
         {profileUsername === me?.username && <section id="profile-edit-details" className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5">
           <details>
             <summary className="cursor-pointer list-none font-bold text-white"><Camera size={17} className="mr-2 inline"/> Edit profile details <span className="float-right text-sm text-slate-400">Open / Close</span></summary>
-            <form onSubmit={async (event) => { event.preventDefault(); try { let nextAvatar = avatarUrl; if (avatarFile) { const uploadData = new FormData(); uploadData.append('file', avatarFile); const uploaded = await api.post('/media/upload', uploadData); nextAvatar = uploaded.data.url; setAvatarUrl(nextAvatar); setAvatarFile(null); } const {data} = await api.patch('/me/profile',{displayName,bio,avatarUrl:nextAvatar}); setMe(data); setUser(data); setProfile(data); tell('Profile saved.'); } catch(e) { tell(errText(e),'error'); } }} className="mt-4 grid gap-3 sm:grid-cols-2">
+            <form onSubmit={async (event) => { event.preventDefault(); try { let nextAvatar = avatarUrl; if (avatarFile) { const uploadData = new FormData(); uploadData.append('file', avatarFile); const uploaded = await api.post('/media/upload', uploadData); nextAvatar = uploaded.data.url; setAvatarUrl(nextAvatar); setAvatarFile(null); } const {data} = await api.patch('/me/profile',{displayName,bio,avatarUrl:nextAvatar}); setMe(data); setUser(data); setProfile(data); setAvatarUrl(data.avatarUrl || ''); tell('Profile saved.'); } catch(e) { tell(errText(e),'error'); } }} className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="block text-xs font-semibold text-slate-400">Display name<input value={displayName} onChange={e=>setDisplayName(e.target.value)} maxLength={60} className={inputClass}/></label>
               <label className="block text-xs font-semibold text-slate-400">Profile picture URL<input value={avatarUrl} onChange={e=>setAvatarUrl(e.target.value)} type="url" placeholder="https://…" className={inputClass}/></label>
               <label className="block text-xs font-semibold text-slate-400 sm:col-span-2">Bio<textarea value={bio} onChange={e=>setBio(e.target.value)} maxLength={500} className={inputClass}/></label>
-              <label className="block text-xs font-semibold text-slate-400 sm:col-span-2">Upload profile picture<input ref={avatarPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>setAvatarFile(e.target.files?.[0]||null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-2 file:text-slate-800"/></label>
+              <label className="block text-xs font-semibold text-slate-400 sm:col-span-2">Upload profile picture (max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>setAvatarFile(e.target.files?.[0]||null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-200 file:px-3 file:py-2 file:text-slate-800"/></label>
               <div className="sm:col-span-2"><button className={primaryButton}>Save changes</button></div>
             </form>
           </details>
