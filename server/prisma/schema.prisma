@@ -15,6 +15,8 @@ model User {
  passwordHash String
  bio String @default("")
  avatarUrl String?
+ followersVisibility String @default("PUBLIC")
+ followingVisibility String @default("PUBLIC")
  points Int @default(100)
  role String @default("USER")
  status String @default("ACTIVE")
