@@ -805,7 +805,8 @@ function SocialGamingApp() {
               <label className="block rounded-xl border border-white/10 p-3 text-xs font-semibold text-slate-300">Add photo (JPG, PNG, WEBP, GIF; up to 5 MB)<input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/></label>
               <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Photo URL (optional)" className={inputClass}/>
               <div className="rounded-xl border border-white/10 p-3">
-                <button type="button" onClick={() => { setComposeOpen(false); setComposerOption(''); navTo('battles'); }} className={secondaryButton + ' w-full justify-center gap-2 py-3'}><Swords size={17}/> Photo Battles</button>
+                <button type="button" onClick={() => { setComposeOpen(false); setComposerOption('battle'); setBattleTab('home'); navTo('battles'); window.setTimeout(() => document.getElementById('create-photo-battle')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 180); }} className={secondaryButton + ' w-full justify-center gap-2 py-3'}><Swords size={17}/> Create a Photo Battle</button>
+                <p className="mt-2 text-xs leading-5 text-slate-400">Photo Battles use two photos that are already posted. Publish your photo first, then choose your photo and an opponent’s public photo below to start a battle.</p>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-400">Post visibility: {privacy==='PUBLIC'?'Everyone':privacy==='FOLLOWERS'?'Followers only':'Only you'}</div><div className="flex flex-wrap gap-2"><button type="button" onClick={saveDraft} className={secondaryButton}>Save draft</button><button type="button" onClick={() => {setComposeOpen(false);setComposerOption('');}} className={secondaryButton}>Close</button><button disabled={busy === 'post'} className={primaryButton}>{busy === 'post' ? 'Posting…' : 'Post'}</button></div></div>
             </form>}
@@ -932,10 +933,10 @@ function SocialGamingApp() {
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>Votes: {battle.challengerVotes || 0} — {battle.opponentVotes || 0} · Reward: {fmt(battle.reward)} pts</span>{battle.status === 'OPEN' && battle.endsAt && new Date(battle.endsAt) <= new Date() && <button disabled={Boolean(busy)} onClick={() => finishBattle(battle.id)} className={secondaryButton}>{busy === `finish:${battle.id}` ? 'Finishing…' : 'Finish battle'}</button>}</div>
             </article>)}{battles.length === 0 && <p className="py-6 text-sm text-slate-500">No battles yet. Start one using photos from both players.</p>}</div>
           </Panel>
-          <Panel title="Create a photo battle" subtitle="Choose one photo you own and one public photo from your opponent.">
+          <div id="create-photo-battle"><Panel title="Create a photo battle" subtitle="Choose one photo you own and one public photo from your opponent.">
             <form onSubmit={loadOpponentPosts} className="space-y-3"><label className="block text-xs text-slate-400">Opponent username<input value={opponentUsername} onChange={(e) => setOpponentUsername(e.target.value)} className={inputClass} placeholder="username"/></label><button className={secondaryButton}>Load battle photos</button></form>
             {myPosts.length > 0 && opponentPosts.length > 0 && <form onSubmit={createBattle} className="mt-4 space-y-3"><label className="block text-xs text-slate-400">Your photo<select value={myBattlePostId} onChange={(e) => setMyBattlePostId(e.target.value)} className={inputClass}>{myPosts.map((p) => <option key={p.id} value={p.id}>{p.caption || p.id}</option>)}</select></label><label className="block text-xs text-slate-400">Opponent photo<select value={opponentBattlePostId} onChange={(e) => setOpponentBattlePostId(e.target.value)} className={inputClass}>{opponentPosts.map((p) => <option key={p.id} value={p.id}>{p.caption || p.id}</option>)}</select></label><button disabled={busy === 'battle'} className={primaryButton}>Challenge to battle</button></form>}
-          </Panel>
+          </Panel></div>
           </div>
         </div>}
         {battleTab === 'ranking' && <Panel title="Photo Battles ranking" subtitle="Players ranked by their current total points.">
