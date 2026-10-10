@@ -232,6 +232,24 @@ function SocialGamingApp() {
     catch (e) { tell(errText(e), 'error'); }
   };
 
+  const collectFromPlayer = async (username) => {
+    if (!username || username === me?.username) return;
+    setBusy(`steal-player:${username}`);
+    try {
+      const { data } = await api.get(`/users/${encodeURIComponent(username)}/posts`);
+      const candidate = Array.isArray(data) ? data.find((post) => post?.id && post.author?.username !== me?.username && post.privacy === 'PUBLIC') : null;
+      if (!candidate) {
+        tell(`@ ${username} has no public post available for point transfer.`.replace('@ ', '@'), 'error');
+        return;
+      }
+      await collectPoints(candidate);
+    } catch (e) {
+      tell(errText(e, 'Could not load a public post from this player.'), 'error');
+    } finally {
+      setBusy((old) => old === `steal-player:${username}` ? '' : old);
+    }
+  };
+
   const collectPoints = async (post) => {
     if (!post?.id || post.author?.username === me?.username) return;
     setBusy(`steal:${post.id}`);
@@ -726,7 +744,7 @@ function SocialGamingApp() {
       {section === 'ranking' && <div className="space-y-5">
         <div className="flex flex-wrap gap-2">{[['overall','Overall'],['daily','Today'],['weekly','This week']].map(([key,label]) => <button key={key} onClick={() => loadLeaderboard(key)} className={section === 'ranking' && period === key ? primaryButton : secondaryButton}>{label}</button>)}</div>
         <Panel title="Leaderboard" subtitle="Current points or net point movement for the selected period.">
-          <div className="space-y-2">{leaderboard.map((player) => <div key={player.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-950/50 p-3"><div className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-sm font-black">{player.rank}</div><Avatar user={player}/><div className="min-w-0 flex-1"><button onClick={() => { setProfileUsername(player.username); loadProfile(player.username); setSection('profile'); }} className="font-bold text-white">@{player.username}</button><div className="text-xs text-slate-500">{player.displayName}</div></div><div className="text-right"><div className="font-black text-amber-200">{fmt(player.points)} pts</div>{player.periodPoints !== undefined && <div className="text-xs text-slate-500">Period: {fmt(player.periodPoints)}</div>}</div>{player.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectPoints(player.username)} className={secondaryButton}>{busy === `steal:${player.username}` ? '…' : 'Steal 3'}</button>}</div>)}</div>
+          <div className="space-y-2">{leaderboard.map((player) => <div key={player.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-950/50 p-3"><div className="grid h-9 w-9 place-items-center rounded-lg bg-white/5 text-sm font-black">{player.rank}</div><Avatar user={player}/><div className="min-w-0 flex-1"><button onClick={() => { setProfileUsername(player.username); loadProfile(player.username); setSection('profile'); }} className="font-bold text-white">@{player.username}</button><div className="text-xs text-slate-500">{player.displayName}</div></div><div className="text-right"><div className="font-black text-amber-200">{fmt(player.points)} pts</div>{player.periodPoints !== undefined && <div className="text-xs text-slate-500">Period: {fmt(player.periodPoints)}</div>}</div>{player.username !== me?.username && <button disabled={Boolean(busy)} onClick={() => collectFromPlayer(player.username)} className={secondaryButton}>{busy === `steal-player:${player.username}` || busy === `steal:${player.username}` ? '…' : 'Steal 3'}</button>}</div>)}</div>
         </Panel>
       </div>}
 
@@ -767,9 +785,9 @@ function SocialGamingApp() {
 
       {section === 'profile' && <div className="mx-auto w-full max-w-5xl space-y-4">
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg">
-          <div className="relative isolate h-32 overflow-visible bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-44">
+          <div className="relative z-0 h-32 overflow-visible bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-44">
             <div className="absolute inset-0 opacity-25" style={{backgroundImage:'radial-gradient(circle at 20% 30%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 25%)'}} />
-            {profileUsername === me?.username && <button type="button" onClick={() => document.getElementById('profile-edit-details')?.scrollIntoView({behavior:'smooth',block:'center'})} className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit profile photo</button>}
+            {profileUsername === me?.username && <button type="button" onClick={() => document.getElementById('profile-edit-details')?.scrollIntoView({behavior:'smooth',block:'center'})} className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit profile</button>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
             <div className="relative z-10 -mt-8 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end sm:justify-between">
