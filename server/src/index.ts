@@ -521,12 +521,27 @@ app.post('/api/admin/points',auth,admin,async(req:any,res)=>{const d=z.object({u
 app.get('/api/admin/users',auth,admin,async(_req,res)=>res.json((await prisma.user.findMany({select:{id:true,username:true,displayName:true,points:true,status:true,role:true,createdAt:true},orderBy:{createdAt:'desc'},take:100}))));
 
 /* Social gaming MVP: profile, follow, wallet history, referrals and moderation. */
+app.patch('/api/me/privacy', auth, async (req:any, res) => {
+  const parsed = z.object({
+    followersVisibility: z.enum(['PUBLIC', 'FOLLOWERS', 'PRIVATE']),
+    followingVisibility: z.enum(['PUBLIC', 'FOLLOWERS', 'PRIVATE'])
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Choose a valid visibility for each list.' });
+  const updated = await prisma.user.update({
+    where: { id: req.user.id },
+    data: parsed.data,
+    select: { followersVisibility: true, followingVisibility: true }
+  });
+  res.json(updated);
+});
+
 app.get('/api/users/:username/profile', async (req, res) => {
   const username = String(req.params.username).toLowerCase();
   const user = await prisma.user.findUnique({
     where: { username },
     select: {
       id: true, username: true, displayName: true, bio: true, avatarUrl: true,
+      followersVisibility: true, followingVisibility: true,
       points: true, role: true, status: true, createdAt: true,
       _count: { select: { followsIn: true, followsOut: true, posts: true } }
     }
@@ -556,8 +571,14 @@ app.get('/api/users/:username/posts', async (req:any, res) => {
 });
 
 app.get('/api/users/:username/followers', async (req:any, res) => {
-  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() }, select: { id: true, status: true } });
+  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() }, select: { id: true, status: true, followersVisibility: true } });
   if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
+  let viewerId:string|null = null;
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) { try { viewerId = String((jwt.verify(header.slice(7), AUTH_SECRET) as any).id); } catch {} }
+  const viewerFollows = viewerId && viewerId !== target.id ? await prisma.follow.findUnique({ where: { followerId_followingId: { followerId: viewerId, followingId: target.id } } }) : null;
+  if (target.followersVisibility === 'PRIVATE' && viewerId !== target.id) return res.status(403).json({ error: 'This user keeps their followers list private.' });
+  if (target.followersVisibility === 'FOLLOWERS' && viewerId !== target.id && !viewerFollows) return res.status(403).json({ error: 'Follow this user to see their followers list.' });
   const follows = await prisma.follow.findMany({
     where: { followingId: target.id },
     include: { follower: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
@@ -567,8 +588,14 @@ app.get('/api/users/:username/followers', async (req:any, res) => {
 });
 
 app.get('/api/users/:username/following', async (req:any, res) => {
-  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() }, select: { id: true, status: true } });
+  const target = await prisma.user.findUnique({ where: { username: String(req.params.username).toLowerCase() }, select: { id: true, status: true, followingVisibility: true } });
   if (!target || target.status !== 'ACTIVE') return res.status(404).json({ error: 'User not found' });
+  let viewerId:string|null = null;
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) { try { viewerId = String((jwt.verify(header.slice(7), AUTH_SECRET) as any).id); } catch {} }
+  const viewerFollows = viewerId && viewerId !== target.id ? await prisma.follow.findUnique({ where: { followerId_followingId: { followerId: viewerId, followingId: target.id } } }) : null;
+  if (target.followingVisibility === 'PRIVATE' && viewerId !== target.id) return res.status(403).json({ error: 'This user keeps their following list private.' });
+  if (target.followingVisibility === 'FOLLOWERS' && viewerId !== target.id && !viewerFollows) return res.status(403).json({ error: 'Follow this user to see their following list.' });
   const follows = await prisma.follow.findMany({
     where: { followerId: target.id },
     include: { following: { select: { id: true, username: true, displayName: true, avatarUrl: true } } },
