@@ -931,7 +931,7 @@ function SocialGamingApp() {
             <div className="min-w-0 flex-1"><div className="break-words font-bold text-white">{person.displayName || person.full_name || person.username}</div><div className="text-xs text-slate-400">@{person.username || 'user'}</div></div>
             <div className="shrink-0 text-right"><div className="font-black text-amber-300">{fmt(person.points)}</div><div className="text-[10px] text-slate-500">POINTS</div></div>
             {person.username && <button type="button" onClick={() => { setProfileUsername(person.username); setSection('profile'); navigate('/?section=profile&username=' + encodeURIComponent(person.username)); loadProfile(person.username); }} className={secondaryButton}>Profile</button>}
-          </div>)}
+          </div>)}</div>
           {leaderboard.length === 0 && <div className="py-6 text-center text-sm text-slate-400">Ranking is not available yet. Try refreshing in a moment.</div>}
         </Panel>}
       </div>}
