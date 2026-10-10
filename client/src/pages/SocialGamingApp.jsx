@@ -73,7 +73,13 @@ function SocialGamingApp() {
   const [me, setMe] = useState(user);
   // Restore the last visible feed immediately after refresh; the API may take
   // several seconds to wake up on the free hosting plan.
-  const [recentPosts, setRecentPosts] = useState([]);
+  const [recentPosts, setRecentPosts] = useState(() => {
+    try {
+      const key = `vibepulse-feed:${user?.username || 'guest'}`;
+      const cached = JSON.parse(window.localStorage.getItem(key) || '[]');
+      return Array.isArray(cached) ? cached : [];
+    } catch { return []; }
+  });
   const [feedTab, setFeedTab] = useState(() => new URLSearchParams(window.location.search).get('feed') === 'ranking' ? 'ranking' : 'home');
   const [posts, setPosts] = useState(() => {
     try {
@@ -161,34 +167,57 @@ function SocialGamingApp() {
 
   const loadCore = useCallback(async () => {
     setLoading(true);
+    // Load feed endpoints independently: slow leaderboard/mission requests must
+    // never hold the home feed back for 10–18 seconds.
+    const feedJobs = Promise.allSettled([
+      api.get('/posts?page=1'),
+      api.get('/posts?page=1&sort=recent')
+    ]).then((results) => {
+      const takePosts = (result, setter) => {
+        if (result.status !== 'fulfilled') return;
+        const value = result.value.data;
+        const next = Array.isArray(value) ? value
+          : Array.isArray(value?.posts) ? value.posts
+          : Array.isArray(value?.items) ? value.items
+          : null;
+        if (next === null) return;
+        setter((current) => next.length === 0 && current.length > 0 ? current : next);
+      };
+      takePosts(results[0], setPosts);
+      takePosts(results[1], setRecentPosts);
+    });
     const jobs = await Promise.allSettled([
-      api.get('/me'), api.get('/posts?page=1'), api.get('/leaderboard'), api.get('/missions'),
+      api.get('/me'), api.get('/leaderboard'), api.get('/missions'),
       api.get('/achievements/me'), api.get('/battles'), api.get('/teams'), api.get('/notifications'),
-      api.get('/points/transactions?limit=50'), api.get('/referrals/me'), api.get('/leaderboard/daily'), api.get('/trending'), api.get('/rising-users'), api.get('/posts?page=1&sort=recent')
+      api.get('/points/transactions?limit=50'), api.get('/referrals/me'), api.get('/leaderboard/daily'),
+      api.get('/trending'), api.get('/rising-users')
     ]);
     const take = (i, setter) => {
-      // Keep the last successful data visible when a request temporarily fails.
-      // Do not replace the feed with an empty list during a slow/retrying request.
       if (jobs[i].status === 'fulfilled') setter(jobs[i].value.data);
     };
     take(0, (value) => { setMe(value); setUser(value); setDisplayName(value.displayName || ''); setBio(value.bio || ''); setAvatarUrl(value.avatarUrl || ''); setCoverUrl(value.coverUrl || ''); });
-    take(1, (value) => {
-      // Some API/proxy responses can briefly return an empty or wrapped feed while
-      // the database wakes up. Never blank an already-visible feed in that case.
-      const next = Array.isArray(value) ? value
-        : Array.isArray(value?.posts) ? value.posts
-        : Array.isArray(value?.items) ? value.items
-        : null;
-      if (next === null) return;
-      setPosts((current) => (next.length === 0 && current.length > 0 ? current : next));
-    }); take(2, setLeaderboard); take(3, setMissions);
-    take(4, setAchievements); take(5, setBattles); take(6, setTeams);
-    take(7, setNotifications); take(8, setTransactions); take(9, setReferral);
-    take(10, setDailyLeaderboard); take(11, setTrending); take(12, setRisingUsers); take(13, (value) => { const next = Array.isArray(value) ? value : Array.isArray(value?.posts) ? value.posts : []; setRecentPosts(next); });
+    take(1, setLeaderboard); take(2, setMissions); take(3, setAchievements);
+    take(4, setBattles); take(5, setTeams); take(6, setNotifications);
+    take(7, setTransactions); take(8, setReferral); take(9, setDailyLeaderboard);
+    take(10, setTrending); take(11, setRisingUsers);
+    await feedJobs;
     setLoading(false);
   }, [setUser]);
 
   useEffect(() => { loadCore(); }, [loadCore]);
+  // Auth resolves asynchronously after a reload. Hydrate this account's cached
+  // posts as soon as its username becomes available instead of showing an empty feed.
+  useEffect(() => {
+    const username = me?.username || user?.username;
+    if (!username) return;
+    try {
+      const cached = JSON.parse(window.localStorage.getItem(`vibepulse-feed:${username}`) || '[]');
+      if (Array.isArray(cached) && cached.length) {
+        setPosts((current) => current.length ? current : cached);
+        setRecentPosts((current) => current.length ? current : cached);
+      }
+    } catch { /* Ignore an unavailable or malformed cache. */ }
+  }, [me?.username, user?.username]);
   // Keep a small per-account feed cache so a reload never shows an empty feed
   // while the server is waking up or returning a temporary empty response.
   useEffect(() => {
@@ -884,14 +913,14 @@ function SocialGamingApp() {
 
       {section === 'profile' && <div className="mx-auto w-full max-w-5xl space-y-4">
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg">
-          <div className="relative z-0 h-36 overflow-hidden bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-52">
+          <div className="relative z-0 h-44 overflow-hidden bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-60">
             {(profileUsername === me?.username ? me?.coverUrl : profile?.coverUrl) && <img src={profileUsername === me?.username ? me.coverUrl : profile.coverUrl} alt="Cover photo" className="absolute inset-0 h-full w-full object-cover" />}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
             {profileUsername === me?.username && <button type="button" onClick={() => coverPickerRef.current?.click()} className="absolute bottom-3 right-3 z-30 rounded-full bg-black/70 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit cover photo</button>}
             {profileUsername === me?.username && <input ref={coverPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>5*1024*1024){tell('Cover photo must be 5 MB or smaller.','error');event.target.value='';return;} try {setBusy('cover-upload');const fd=new FormData();fd.append('file',file);const uploaded=await api.post('/media/upload',fd);const {data}=await api.patch('/me/profile',{coverUrl:uploaded.data.url});setMe(data);setUser(data);setProfile(data);setCoverUrl(data.coverUrl||uploaded.data.url);tell('Cover photo updated.');}catch(err){tell(errText(err,'Could not upload cover photo. Check that image storage is configured on the server.'),'error');}finally{setBusy('');event.target.value='';}}}/>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
-            <div className="relative z-10 -mt-10 flex flex-col gap-3 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
+            <div className="relative z-10 -mt-7 flex flex-col gap-3 sm:-mt-10 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 items-end gap-3">
                 <div className="relative z-20 shrink-0 rounded-full border-4 border-white bg-white shadow-xl dark:border-slate-900">
                   {((profileUsername === me?.username ? me : profile)?.avatarUrl) ? <img src={(profileUsername === me?.username ? me : profile).avatarUrl} alt="" className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"/> : <div className="grid h-24 w-24 place-items-center rounded-full bg-sky-500 text-3xl font-black text-white sm:h-32 sm:w-32">{((profileUsername === me?.username ? me?.displayName : profile?.displayName) || profileUsername || 'U').slice(0,1).toUpperCase()}</div>}
