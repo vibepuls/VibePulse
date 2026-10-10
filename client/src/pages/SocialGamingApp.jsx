@@ -111,6 +111,7 @@ function SocialGamingApp() {
   const [profileListUsers, setProfileListUsers] = useState([]);
   const [profileListLoading, setProfileListLoading] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [profileActionsOpen, setProfileActionsOpen] = useState(false);
   const [followersVisibility, setFollowersVisibility] = useState('PUBLIC');
   const [followingVisibility, setFollowingVisibility] = useState('PUBLIC');
   const [profileUsername, setProfileUsername] = useState('');
@@ -229,6 +230,8 @@ function SocialGamingApp() {
   // The URL is the source of truth so refreshing a section keeps the same page.
   useEffect(() => {
     const routeSection = new URLSearchParams(location.search).get('section');
+    const routeFeed = new URLSearchParams(location.search).get('feed');
+    if (routeFeed === 'home' || routeFeed === 'ranking') setFeedTab(routeFeed);
     if (location.pathname.startsWith('/profile/')) {
       if (section !== 'profile') setSection('profile');
       return;
@@ -933,9 +936,9 @@ function SocialGamingApp() {
             {profileUsername === me?.username && <input ref={coverPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>5*1024*1024){tell('Cover photo must be 5 MB or smaller.','error');event.target.value='';return;} try {setBusy('cover-upload');const fd=new FormData();fd.append('file',file);const uploaded=await api.post('/media/upload',fd);const {data}=await api.patch('/me/profile',{coverUrl:uploaded.data.url});setMe(data);setUser(data);setProfile(data);setCoverUrl(data.coverUrl||uploaded.data.url);tell('Cover photo updated.');}catch(err){tell(errText(err,'Could not upload cover photo. Check that image storage is configured on the server.'),'error');}finally{setBusy('');event.target.value='';}}}/>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
-            <div className="relative z-10 -mt-7 flex flex-col gap-3 sm:-mt-10 sm:flex-row sm:items-end sm:justify-between">
+            <div className="relative z-30 -mt-3 flex flex-col gap-3 sm:-mt-8 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 items-end gap-3">
-                <div className="relative z-20 shrink-0 rounded-full border-4 border-white bg-white shadow-xl dark:border-slate-900">
+                <div className="relative z-30 shrink-0 rounded-full border-4 border-white bg-white shadow-xl ring-2 ring-black/10 dark:border-slate-900">
                   {((profileUsername === me?.username ? me : profile)?.avatarUrl) ? <img src={(profileUsername === me?.username ? me : profile).avatarUrl} alt="" className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"/> : <div className="grid h-24 w-24 place-items-center rounded-full bg-sky-500 text-3xl font-black text-white sm:h-32 sm:w-32">{((profileUsername === me?.username ? me?.displayName : profile?.displayName) || profileUsername || 'U').slice(0,1).toUpperCase()}</div>}
                 </div>
                 <div className="min-w-0 pb-1">
@@ -944,7 +947,7 @@ function SocialGamingApp() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 pb-1">
-                {profileUsername === me?.username ? <button type="button" onClick={() => setProfileEditOpen(true)} className={primaryButton}><Camera size={15} className="mr-1 inline"/> Edit profile</button> : <><button type="button" disabled={busy === `follow:${profileUsername}`} onClick={() => toggleFollow(profileUsername)} className={primaryButton}>{followingUsers.includes(profileUsername) ? 'Following · Unfollow' : 'Follow'}</button><button type="button" onClick={() => openConversation(profileUsername)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/> Message</button><button type="button" onClick={() => setReportTarget({type:'USER',id:profile?.id})} className={secondaryButton}>Report</button></>}
+                {profileUsername === me?.username ? <><button type="button" onClick={() => setProfileEditOpen(true)} className={primaryButton}><Camera size={15} className="mr-1 inline"/> Edit profile</button><div className="relative"><button type="button" aria-label="Profile settings" title="Profile settings" onClick={() => setProfileActionsOpen(v => !v)} className={secondaryButton}><MoreHorizontal size={19}/></button>{profileActionsOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 text-slate-800 shadow-2xl"><button type="button" onClick={() => {setProfileActionsOpen(false);navTo('privacy');}} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-semibold hover:bg-slate-100"><Settings size={17}/> Privacy settings</button><button type="button" onClick={() => {setProfileActionsOpen(false);setProfileEditOpen(true);}} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-semibold hover:bg-slate-100"><Camera size={17}/> Edit profile</button></div>}</div></> : <><button type="button" disabled={busy === `follow:${profileUsername}`} onClick={() => toggleFollow(profileUsername)} className={primaryButton}>{followingUsers.includes(profileUsername) ? 'Following · Unfollow' : 'Follow'}</button><button type="button" onClick={() => openConversation(profileUsername)} className={secondaryButton}><MessageCircle size={15} className="mr-1 inline"/> Message</button><button type="button" onClick={() => setReportTarget({type:'USER',id:profile?.id})} className={secondaryButton}>Report</button></>}
               </div>
             </div>
             <p className="mt-3 max-w-3xl whitespace-pre-wrap break-words text-sm text-slate-300">{(profileUsername === me?.username ? me?.bio : profile?.bio) || 'No bio added yet.'}</p>
