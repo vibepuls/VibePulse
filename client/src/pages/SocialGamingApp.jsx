@@ -908,7 +908,30 @@ function SocialGamingApp() {
             <button type="button" role="tab" aria-selected={battleTab === 'ranking'} onClick={() => setBattleTab('ranking')} className={`rounded-xl px-4 py-3 text-sm font-bold transition ${battleTab === 'ranking' ? 'bg-sky-500 text-white shadow' : 'text-slate-400 hover:bg-white/5'}`}>Ranking</button>
           </div>
         </div>
-        {battleTab === 'home' && <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
+        {battleTab === 'home' && <div className="space-y-5">
+          <Panel title="Home" subtitle="Latest community posts, with followed creators and relevant posts shown first.">
+            <div className="space-y-4">
+              {(homeFeedPosts || []).map((post) => <article key={post.id} className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-slate-950/50">
+                <div className="flex items-center gap-3 p-3">
+                  <Avatar user={post.author}/>
+                  <button type="button" onClick={() => { const username = post.author?.username; if (!username) return; setProfileUsername(username); setSection('profile'); navigate('/?section=profile&username=' + encodeURIComponent(username)); loadProfile(username); }} className="min-w-0 flex-1 text-left">
+                    <div className="truncate text-sm font-bold text-white">{post.author?.displayName || post.author?.username || 'VibePulse user'}</div>
+                    <div className="truncate text-xs text-slate-500">@{post.author?.username || 'user'} · {dateText(post.createdAt)}</div>
+                  </button>
+                  <span className="shrink-0 text-xs font-bold text-amber-200">⚡ {fmt(post.points)} pts</span>
+                </div>
+                {post.caption && <p className="whitespace-pre-wrap px-3 pb-3 text-sm text-slate-200" style={{overflowWrap:'anywhere'}}>{post.caption}</p>}
+                {post.imageUrl && <button type="button" onClick={() => setExpandedMedia({url:post.imageUrl,caption:post.caption||'',author:post.author?.username||''})} className="block w-full"><img src={post.imageUrl} alt={post.caption || 'Community post'} loading="lazy" className="max-h-[620px] w-full bg-black object-contain"/></button>}
+                <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-xs text-slate-400"><span>{post._count?.likes || 0} likes</span><span>{post._count?.comments || 0} comments</span></div>
+                <div className="grid grid-cols-2 border-t border-white/10 p-1">
+                  <button type="button" disabled={Boolean(busy)} onClick={() => likePost(post.id)} className="rounded-lg py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 disabled:opacity-40"><Heart size={16} className="mr-2 inline"/>Like</button>
+                  <button type="button" onClick={() => sharePost(post)} className="rounded-lg py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"><Share2 size={16} className="mr-2 inline"/>Share</button>
+                </div>
+              </article>)}
+              {(!homeFeedPosts || homeFeedPosts.length === 0) && <p className="py-5 text-center text-sm text-slate-400">No community posts yet. New posts will appear here.</p>}
+            </div>
+          </Panel>
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
           <Panel title="Community photo battles" subtitle="Vote once per battle. Voting closes after 10 minutes.">
             <div className="space-y-4">{battles.map((battle) => <article key={battle.id} className="rounded-xl border border-white/10 bg-slate-950/50 p-4">
               <div className="mb-3 flex items-center justify-between gap-3"><div className="font-bold text-white">{battle.title}</div><span className="text-xs text-slate-500">{battle.status}</span></div>
@@ -923,6 +946,7 @@ function SocialGamingApp() {
             <form onSubmit={loadOpponentPosts} className="space-y-3"><label className="block text-xs text-slate-400">Opponent username<input value={opponentUsername} onChange={(e) => setOpponentUsername(e.target.value)} className={inputClass} placeholder="username"/></label><button className={secondaryButton}>Load battle photos</button></form>
             {myPosts.length > 0 && opponentPosts.length > 0 && <form onSubmit={createBattle} className="mt-4 space-y-3"><label className="block text-xs text-slate-400">Your photo<select value={myBattlePostId} onChange={(e) => setMyBattlePostId(e.target.value)} className={inputClass}>{myPosts.map((p) => <option key={p.id} value={p.id}>{p.caption || p.id}</option>)}</select></label><label className="block text-xs text-slate-400">Opponent photo<select value={opponentBattlePostId} onChange={(e) => setOpponentBattlePostId(e.target.value)} className={inputClass}>{opponentPosts.map((p) => <option key={p.id} value={p.id}>{p.caption || p.id}</option>)}</select></label><button disabled={busy === 'battle'} className={primaryButton}>Challenge to battle</button></form>}
           </Panel>
+          </div>
         </div>}
         {battleTab === 'ranking' && <Panel title="Photo Battles ranking" subtitle="Players ranked by their current total points.">
           <div className="space-y-2">{leaderboard.map((person, index) => <div key={person.id || person.username || index} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-slate-950/40 p-3">
