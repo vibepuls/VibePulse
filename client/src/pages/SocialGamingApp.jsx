@@ -86,6 +86,8 @@ function SocialGamingApp() {
   const [profileListModal, setProfileListModal] = useState('');
   const [profileListUsers, setProfileListUsers] = useState([]);
   const [profileListLoading, setProfileListLoading] = useState(false);
+  const [followersVisibility, setFollowersVisibility] = useState('PUBLIC');
+  const [followingVisibility, setFollowingVisibility] = useState('PUBLIC');
   const [profileUsername, setProfileUsername] = useState('');
   const [messages, setMessages] = useState([]);
   const [inbox, setInbox] = useState([]);
@@ -214,6 +216,10 @@ function SocialGamingApp() {
         api.get(`/users/${encodeURIComponent(username)}/posts`)
       ]);
       setProfile(p.data); setProfilePosts(ps.data); setProfileUsername(username);
+      if (username.toLowerCase() === String(me?.username || '').toLowerCase()) {
+        setFollowersVisibility(p.data.followersVisibility || 'PUBLIC');
+        setFollowingVisibility(p.data.followingVisibility || 'PUBLIC');
+      }
     } catch (e) { tell(errText(e, 'Could not load profile.'), 'error'); }
   };
 
@@ -825,6 +831,33 @@ function SocialGamingApp() {
               <div className="sm:col-span-2"><button className={primaryButton}>Save changes</button></div>
             </form>
           </details>
+        </section>}
+
+        {profileUsername === me?.username && <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:p-5">
+          <h2 className="font-bold text-white">Privacy settings</h2>
+          <p className="mt-1 text-sm text-slate-400">Choose who can see your followers and following lists.</p>
+          <form onSubmit={async (event) => {
+            event.preventDefault();
+            try {
+              const { data } = await api.patch('/me/privacy', { followersVisibility, followingVisibility });
+              setFollowersVisibility(data.followersVisibility);
+              setFollowingVisibility(data.followingVisibility);
+              setProfile((old) => old ? { ...old, ...data } : old);
+              tell('Privacy settings saved.');
+            } catch (e) { tell(errText(e, 'Could not save privacy settings.'), 'error'); }
+          }} className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm text-slate-300">Who can see your followers
+              <select value={followersVisibility} onChange={(e) => setFollowersVisibility(e.target.value)} className={inputClass}>
+                <option value="PUBLIC">Everyone</option><option value="FOLLOWERS">Followers only</option><option value="PRIVATE">Only me</option>
+              </select>
+            </label>
+            <label className="block text-sm text-slate-300">Who can see your following
+              <select value={followingVisibility} onChange={(e) => setFollowingVisibility(e.target.value)} className={inputClass}>
+                <option value="PUBLIC">Everyone</option><option value="FOLLOWERS">Followers only</option><option value="PRIVATE">Only me</option>
+              </select>
+            </label>
+            <div className="sm:col-span-2"><button className={primaryButton}>Save privacy settings</button></div>
+          </form>
         </section>}
 
         <section id="profile-posts-section" className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045]">
