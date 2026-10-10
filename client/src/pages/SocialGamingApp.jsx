@@ -83,6 +83,9 @@ function SocialGamingApp() {
   const [query, setQuery] = useState('');
   const [profile, setProfile] = useState(null);
   const [profilePosts, setProfilePosts] = useState([]);
+  const [profileListModal, setProfileListModal] = useState('');
+  const [profileListUsers, setProfileListUsers] = useState([]);
+  const [profileListLoading, setProfileListLoading] = useState(false);
   const [profileUsername, setProfileUsername] = useState('');
   const [messages, setMessages] = useState([]);
   const [inbox, setInbox] = useState([]);
@@ -185,6 +188,23 @@ function SocialGamingApp() {
       loadProfile(username);
     }
   }, [location.pathname, params.username]);
+
+  const openProfileList = async (kind) => {
+    const username = profileUsername || me?.username;
+    if (!username) return;
+    setProfileListModal(kind);
+    setProfileListUsers([]);
+    setProfileListLoading(true);
+    try {
+      const endpoint = kind === 'followers' ? 'followers' : 'following';
+      const { data } = await api.get(`/users/profile/${encodeURIComponent(username)}/${endpoint}`);
+      setProfileListUsers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      tell(errText(e, 'Could not load this list.'), 'error');
+    } finally {
+      setProfileListLoading(false);
+    }
+  };
 
   const loadProfile = async (username) => {
     if (!username) return;
@@ -747,14 +767,14 @@ function SocialGamingApp() {
 
       {section === 'profile' && <div className="mx-auto w-full max-w-5xl space-y-4">
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg">
-          <div className="relative h-40 bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-56">
+          <div className="relative z-0 h-40 bg-gradient-to-r from-sky-700 via-indigo-600 to-violet-700 sm:h-56">
             <div className="absolute inset-0 opacity-25" style={{backgroundImage:'radial-gradient(circle at 20% 30%, white 0, transparent 30%), radial-gradient(circle at 80% 70%, white 0, transparent 25%)'}} />
             {profileUsername === me?.username && <button type="button" onClick={() => document.getElementById('profile-edit-details')?.scrollIntoView({behavior:'smooth',block:'center'})} className="absolute bottom-3 right-3 rounded-full bg-black/55 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit profile photo</button>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
             <div className="-mt-12 flex flex-col gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex min-w-0 items-end gap-3">
-                <div className="rounded-full border-4 border-white bg-white shadow-md dark:border-slate-900">
+                <div className="relative z-10 shrink-0 rounded-full border-4 border-white bg-white shadow-md dark:border-slate-900">
                   {((profileUsername === me?.username ? me : profile)?.avatarUrl) ? <img src={(profileUsername === me?.username ? me : profile).avatarUrl} alt="" className="h-24 w-24 rounded-full object-cover sm:h-32 sm:w-32"/> : <div className="grid h-24 w-24 place-items-center rounded-full bg-sky-500 text-3xl font-black text-white sm:h-32 sm:w-32">{((profileUsername === me?.username ? me?.displayName : profile?.displayName) || profileUsername || 'U').slice(0,1).toUpperCase()}</div>}
                 </div>
                 <div className="min-w-0 pb-1">
@@ -768,10 +788,10 @@ function SocialGamingApp() {
             </div>
             <p className="mt-3 max-w-3xl whitespace-pre-wrap break-words text-sm text-slate-300">{(profileUsername === me?.username ? me?.bio : profile?.bio) || 'No bio added yet.'}</p>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/10 pt-4 text-sm text-slate-400">
-              <span><strong className="text-white">{fmt((profileUsername === me?.username ? posts.filter(p=>p.author?.username===me?.username).length : profile?.postCount) || 0)}</strong> Posts</span>
-              <span><strong className="text-white">{fmt((profileUsername === me?.username ? profile?.followers : profile?.followers) || 0)}</strong> Followers</span>
-              <span><strong className="text-white">{fmt(profile?.following || 0)}</strong> Following</span>
-              <span><strong className="text-amber-300">{fmt((profileUsername === me?.username ? me?.points : profile?.points) || 0)}</strong> Points</span>
+              <button type="button" onClick={() => document.getElementById('profile-posts-section')?.scrollIntoView({behavior:'smooth',block:'start'})} className="rounded-lg px-1 py-1 text-left hover:bg-white/10"><strong className="text-white">{fmt((profileUsername === me?.username ? posts.filter(p=>p.author?.username===me?.username).length : profile?.postCount) || 0)}</strong> Posts</button>
+              <button type="button" onClick={() => openProfileList('followers')} className="rounded-lg px-1 py-1 text-left hover:bg-white/10"><strong className="text-white">{fmt(profile?.followers || 0)}</strong> Followers</button>
+              <button type="button" onClick={() => openProfileList('following')} className="rounded-lg px-1 py-1 text-left hover:bg-white/10"><strong className="text-white">{fmt(profile?.following || 0)}</strong> Following</button>
+              <span className="rounded-lg px-1 py-1"><strong className="text-amber-300">{fmt((profileUsername === me?.username ? me?.points : profile?.points) || 0)}</strong> Points</span>
             </div>
           </div>
         </section>
@@ -789,7 +809,7 @@ function SocialGamingApp() {
           </details>
         </section>}
 
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045]">
+        <section id="profile-posts-section" className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045]">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
             <h2 className="text-lg font-extrabold text-white">{profileUsername === me?.username ? 'Your posts' : 'Posts'}</h2>
             {profileUsername === me?.username && <button type="button" onClick={() => {setSection('home');setComposeOpen(true);}} className={primaryButton}><Plus size={15} className="mr-1 inline"/> Create post</button>}
@@ -804,6 +824,7 @@ function SocialGamingApp() {
               {post.caption && <p className="whitespace-pre-wrap break-words px-4 pb-3 text-sm text-slate-200">{post.caption}</p>}
               {post.imageUrl && <button type="button" onClick={()=>setExpandedMedia({url:post.imageUrl,caption:post.caption||'',author:post.author?.username||profileUsername||''})} className="block w-full cursor-zoom-in bg-black/10"><img src={post.imageUrl} alt="Open post photo" className="max-h-[620px] w-full object-contain"/></button>}
               <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"><span className="text-amber-300">⚡ {fmt(post.points)} points</span><span className="text-slate-400">♥ {fmt(post._count?.likes)} likes · 💬 {fmt(post._count?.comments)} comments</span></div>
+              {post.author?.username === me?.username && <div className="px-4 pb-3"><button type="button" disabled={busy === 'invest:' + post.id} onClick={() => addPointsToPost(post)} className={secondaryButton + ' w-full sm:w-auto'}><Zap size={15} className="mr-1 inline"/> Add points to this post</button></div>}
               <div className="grid grid-cols-3 border-y border-white/10 px-2 py-1">
                 <button type="button" disabled={Boolean(busy)} onClick={()=>likePost(post.id)} className="rounded-lg py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10"><Heart size={16} className="mr-1 inline"/> Like</button>
                 <button type="button" onClick={()=>document.getElementById('profile-comment-'+post.id)?.focus()} className="rounded-lg py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10"><MessageCircle size={16} className="mr-1 inline"/> Comment</button>
@@ -827,6 +848,16 @@ function SocialGamingApp() {
         <Panel title="Global notification" subtitle="Send an announcement to all active users."><form onSubmit={sendGlobalNotice} className="space-y-3"><textarea value={globalText} onChange={(e) => setGlobalText(e.target.value)} maxLength={500} className={inputClass} placeholder="Announcement…"/><button className={primaryButton}>Send notification</button></form></Panel>
         <Panel title="Latest audit logs" subtitle="Administrative changes"><div className="space-y-2">{auditLogs.map((log) => <div key={log.id} className="rounded-lg bg-slate-950/50 p-3 text-sm"><strong>{log.action}</strong> · {log.actor?.username} · {log.details}<div className="text-xs text-slate-500">{dateText(log.createdAt)}</div></div>)}</div></Panel>
         <Panel title="Recent transactions" subtitle="Latest 200 point movements"><div className="space-y-2">{adminTransactions.map((tx) => <div key={tx.id} className="rounded-lg bg-slate-950/50 p-3 text-sm">{tx.type} · {fmt(tx.amount)} · @{tx.sender?.username || 'system'} → @{tx.receiver?.username || '—'}<div className="text-xs text-slate-500">{dateText(tx.createdAt)}</div></div>)}</div></Panel>
+      </div>}
+
+      {profileListModal && <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4" onClick={() => setProfileListModal('')}>
+        <section role="dialog" aria-modal="true" aria-label={profileListModal === 'followers' ? 'Followers' : 'Following'} onClick={event => event.stopPropagation()} className="max-h-[80vh] w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3"><h2 className="font-bold text-white">{profileListModal === 'followers' ? 'Followers' : 'Following'}</h2><button type="button" onClick={() => setProfileListModal('')} className="rounded-full p-2 text-slate-300 hover:bg-white/10" aria-label="Close"><X size={18}/></button></div>
+          <div className="max-h-[65vh] space-y-2 overflow-y-auto p-3">
+            {profileListLoading ? <p className="p-5 text-center text-sm text-slate-400">Loading…</p> : profileListUsers.map((person, index) => <div key={person.id || person.username || index} className="flex items-center gap-3 rounded-xl p-3 hover:bg-white/5"><Avatar user={{...person, displayName:person.displayName || person.full_name, avatarUrl:person.avatarUrl || person.profile_picture}}/><div className="min-w-0 flex-1"><div className="break-words font-semibold text-white">{person.displayName || person.full_name || person.username}</div><div className="text-xs text-slate-400">@{person.username}</div></div>{person.username && person.username !== me?.username && <button type="button" onClick={() => { setProfileListModal(''); setProfileUsername(person.username); loadProfile(person.username); setSection('profile'); }} className={secondaryButton}>View profile</button>}</div>)}
+            {!profileListLoading && profileListUsers.length === 0 && <p className="p-5 text-center text-sm text-slate-400">No {profileListModal} to show yet.</p>}
+          </div>
+        </section>
       </div>}
 
       {reportTarget && <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"><form onSubmit={submitReport} className="w-full max-w-md space-y-3 rounded-2xl border border-white/10 bg-slate-900 p-5"><h2 className="text-xl font-bold text-white">Report content</h2><select value={reportCategory} onChange={(e) => setReportCategory(e.target.value)} className={inputClass}>{['SPAM','HARASSMENT','FAKE_ACCOUNT','ILLEGAL_CONTENT','COPYRIGHT','ABUSE','OTHER'].map((value) => <option key={value}>{value}</option>)}</select><textarea value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} maxLength={1000} placeholder="Details (optional)" className={inputClass}/><div className="flex gap-2"><button type="button" onClick={() => setReportTarget(null)} className={secondaryButton}>Cancel</button><button disabled={busy === 'report'} className={primaryButton}>Submit report</button></div></form></div>}
