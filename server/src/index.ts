@@ -62,14 +62,27 @@ app.post('/api/media/upload', auth, (req:any,res:any,next:any)=>upload.single('f
   const objectPath = `${req.user.id}/${randomUUID()}.${extension[req.file.mimetype]}`;
   const encodedPath = objectPath.split('/').map((part:string) => encodeURIComponent(part)).join('/');
   try {
-    const response = await fetch(`${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${encodedPath}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': req.file.mimetype, 'x-upsert': 'false' },
-      body: req.file.buffer
-    });
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${encodedPath}`;
+    const uploadHeaders = { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': req.file.mimetype, 'x-upsert': 'false' };
+    let response = await fetch(uploadUrl, { method: 'POST', headers: uploadHeaders, body: req.file.buffer });
+    // A missing bucket is a common first-deploy failure. Create the public image
+    // bucket with the same strict upload limits, then retry once.
+    if (response.status === 404) {
+      await response.text();
+      const bucketResponse = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: bucket, name: bucket, public: true, file_size_limit: 5242880, allowed_mime_types: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] })
+      });
+      if (bucketResponse.ok || bucketResponse.status === 409) {
+        response = await fetch(uploadUrl, { method: 'POST', headers: uploadHeaders, body: req.file.buffer });
+      } else {
+        console.error('Supabase Storage bucket creation failed:', bucketResponse.status, await bucketResponse.text());
+      }
+    }
     if (!response.ok) {
       console.error('Supabase Storage upload failed:', response.status, await response.text());
-      return res.status(502).json({ error: 'Image storage rejected the upload. Check the storage bucket settings.' });
+      return res.status(502).json({ error: 'Image upload failed. Verify SUPABASE_SERVICE_ROLE_KEY and the Supabase storage bucket permissions.' });
     }
     res.status(201).json({ url: `${supabaseUrl}/storage/v1/object/public/${encodeURIComponent(bucket)}/${encodedPath}` });
   } catch (error) {
