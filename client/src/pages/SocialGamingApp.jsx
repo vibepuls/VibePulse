@@ -81,6 +81,7 @@ function SocialGamingApp() {
     } catch { return []; }
   });
   const [feedTab, setFeedTab] = useState(() => new URLSearchParams(window.location.search).get('feed') === 'ranking' ? 'ranking' : 'home');
+  const [interestAuthors, setInterestAuthors] = useState(() => { try { const saved = JSON.parse(window.localStorage.getItem(`vibepulse-interests:${user?.username || 'guest'}`) || '[]'); return Array.isArray(saved) ? saved : []; } catch { return []; } });
   const [posts, setPosts] = useState(() => {
     try {
       const key = `vibepulse-feed:${user?.username || 'guest'}`;
@@ -486,8 +487,20 @@ function SocialGamingApp() {
 
   const likePost = async (postId) => {
     setBusy('like:' + postId);
-    try { await api.post(`/posts/${postId}/like`); tell('Liked the photo. +1 point was awarded by the server.'); await loadCore(); }
-    catch (e) { tell(errText(e), 'error'); }
+    try {
+      await api.post(`/posts/${postId}/like`);
+      const likedPost = [...posts, ...recentPosts].find((post) => String(post.id) === String(postId));
+      const author = likedPost?.author?.username;
+      if (author) {
+        setInterestAuthors((old) => {
+          const next = [author, ...old.filter((name) => name !== author)].slice(0, 100);
+          try { window.localStorage.setItem(`vibepulse-interests:${me?.username || user?.username || 'guest'}`, JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
+      tell('Liked the photo. +1 point was awarded by the server.');
+      await loadCore();
+    } catch (e) { tell(errText(e), 'error'); }
     finally { setBusy(''); }
   };
 
@@ -721,19 +734,26 @@ function SocialGamingApp() {
     catch (e) { tell(errText(e), 'error'); }
   };
 
-  // Home feed uses a Facebook-style relevance heuristic (freshness + engagement + followed creators), never point totals.
+  // Home: a lightweight personalized feed using recency, engagement, follows, and authors the user has liked.
   const homeFeedPosts = [...recentPosts].sort((a, b) => {
     const score = (post) => {
       const ageHours = Math.max(0, (Date.now() - new Date(post.createdAt || Date.now()).getTime()) / 3600000);
       const freshness = 36 / Math.pow(ageHours + 2, 0.72);
       const likes = Number(post._count?.likes || post.likesCount || 0);
       const comments = Number(post._count?.comments || post.commentsCount || 0);
-      const fromFollowed = followingUsers.includes(post.author?.username) ? 5 : 0;
-      const ownPost = post.author?.username === me?.username ? 0.5 : 0;
-      return freshness + Math.log1p(likes) * 1.8 + Math.log1p(comments) * 3.2 + fromFollowed + ownPost;
+      const author = post.author?.username;
+      const fromFollowed = followingUsers.includes(author) ? 8 : 0;
+      const authorAffinity = interestAuthors.includes(author) ? 12 : 0;
+      const ownPost = author === me?.username ? 0.5 : 0;
+      return freshness + Math.log1p(likes) * 1.8 + Math.log1p(comments) * 3.2 + fromFollowed + authorAffinity + ownPost;
     };
     return score(b) - score(a);
   });
+  // Ranking feed is always ordered by post points first; newest breaks ties.
+  const rankingFeedPosts = [...posts].sort((a, b) =>
+    Number(b.points || 0) - Number(a.points || 0) ||
+    new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+  );
   const myRank = leaderboard.findIndex((item) => item.username === me?.username) + 1;
   const unreadCount = notifications.filter((item) => !item.readAt && !/new message|sent you a message|message from @|sent a message/i.test(item.text || "")).length;
   const unreadMessagesCount = inbox.reduce((sum, item) => sum + Number(item.unread || 0), 0);
@@ -790,7 +810,7 @@ function SocialGamingApp() {
 
       {section === 'home' && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
         <div className="space-y-5">
-          <section className="space-y-3"><div role="tablist" aria-label="Feed type" className="grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.04] p-1"><button type="button" role="tab" aria-selected={feedTab==='home'} onClick={()=>{setFeedTab('home');navigate('/?section=home&feed=home');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='home'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Home</button><button type="button" role="tab" aria-selected={feedTab==='ranking'} onClick={()=>{setFeedTab('ranking');navigate('/?section=home&feed=ranking');loadLeaderboard('overall');}} className={'rounded-lg px-4 py-2.5 text-sm font-bold transition '+(feedTab==='ranking'?'bg-sky-500 text-white shadow':'text-slate-400 hover:bg-white/10')}>Ranking</button></div></section>
+          <section className="sticky top-[60px] z-30 -mx-2 border-b border-white/10 bg-black/95 px-2 backdrop-blur sm:top-[68px] sm:mx-0 sm:rounded-t-2xl"><div role="tablist" aria-label="Feed type" className="grid grid-cols-2"><button type="button" role="tab" aria-selected={feedTab==='home'} onClick={()=>{setFeedTab('home');navigate('/?section=home&feed=home');}} className={'relative min-h-14 px-4 py-3 text-sm font-extrabold transition hover:bg-white/5 '+(feedTab==='home'?'text-white':'text-slate-400')}><span>Home</span>{feedTab==='home'&&<span className="absolute inset-x-10 bottom-0 h-1 rounded-full bg-sky-400"/>}</button><button type="button" role="tab" aria-selected={feedTab==='ranking'} onClick={()=>{setFeedTab('ranking');navigate('/?section=home&feed=ranking');loadLeaderboard('overall');}} className={'relative min-h-14 px-4 py-3 text-sm font-extrabold transition hover:bg-white/5 '+(feedTab==='ranking'?'text-white':'text-slate-400')}><span>Ranking</span>{feedTab==='ranking'&&<span className="absolute inset-x-10 bottom-0 h-1 rounded-full bg-sky-400"/>}</button></div></section>
           <section className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 shadow-lg">
             <div className="flex items-center gap-3">
               <Avatar user={me}/>
@@ -823,7 +843,7 @@ function SocialGamingApp() {
           </section>
           <Panel title="" subtitle="">
             <div className="grid gap-4 grid-cols-1">
-              {(feedTab === 'home' ? homeFeedPosts : posts).map((post) => <article id={"post-" + post.id} key={post.id} className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
+              {(feedTab === 'home' ? homeFeedPosts : rankingFeedPosts).map((post) => <article id={"post-" + post.id} key={post.id} className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/50">
                 {post.imageUrl && <button type="button" onClick={() => setExpandedMedia({url:post.imageUrl,caption:post.caption||'',author:post.author?.username||''})} className="mt-2 block w-full cursor-zoom-in sm:mt-3"><img src={post.imageUrl} alt={post.caption || 'Community photo'} loading="lazy" className="block h-auto max-h-[65vh] w-full max-w-full rounded-xl border border-white/10 bg-black object-contain sm:max-h-[620px] sm:rounded-2xl"/></button>}
                 <div className="min-w-0 space-y-3 p-2 sm:p-4">
                   <div className="flex items-center gap-3"><Avatar user={post.author}/><button onClick={() => { const username = post.author?.username; setProfileUsername(username); setSection('profile'); navigate('/?section=profile&username=' + encodeURIComponent(username || '')); loadProfile(username); }} className="min-w-0 text-left"><div className="truncate text-sm font-bold text-white">{post.author?.displayName || post.author?.username}</div><div className="text-xs text-slate-500">@{post.author?.username}</div></button><span className="ml-auto text-sm font-black text-amber-200">⚡ {fmt(post.points)}</span></div>
@@ -857,7 +877,7 @@ function SocialGamingApp() {
                   </form>
                 </div>
               </article>)}
-              {(feedTab === 'home' ? homeFeedPosts : posts).length === 0 && <p className="py-8 text-center text-sm text-slate-500 md:col-span-2">No posts yet. Publish the first photo to start the arena.</p>}
+              {(feedTab === 'home' ? homeFeedPosts : rankingFeedPosts).length === 0 && <p className="py-8 text-center text-sm text-slate-500 md:col-span-2">No posts yet. Publish the first photo to start the arena.</p>}
             </div>
           </Panel>
         </div>
