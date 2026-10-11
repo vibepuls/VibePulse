@@ -13,7 +13,7 @@ export default function App() {
     return <div className="grid min-h-screen place-items-center bg-slate-950 text-slate-200">Loading VibePulse…</div>;
   }
 
-  const canAccessAdmin = ['admin', 'super_admin', 'moderator'].includes(user?.role);
+  const canAccessAdmin = ['admin', 'super_admin', 'moderator', 'ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(user?.role);
 
   return (
     <Routes>
