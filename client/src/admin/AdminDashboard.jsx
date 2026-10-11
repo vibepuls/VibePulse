@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [reportFilter, setReportFilter] = useState('pending');
   const [userSearch, setUserSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
@@ -73,14 +74,25 @@ export default function AdminDashboard() {
     }
   };
 
-  const resolveReport = async (report) => {
+  const loadReports = async (status = reportFilter) => {
+    try {
+      const res = await api.get('/admin/reports', { params: { status: status || undefined, limit: 50 } });
+      setReports(Array.isArray(res.data) ? res.data : []);
+      setError('');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Reports লোড করা যায়নি।');
+    }
+  };
+
+  const resolveReport = async (report, status) => {
     setBusyId(report.id);
     setError('');
     setNotice('');
     try {
-      await api.patch(`/admin/reports/${report.id}`, { status: 'resolved' });
+      await api.patch(`/admin/reports/${report.id}`, { status });
       setReports((current) => current.filter((item) => item.id !== report.id));
-      setNotice('Report resolved হয়েছে।');
+      setNotice(status === 'resolved' ? 'Report resolved হয়েছে।' : 'Report dismissed হয়েছে।');
+      loadDashboard();
     } catch (err) {
       setError(err.response?.data?.error || 'Report update করা যায়নি।');
     } finally {
@@ -145,8 +157,8 @@ export default function AdminDashboard() {
         </section>}
 
         {activeTab === 'reports' && <section className="space-y-3">
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-5"><h2 className="font-semibold">Content and account reports</h2><p className="mt-1 text-sm text-slate-400">Resolve reports after reviewing them.</p></div>
-          {reports.map((report) => <article key={report.id} className="rounded-2xl border border-white/10 bg-slate-900 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">Reported: @{report.reported_username || 'user'}</p><p className="mt-1 text-xs text-slate-400">Reason: {report.reason || 'Not specified'}</p></div><span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs text-amber-300">{report.status || 'pending'}</span></div>{report.description && <p className="mt-3 text-sm text-slate-300">{report.description}</p>}{report.status === 'pending' && <button disabled={busyId === report.id} onClick={() => resolveReport(report)} className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500 disabled:opacity-50">{busyId === report.id ? 'Please wait…' : 'Mark resolved'}</button>}</article>)}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900 p-5"><div><h2 className="font-semibold">Content and account reports</h2><p className="mt-1 text-sm text-slate-400">Review each report and record a moderation decision.</p></div><label className="flex items-center gap-2 text-sm text-slate-300">Status<select aria-label="Filter reports by status" value={reportFilter} onChange={(e) => { setReportFilter(e.target.value); loadReports(e.target.value); }} className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2"><option value="pending">Pending</option><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option><option value="">All reports</option></select></label></div>
+          {reports.map((report) => <article key={report.id} className="rounded-2xl border border-white/10 bg-slate-900 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">Reported: @{report.reported_username || 'user'}</p><p className="mt-1 text-xs text-slate-400">Reason: {report.reason || 'Not specified'}</p></div><span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs text-amber-300">{report.status || 'pending'}</span></div>{report.description && <p className="mt-3 text-sm text-slate-300">{report.description}</p>}{report.status === 'pending' && <div className="mt-4 flex flex-wrap gap-2"><button disabled={busyId === report.id} onClick={() => resolveReport(report, 'resolved')} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500 disabled:opacity-50">{busyId === report.id ? 'Please wait…' : 'Resolve report'}</button><button disabled={busyId === report.id} onClick={() => resolveReport(report, 'dismissed')} className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-50">Dismiss report</button></div>}</article>)}
           {!loading && reports.length === 0 && <div className="rounded-2xl border border-white/10 bg-slate-900 p-8 text-center text-sm text-slate-400">No pending reports.</div>}
         </section>}
       </main>
