@@ -792,6 +792,11 @@ function SocialGamingApp() {
   const navTo = (key) => {
     setMenuOpen(false);
     setSection(key);
+    if (key === 'home') {
+      setFeedTab('home');
+      navigate('/?section=home&feed=home');
+      return;
+    }
     if (key === 'profile') {
       const username = me?.username;
       if (username) {
@@ -853,7 +858,7 @@ function SocialGamingApp() {
               <div className="flex items-center gap-3"><Avatar user={me} /><div className="min-w-0"><p className="break-words font-bold text-white">{me?.displayName || me?.username}</p><select aria-label="Post audience" value={privacy} onChange={(e) => setPrivacy(e.target.value)} className="mt-1 rounded-full border border-white/10 bg-slate-900 px-3 py-1 text-xs text-slate-200"><option value="PUBLIC">🌐 Public</option><option value="FOLLOWERS">👥 Followers</option><option value="PRIVATE">🔒 Only me</option></select></div></div>
               <textarea autoFocus value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={2000} placeholder="What’s on your mind?" className={`${inputClass} min-h-28 resize-y text-base`}/>
               {imageFile && <div className="flex items-center gap-3 rounded-xl border border-emerald-400/30 p-2"><span className="text-emerald-300">Photo selected</span><span className="min-w-0 flex-1 truncate text-xs text-slate-400">{imageFile.name}</span><button type="button" onClick={() => {setImageFile(null);const input=document.getElementById('arena-photo-file');if(input)input.value='';}} className="text-xs text-rose-300">Remove</button></div>}
-              <label className="block rounded-xl border border-white/10 p-3 text-xs font-semibold text-slate-300">Add photo (JPG, PNG, WEBP, GIF; up to 5 MB)<input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/></label>
+              <label className="block rounded-xl border border-white/10 p-3 text-xs font-semibold text-slate-300">Add photo (JPG, PNG, WEBP, GIF; up to 15 MB, compressed automatically)<input id="arena-photo-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="mt-2 block w-full text-xs text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-slate-100"/></label>
               <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Photo URL (optional)" className={inputClass}/>
               <div id="inline-photo-battle" className="rounded-xl border border-white/10 p-3">
                 <button type="button" onClick={() => setComposerOption(composerOption === 'battle' ? '' : 'battle')} className={secondaryButton + ' w-full justify-center gap-2 py-3'}><Swords size={17}/> {composerOption === 'battle' ? 'Close Photo Battle' : 'Create a Photo Battle'}</button>
