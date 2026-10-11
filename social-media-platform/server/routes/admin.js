@@ -30,13 +30,30 @@ router.get('/users', async (req, res, next) => {
 });
 
 router.post('/users/:id/suspend', authorize('admin', 'super_admin'), async (req, res, next) => {
-  try { await User.suspend(req.params.id); res.json({ message: 'User suspended' }); }
-  catch (err) { next(err); }
+  try {
+    if (String(req.params.id) === String(req.user.id)) {
+      return res.status(400).json({ error: 'You cannot suspend your own account.' });
+    }
+    const target = await query('SELECT id, role FROM users WHERE id = $1 AND deleted_at IS NULL', [req.params.id]);
+    if (!target.rows.length) return res.status(404).json({ error: 'User not found.' });
+    if (target.rows[0].role === 'super_admin') {
+      return res.status(403).json({ error: 'Super admin accounts are protected.' });
+    }
+    await User.suspend(req.params.id);
+    res.json({ message: 'User suspended' });
+  } catch (err) { next(err); }
 });
 
 router.post('/users/:id/unsuspend', authorize('admin', 'super_admin'), async (req, res, next) => {
-  try { await User.unsuspend(req.params.id); res.json({ message: 'User unsuspended' }); }
-  catch (err) { next(err); }
+  try {
+    const target = await query('SELECT id, role FROM users WHERE id = $1 AND deleted_at IS NULL', [req.params.id]);
+    if (!target.rows.length) return res.status(404).json({ error: 'User not found.' });
+    if (target.rows[0].role === 'super_admin') {
+      return res.status(403).json({ error: 'Super admin accounts are protected.' });
+    }
+    await User.unsuspend(req.params.id);
+    res.json({ message: 'User unsuspended' });
+  } catch (err) { next(err); }
 });
 
 router.delete('/users/:id', authorize('super_admin'), async (req, res, next) => {
@@ -50,8 +67,19 @@ router.get('/reports', async (req, res, next) => {
 });
 
 router.patch('/reports/:id', async (req, res, next) => {
-  try { const { status, admin_notes } = req.body; await Report.updateStatus(req.params.id, status, admin_notes, req.user.id); res.json({ message: 'Report updated' }); }
-  catch (err) { next(err); }
+  try {
+    const { status, admin_notes = '' } = req.body;
+    if (!['pending', 'resolved', 'dismissed'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid report status.' });
+    }
+    if (typeof admin_notes !== 'string' || admin_notes.length > 2000) {
+      return res.status(400).json({ error: 'Admin notes must be text under 2000 characters.' });
+    }
+    const existing = await query('SELECT id FROM reports WHERE id = $1', [req.params.id]);
+    if (!existing.rows.length) return res.status(404).json({ error: 'Report not found.' });
+    await Report.updateStatus(req.params.id, status, admin_notes.trim(), req.user.id);
+    res.json({ message: 'Report updated', status });
+  } catch (err) { next(err); }
 });
 
 module.exports = router;
