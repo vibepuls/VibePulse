@@ -38,6 +38,18 @@ function GuestBrowse() {
         </div>
       </header>
 
+      <section aria-labelledby="vibepulse-main-heading" className="mx-auto max-w-6xl px-4 pt-7 sm:px-5 sm:pt-9">
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-sky-300">Share · Discover · Connect</p>
+        <h1 id="vibepulse-main-heading" className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">VibePulse — Share Moments and Discover People</h1>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
+          VibePulse is a social network where people can share photos and updates, discover creators, follow friends, and join community photo battles. Explore public posts and the points leaderboard below, then create a free account to publish your own posts, like and comment, follow people, and take part in community activities.
+        </p>
+        <nav aria-label="Get started with VibePulse" className="mt-4 flex flex-wrap gap-3 text-sm font-semibold">
+          <Link to="/register" className="rounded-xl bg-sky-500 px-4 py-2 text-slate-950 hover:bg-sky-300">Join VibePulse</Link>
+          <Link to="/login" className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10">Sign in</Link>
+        </nav>
+      </section>
+
       <div className="mx-auto grid max-w-6xl gap-6 px-3 py-5 sm:px-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section>
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -94,6 +106,18 @@ function GuestBrowse() {
           </section>
         </aside>
       </div>
+      <section aria-labelledby="vibepulse-about-heading" className="mx-auto max-w-6xl px-4 pb-8 sm:px-5">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5 sm:p-6">
+          <h2 id="vibepulse-about-heading" className="text-xl font-bold text-white">Explore the VibePulse social community</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-300">Find new posts, discover people to follow, and see how community points shape the public leaderboard. VibePulse brings social sharing and friendly community challenges together in one place. Public posts can be previewed here; an account lets you participate and build your own profile.</p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <article><h3 className="font-bold text-white">Share photos and updates</h3><p className="mt-1 text-sm leading-6 text-slate-400">Post moments, ideas, and captions for the community to discover.</p></article>
+            <article><h3 className="font-bold text-white">Discover creators</h3><p className="mt-1 text-sm leading-6 text-slate-400">Browse public posts and visit creator profiles to find people you enjoy.</p></article>
+            <article><h3 className="font-bold text-white">Join the ranking</h3><p className="mt-1 text-sm leading-6 text-slate-400">Explore the points leaderboard and take part in community activities.</p></article>
+          </div>
+          <p className="mt-5 text-sm text-slate-300">New to VibePulse? <Link to="/register" className="font-semibold text-sky-300 underline underline-offset-4">Create a free account</Link> or <Link to="/login" className="font-semibold text-sky-300 underline underline-offset-4">sign in</Link>.</p>
+        </div>
+      </section>
       <footer className="border-t border-white/10 px-4 py-6 text-center text-xs text-slate-500">VibePulse · Public content is viewable without signing in.</footer>
     </main>
   );
