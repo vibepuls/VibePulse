@@ -18,6 +18,37 @@ const editCooldownLabel = (lastEditedAt) => {
   return `Edit in ${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 };
 const errText = (e, fallback = 'Something went wrong. Please try again.') => e?.response?.data?.error || e?.message || fallback;
+
+// Resize phone photos before sending them to Storage. This avoids common bucket
+// size-limit failures while keeping profile and feed images sharp enough for web.
+async function prepareImageUpload(file) {
+  if (!file || !file.type?.startsWith('image/')) throw new Error('Choose an image file.');
+  if (file.size > 15 * 1024 * 1024) throw new Error('Choose an image smaller than 15 MB.');
+  if (file.size <= 900 * 1024) return file;
+  if (file.type === 'image/gif') throw new Error('Animated GIFs must be under 900 KB. For larger GIFs, choose a JPG, PNG, or WEBP image.');
+  let bitmap;
+  try { bitmap = await createImageBitmap(file); }
+  catch { throw new Error('This image could not be compressed. Please choose a JPG, PNG, or WEBP image.'); }
+  try {
+    const maxSide = 1600;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Your browser could not prepare this image.');
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    let quality = 0.86;
+    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    while (blob && blob.size > 900 * 1024 && quality > 0.48) {
+      quality -= 0.1;
+      blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+    }
+    if (!blob) throw new Error('Image compression failed. Please try another image.');
+    if (blob.size > 1024 * 1024) throw new Error('This image is still too large after compression. Choose a smaller image.');
+    return new File([blob], (file.name || 'image').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+  } finally { bitmap.close?.(); }
+}
 const menu = [
   ['home', 'Home', Activity], ['search', 'Find Players', Search], ['ranking', 'Ranking', Trophy], ['wallet', 'Wallet', Wallet],
   ['missions', 'Missions', Zap], ['battles', 'Photo Battles', Swords], ['games', 'Mini Games', Gamepad2],
@@ -416,7 +447,7 @@ function SocialGamingApp() {
     try {
       let finalUrl = imageUrl.trim();
       if (imageFile) {
-        const data = new FormData(); data.append('file', imageFile);
+        const data = new FormData(); data.append('file', await prepareImageUpload(imageFile));
         const uploaded = await api.post('/media/upload', data);
         finalUrl = uploaded.data.url;
       }
@@ -791,7 +822,7 @@ function SocialGamingApp() {
         <div className="flex items-center gap-1"><button title="Notifications" onClick={async () => { const unread=notifications.filter(n=>!n.readAt); await Promise.all(unread.map(n=>api.post(`/notifications/${n.id}/read`).catch(()=>null))); setNotifications(old=>old.map(n=>({...n,readAt:n.readAt||new Date().toISOString()}))); navTo("notifications"); }} className={secondaryButton}><Bell size={17}/>{unreadCount>0&&<span className="rounded-full bg-rose-500 px-1.5 text-[10px] text-white">{unreadCount}</span>}</button><button title="Light/dark mode" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className={secondaryButton}>{theme === "dark" ? <Sun size={17}/> : <Moon size={17}/>}</button><button title="Language" onClick={() => setLanguage(bn ? "en" : "bn")} className={secondaryButton}><Languages size={16}/>{bn ? " EN" : " বাংলা"}</button></div>
         <div className="flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2"><Zap size={16} className="text-amber-200"/><span className="text-sm font-black text-amber-100">{fmt(me?.points)}</span><span className="hidden text-xs text-amber-200/70 sm:inline">POINTS</span></div>
         <div className="flex items-center gap-2">
-          <input ref={avatarPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (e) => { const file=e.target.files?.[0]; if(!file)return; if(file.size>5*1024*1024){tell("Profile picture must be 5 MB or smaller.","error");e.target.value="";return;} try { setBusy("avatar-upload"); const fd=new FormData(); fd.append("file",file); const up=await api.post("/media/upload",fd); const saved=await api.patch("/me/profile",{avatarUrl:up.data.url}); setMe(saved.data); setUser(saved.data); setProfile(saved.data); setAvatarUrl(saved.data.avatarUrl||up.data.url); tell("Profile picture updated."); } catch(err) { tell(errText(err,"Could not upload profile picture. If the error says uploads are not configured, the server's Supabase Storage settings need fixing."),"error"); } finally { setBusy(""); e.target.value=""; } }}/><button type="button" title="Click profile picture to change it" className={secondaryButton} onClick={() => avatarPickerRef.current?.click()}><span className="relative block"><Avatar user={me}/><span className="absolute bottom-0 right-0 rounded-full bg-sky-500 p-0.5 text-white"><Camera size={11}/></span></span><span className="ml-2 hidden sm:inline">@{me?.username}</span></button>
+          <input ref={avatarPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (e) => { const file=e.target.files?.[0]; if(!file)return; try { setBusy("avatar-upload"); const fd=new FormData(); fd.append("file",await prepareImageUpload(file)); const up=await api.post("/media/upload",fd); const saved=await api.patch("/me/profile",{avatarUrl:up.data.url}); setMe(saved.data); setUser(saved.data); setProfile(saved.data); setAvatarUrl(saved.data.avatarUrl||up.data.url); tell("Profile picture updated."); } catch(err) { tell(errText(err,"Could not upload profile picture. If the error says uploads are not configured, the server's Supabase Storage settings need fixing."),"error"); } finally { setBusy(""); e.target.value=""; } }}/><button type="button" title="Click profile picture to change it" className={secondaryButton} onClick={() => avatarPickerRef.current?.click()}><span className="relative block"><Avatar user={me}/><span className="absolute bottom-0 right-0 rounded-full bg-sky-500 p-0.5 text-white"><Camera size={11}/></span></span><span className="ml-2 hidden sm:inline">@{me?.username}</span></button>
         </div>
       </div>
       
@@ -1034,7 +1065,7 @@ function SocialGamingApp() {
             {(profileUsername === me?.username ? me?.coverUrl : profile?.coverUrl) && <img src={profileUsername === me?.username ? me.coverUrl : profile.coverUrl} alt="Cover photo" className="absolute inset-0 h-full w-full object-cover" />}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
             {profileUsername === me?.username && <button type="button" onClick={() => coverPickerRef.current?.click()} className="absolute bottom-3 right-3 z-30 rounded-full bg-black/70 px-3 py-2 text-xs font-semibold text-white"><Camera size={14} className="mr-1 inline"/> Edit cover photo</button>}
-            {profileUsername === me?.username && <input ref={coverPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (event) => { const file=event.target.files?.[0]; if(!file)return; if(file.size>5*1024*1024){tell('Cover photo must be 5 MB or smaller.','error');event.target.value='';return;} try {setBusy('cover-upload');const fd=new FormData();fd.append('file',file);const uploaded=await api.post('/media/upload',fd);const {data}=await api.patch('/me/profile',{coverUrl:uploaded.data.url});setMe(data);setUser(data);setProfile(data);setCoverUrl(data.coverUrl||uploaded.data.url);tell('Cover photo updated.');}catch(err){tell(errText(err,'Could not upload cover photo. Check that image storage is configured on the server.'),'error');}finally{setBusy('');event.target.value='';}}}/>}
+            {profileUsername === me?.username && <input ref={coverPickerRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={async (event) => { const file=event.target.files?.[0]; if(!file)return; try {setBusy('cover-upload');const fd=new FormData();fd.append('file',await prepareImageUpload(file));const uploaded=await api.post('/media/upload',fd);const {data}=await api.patch('/me/profile',{coverUrl:uploaded.data.url});setMe(data);setUser(data);setProfile(data);setCoverUrl(data.coverUrl||uploaded.data.url);tell('Cover photo updated.');}catch(err){tell(errText(err,'Could not upload cover photo. Check that image storage is configured on the server.'),'error');}finally{setBusy('');event.target.value='';}}}/>}
           </div>
           <div className="px-4 pb-4 sm:px-7">
             <div className="relative z-20 -mt-12 flex flex-col gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:justify-between">
@@ -1109,8 +1140,8 @@ function SocialGamingApp() {
             event.preventDefault(); setBusy('profile-save');
             try {
               let nextAvatar = avatarUrl.trim(); let nextCover = coverUrl.trim();
-              if (avatarFile) { if (avatarFile.size > 5*1024*1024) throw new Error('Profile picture must be 5 MB or smaller.'); const fd = new FormData(); fd.append('file', avatarFile); const upload = await api.post('/media/upload', fd); nextAvatar = upload.data.url; }
-              if (coverFile) { if (coverFile.size > 5*1024*1024) throw new Error('Cover photo must be 5 MB or smaller.'); const fd = new FormData(); fd.append('file', coverFile); const upload = await api.post('/media/upload', fd); nextCover = upload.data.url; }
+              if (avatarFile) { const fd = new FormData(); fd.append('file', await prepareImageUpload(avatarFile)); const upload = await api.post('/media/upload', fd); nextAvatar = upload.data.url; }
+              if (coverFile) { const fd = new FormData(); fd.append('file', await prepareImageUpload(coverFile)); const upload = await api.post('/media/upload', fd); nextCover = upload.data.url; }
               const {data} = await api.patch('/me/profile', {displayName:displayName.trim(), bio:bio.trim(), avatarUrl:nextAvatar, coverUrl:nextCover});
               setMe(data); setUser(data); setProfile(data); setAvatarUrl(data.avatarUrl||''); setCoverUrl(data.coverUrl||''); setAvatarFile(null); setCoverFile(null); setProfileEditOpen(false); tell('Profile updated successfully.');
             } catch(e) { tell(errText(e, 'Could not save profile. Check image storage configuration.'), 'error'); } finally { setBusy(''); }
