@@ -280,21 +280,6 @@ function SocialGamingApp() {
       setSection('home');
     }
   }, [location.pathname, location.search]);
-  // Keep the current section in the address bar even when a button changes section directly.
-  // This makes browser refresh/back-forward restore the page the user was viewing.
-  useEffect(() => {
-    // Never overwrite a valid deep-link during the first render after refresh.
-    // Navigation handlers already write the destination URL; this effect only
-    // fills in a missing section for legacy URLs.
-    if (location.pathname.startsWith('/profile/')) return;
-    const params = new URLSearchParams(location.search);
-    if (params.has('section')) return;
-    if (section === 'home') return;
-    if (section === 'profile' && !profileUsername) return;
-    params.set('section', section);
-    if (section === 'profile') params.set('username', profileUsername);
-    navigate({ pathname: '/', search: `?${params.toString()}` }, { replace: true });
-  }, [section, profileUsername, location.pathname, location.search, navigate]);
   useEffect(() => { window.localStorage.setItem('vibepulse-theme', theme); }, [theme]);
   useEffect(() => { window.localStorage.setItem('vibepulse-language', language); }, [language]);
   useEffect(() => { try { setDrafts(JSON.parse(window.localStorage.getItem(`vibepulse-drafts:${me?.username || user?.username || 'guest'}`) || '[]')); } catch { setDrafts([]); } }, [me?.username, user?.username]);
@@ -487,7 +472,7 @@ function SocialGamingApp() {
   const openConversation = async (username) => {
     const target = String(username || '').trim().replace(/^@/, '');
     if (!target || target.toLowerCase() === String(me?.username || '').toLowerCase()) return tell('Choose another user to message.', 'error');
-    setMessageTarget(target); setSection('messages');
+    setMessageTarget(target); setSection('messages'); navigate('/?section=messages');
     try { const { data } = await api.get('/messages/' + encodeURIComponent(target)); setMessages(Array.isArray(data) ? data : []); }
     catch (e) { setMessages([]); tell(errText(e, 'Could not open chat with @' + target + '.'), 'error'); }
   };
@@ -568,7 +553,7 @@ function SocialGamingApp() {
     event?.preventDefault();
     const target = messageTarget.trim();
     if (!target) return tell('Enter a username to open a conversation.', 'error');
-    try { const { data } = await api.get(`/messages/${encodeURIComponent(target)}`); setMessages(data); setMessageTarget(target); setSection('messages'); }
+    try { const { data } = await api.get(`/messages/${encodeURIComponent(target)}`); setMessages(data); setMessageTarget(target); setSection('messages'); navigate('/?section=messages'); }
     catch (e) { tell(errText(e, 'Could not load messages.'), 'error'); }
   };
 
@@ -1100,7 +1085,7 @@ function SocialGamingApp() {
         <section id="profile-posts-section" className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045]">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
             <h2 className="text-lg font-extrabold text-white">{profileUsername === me?.username ? 'Your posts' : 'Posts'}</h2>
-            {profileUsername === me?.username && <button type="button" onClick={() => {setSection('home');setComposeOpen(true);}} className={primaryButton}><Plus size={15} className="mr-1 inline"/> Create post</button>}
+            {profileUsername === me?.username && <button type="button" onClick={() => {setSection('home');setFeedTab('home');navigate('/?section=home&feed=home');setComposeOpen(true);}} className={primaryButton}><Plus size={15} className="mr-1 inline"/> Create post</button>}
           </div>
           <div className="space-y-4 p-3 sm:p-5">
             {profilePosts.map(post => <article key={post.id} className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
@@ -1121,7 +1106,7 @@ function SocialGamingApp() {
               {post.author?.username !== me?.username && <div className="flex flex-wrap gap-2 px-4 pt-3"><button type="button" disabled={busy===`steal:${post.id}`||(stealCountdowns[post.id]||0)>0} onClick={()=>collectPoints(post)} className={secondaryButton}>{(stealCountdowns[post.id]||0)>0?`Steal in ${stealCountdowns[post.id]}s`:'Steal 3'}</button><button type="button" onClick={()=>giftPostAuthor(post)} className={secondaryButton}><Gift size={14} className="mr-1 inline"/> Gift points</button><button type="button" onClick={()=>openConversation(post.author.username)} className={secondaryButton}>Message</button></div>}
               <form onSubmit={event=>addComment(event,post.id)} className="flex min-w-0 gap-2 p-4"><input id={'profile-comment-'+post.id} value={commentDrafts[post.id]||''} onChange={event=>setCommentDrafts(old=>({...old,[post.id]:event.target.value}))} maxLength={1000} placeholder="Write a comment…" className={inputClass+' min-w-0 flex-1'}/><button disabled={busy===`comment:${post.id}`} className={secondaryButton} aria-label="Send comment"><Send size={15}/></button></form>
             </article>)}
-            {profilePosts.length === 0 && <div className="py-12 text-center"><ImagePlus size={38} className="mx-auto mb-3 text-slate-400"/><h3 className="font-bold text-white">No posts yet</h3><p className="mt-1 text-sm text-slate-400">Photos and updates will appear here.</p>{profileUsername === me?.username && <button type="button" onClick={()=>{setSection('home');setComposeOpen(true);}} className={primaryButton+' mt-4'}>Create your first post</button>}</div>}
+            {profilePosts.length === 0 && <div className="py-12 text-center"><ImagePlus size={38} className="mx-auto mb-3 text-slate-400"/><h3 className="font-bold text-white">No posts yet</h3><p className="mt-1 text-sm text-slate-400">Photos and updates will appear here.</p>{profileUsername === me?.username && <button type="button" onClick={()=>{setSection('home');setFeedTab('home');navigate('/?section=home&feed=home');setComposeOpen(true);}} className={primaryButton+' mt-4'}>Create your first post</button>}</div>}
           </div>
         </section>
       </div>}
