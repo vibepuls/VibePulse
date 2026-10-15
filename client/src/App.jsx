@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import SocialGamingApp from './pages/SocialGamingApp';
 import GuestBrowse from './pages/GuestBrowse';
 import AdminDashboard from './admin/AdminDashboard';
+import SeoManager from './SeoManager';
+import PublicProfile from './pages/PublicProfile';
 
 export default function App() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -16,12 +18,15 @@ export default function App() {
   const canAccessAdmin = ['admin', 'super_admin', 'moderator', 'ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(user?.role);
 
   return (
+    <>
+    <SeoManager />
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <Register />} />
       <Route path="/admin" element={isAuthenticated && canAccessAdmin ? <AdminDashboard /> : <Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
-      <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <GuestBrowse />} />
+      <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <PublicProfile />} />
       <Route path="/*" element={isAuthenticated ? <SocialGamingApp /> : <GuestBrowse />} />
     </Routes>
+    </>
   );
 }
