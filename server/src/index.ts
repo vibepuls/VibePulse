@@ -91,6 +91,20 @@ app.post('/api/media/upload', auth, (req:any,res:any,next:any)=>upload.single('f
   }
 });
 
+app.get('/api/seo/public-profiles', async (_req, res) => {
+  const users = await prisma.user.findMany({
+    where: { status: 'ACTIVE' },
+    select: { username: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+    take: 5000
+  });
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json(users.map((user) => ({
+    username: user.username,
+    lastmod: user.createdAt.toISOString().slice(0, 10)
+  })));
+});
+
 app.get('/api/health',(_req,res)=>res.json({ok:true,service:'VibePulse API'}));
 app.post('/api/auth/register',async(req,res)=>{try{const data=z.object({username:z.string().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/),displayName:z.string().min(1).max(60),email:z.string().email().optional().or(z.literal('')),password:z.string().min(8).max(100)}).parse(req.body); const username=data.username.toLowerCase(); const hash=await bcrypt.hash(data.password,12); const user=await prisma.user.create({data:{username,displayName:data.displayName,email:data.email||null,passwordHash:hash}}); const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'}); res.status(201).json({token,user:safeUser(user)});}catch(e:any){res.status(e?.code==='P2002'?409:400).json({error:e?.code==='P2002'?'Username or email already exists':e.message||'Registration failed'});}});
 app.post('/api/auth/login',async(req,res)=>{const data=z.object({username:z.string(),password:z.string()}).safeParse(req.body);if(!data.success)return res.status(400).json({error:'Username and password required'});const user=await prisma.user.findUnique({where:{username:data.data.username.toLowerCase()}});if(!user||!(await bcrypt.compare(data.data.password,user.passwordHash)))return res.status(401).json({error:'Incorrect username or password'});if(user.status!=='ACTIVE')return res.status(403).json({error:'Account is not active'});const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'});res.json({token,user:safeUser(user)});});
