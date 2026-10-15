@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">VibePulse — Share Moments, Discover People</title>
+  <desc id="desc">VibePulse social network brand card.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1020"/><stop offset="1" stop-color="#123a63"/></linearGradient><linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs>
+  <rect width="1200" height="630" rx="0" fill="url(#bg)"/>
+  <circle cx="1010" cy="110" r="250" fill="#38bdf8" opacity=".08"/><circle cx="170" cy="600" r="280" fill="#6366f1" opacity=".12"/>
+  <rect x="94" y="178" width="92" height="92" rx="24" fill="url(#accent)"/>
+  <path d="M112 207h14l12 39 13-29 9 19 14-29h-14" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="218" y="245" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="72" font-weight="700">VibePulse</text>
+  <text x="96" y="350" fill="#e2e8f0" font-family="Arial,Helvetica,sans-serif" font-size="42" font-weight="600">Share moments. Discover people.</text>
+  <text x="98" y="414" fill="#94a3b8" font-family="Arial,Helvetica,sans-serif" font-size="26">Creators · Friends · Community rankings</text>
+</svg>
