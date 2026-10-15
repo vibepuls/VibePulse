@@ -1,5 +1,3 @@
 User-agent: *
 Allow: /
-Disallow: /login
-Disallow: /register
 Sitemap: https://vibepulse-frontend.onrender.com/sitemap.xml
