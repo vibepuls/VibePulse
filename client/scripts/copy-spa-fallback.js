@@ -22,7 +22,7 @@ try {
 const urls = [
   `  <url><loc>${site}/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>`,
   ...profiles.map((profile) => {
-    const lastmod = /^\\d{4}-\\d{2}-\\d{2}$/.test(profile.lastmod || '') ? profile.lastmod : today;
+    const lastmod = /^\d{4}-\d{2}-\d{2}$/.test(profile.lastmod || '') ? profile.lastmod : today;
     const username = encodeURIComponent(profile.username);
     return `  <url><loc>${site}/profile/${username}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`;
   })
