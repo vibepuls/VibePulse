@@ -239,7 +239,8 @@ export default function ProfessionalVideoEditor() {
     setExporting(true);
     try {
       const canvas=document.createElement('canvas');
-      const [w,h]=aspect==='9:16'?[720,1280]:aspect==='1:1'?[1080,1080]:[1280,720];
+      // Use a mobile-friendly render size to reduce dropped frames while encoding in-browser.
+      const [w,h]=aspect==='9:16'?[540,960]:aspect==='1:1'?[720,720]:[960,540];
       canvas.width=w; canvas.height=h;
       const ctx=canvas.getContext('2d');
       const loaded=await Promise.all(clips.map(c=>new Promise((resolve,reject)=>{
@@ -248,7 +249,9 @@ export default function ProfessionalVideoEditor() {
         const ready=()=>{video.playbackRate=c.speed||1;video.play().catch(()=>{});resolve({c,media:video,width:video.videoWidth||1280,height:video.videoHeight||720});};
         video.addEventListener('loadedmetadata',ready,{once:true});video.addEventListener('error',reject,{once:true});video.load();
       })));
-      const stream=canvas.captureStream(30);
+      // 24 fps is more reliable on phones during simultaneous drawing and MP4 encoding.
+      const renderFps=24;
+      const stream=canvas.captureStream(renderFps);
       let audioCtx=null, audioEl=null, audioGain=null;
       if(audio?.url){
         audioCtx=new AudioContext(); audioEl=new Audio(audio.url); audioEl.loop=true;
@@ -296,7 +299,7 @@ export default function ProfessionalVideoEditor() {
             else if(Math.abs(item.media.currentTime-sourceTime)>.75){try{item.media.currentTime=Math.min(sourceEnd||sourceTime,sourceTime);}catch{}}
           }
           ctx.save();ctx.filter=item.c.filter||'none';try{ctx.drawImage(item.media,(w-dw)/2+moveX*w/100,(h-dh)/2+moveY*h/100,dw,dh);}catch{}ctx.restore();
-          const grad=ctx.createLinearGradient(0,h*.5,0,h);grad.addColorStop(0,'transparent');grad.addColorStop(1,'rgba(0,0,0,.65)');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+          const grad=ctx.createLinearGradient(0,h*.5,0,h);grad.addColorStop(0,'rgba(0,0,0,0)');grad.addColorStop(1,'rgba(0,0,0,.65)');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
           if(title){ctx.fillStyle='white';ctx.textAlign='center';ctx.font='bold '+Math.round(w*.045*textSize)+'px Arial';ctx.fillText(title,w/2,h*(1-textY/100),w*.85);}
           if(t>=total)resolve();else requestAnimationFrame(draw);
         };requestAnimationFrame(draw);
