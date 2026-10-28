@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, AudioLines, Clapperboard, Download, Film, ImagePlus, Music2, Pause, Play, Plus, Scissors, Settings2, Sparkles, Trash2, Type, Undo2, Redo2, Volume2, WandSparkles } from 'lucide-react';
 
 const id = () => globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+const openEditorDB = () => new Promise((resolve, reject) => { if (!('indexedDB' in window)) return reject(new Error('Browser storage unavailable')); const req = indexedDB.open('vibepulse-studio-projects', 1); req.onupgradeneeded = () => req.result.createObjectStore('projects'); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); });
 const fmt = (n) => { const v = Math.max(0, Number(n) || 0); return `${Math.floor(v / 60)}:${(v % 60).toFixed(1).padStart(4, '0')}`; };
 const animations = [['None','none'],['Ken Burns — Zoom In','vp-ken-burns-in'],['Ken Burns — Zoom Out','vp-ken-burns-out'],['Ken Burns — Pan Left','vp-ken-burns-left'],['Ken Burns — Pan Right','vp-ken-burns-right'],['Ken Burns — Pan Up','vp-ken-burns-up'],['Ken Burns — Pan Down','vp-ken-burns-down'],['2.5D Parallax','vp-25d'],['Cinematic Push In','vp-push'],['Cinematic Pull Back','vp-zoom-out'],['Dynamic Drift','vp-drift-right'],['Soft Fade In','vp-fade']];
 const visualEffects = [['None','none'],['Glow','vp-glow'],['VHS','vp-vhs'],['Dream Blur','vp-dream'],['Flash','vp-flash'],['Vintage','vp-vintage'],['Neon','vp-neon'],['Film Grain','vp-grain'],['Chromatic','vp-chromatic'],['Cinematic Contrast','vp-cinema'],['Soft Bloom','vp-bloom'],['Night Vision','vp-night'],['Retro Fade','vp-retro'],['Edge Pop','vp-edge']];
@@ -39,6 +40,42 @@ export default function ProfessionalVideoEditor() {
     for (const c of clips) { if (playhead < cursor + c.duration) return c; cursor += c.duration; }
     return clips[clips.length - 1] || null;
   }, [clips, playhead]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const db = await openEditorDB();
+        const saved = await new Promise((resolve, reject) => { const tx = db.transaction('projects', 'readonly'); const req = tx.objectStore('projects').get('autosave'); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); });
+        if (cancelled) { db.close(); return; }
+        if (saved) {
+          const restored = (saved.clips || []).filter(c => c.file).map(c => ({ ...c, url: URL.createObjectURL(c.file) }));
+          setClips(restored); setSelected(restored[0]?.id || null); setTitle(saved.title || ''); setAspect(saved.aspect || '16:9');
+          setTextSize(saved.textSize || 1); setTextY(saved.textY ?? 10); setAudioVolume(saved.audioVolume ?? 80); setAudioFadeIn(saved.audioFadeIn ?? .5); setAudioFadeOut(saved.audioFadeOut ?? .5);
+          if (saved.audio?.file) setAudio({ ...saved.audio, url: URL.createObjectURL(saved.audio.file) });
+          if (restored.length) setNotice('Recovered your last autosaved project from this browser.');
+        }
+        db.close();
+      } catch { /* browser storage may be unavailable */ }
+      if (!cancelled) setAutosaveReady(true);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const db = await openEditorDB();
+        const storedClips = clips.map(clip => { const copy = { ...clip }; delete copy.url; return copy; });
+        const storedAudio = audio ? { ...audio } : null; if (storedAudio) delete storedAudio.url;
+        const payload = { clips: storedClips, title, aspect, textSize, textY, audioVolume, audioFadeIn, audioFadeOut, audio: storedAudio, savedAt: Date.now() };
+        await new Promise((resolve, reject) => { const tx = db.transaction('projects', 'readwrite'); tx.objectStore('projects').put(payload, 'autosave'); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); });
+        db.close();
+      } catch { /* autosave is best-effort */ }
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [autosaveReady, clips, title, aspect, textSize, textY, audio, audioVolume, audioFadeIn, audioFadeOut]);
 
   useEffect(() => {
     if (!playing) return;
