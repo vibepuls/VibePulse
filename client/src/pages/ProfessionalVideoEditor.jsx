@@ -181,17 +181,17 @@ export default function ProfessionalVideoEditor() {
         const img=new Image(); img.onload=()=>resolve({c,img}); img.onerror=reject; img.src=c.url;
       })));
       const stream=canvas.captureStream(30);
-      let audioCtx=null, audioEl=null;
+      let audioCtx=null, audioEl=null, audioGain=null;
       if(audio?.url){
         audioCtx=new AudioContext(); audioEl=new Audio(audio.url); audioEl.loop=true;
-        const src=audioCtx.createMediaElementSource(audioEl); const gain=audioCtx.createGain(); const dest=audioCtx.createMediaStreamDestination();
+        const src=audioCtx.createMediaElementSource(audioEl); const gain=audioCtx.createGain(); audioGain=gain; const dest=audioCtx.createMediaStreamDestination();
         const targetVolume=Math.max(0,Math.min(1,audioVolume/100)); gain.gain.setValueAtTime(audioFadeIn>0?0:targetVolume,audioCtx.currentTime); if(audioFadeIn>0)gain.gain.linearRampToValueAtTime(targetVolume,audioCtx.currentTime+audioFadeIn); src.connect(gain); gain.connect(dest); dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t)); await audioCtx.resume(); await audioEl.play().catch(()=>{});
       }
       const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
       const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined); const chunks=[];
       recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
       const stopped=new Promise(resolve=>recorder.onstop=resolve); recorder.start(250);
-      const total=clips.reduce((s,c)=>s+c.duration,0); if(audioCtx&&audioFadeOut>0&&audioFadeOut<total){const g=audioCtx.createGain(); /* fade-out is applied to the exported audio bus below when supported */} let start=performance.now();
+      const total=clips.reduce((s,c)=>s+c.duration,0); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} let start=performance.now();
       await new Promise(resolve=>{
         const draw=now=>{
           const t=Math.min(total,(now-start)/1000); let offset=0; let item=loaded[loaded.length-1];
