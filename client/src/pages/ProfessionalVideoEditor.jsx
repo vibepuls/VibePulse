@@ -218,8 +218,8 @@ export default function ProfessionalVideoEditor() {
     setPlayhead(Math.max(0,Math.min(duration,((event.clientX-rect.left)/rect.width)*duration)));
   };
   const motionDuration = activeAtTime ? Math.max(8, activeAtTime.duration || 8) : 8;
-  const previewAnimation = activeAtTime?.animation && activeAtTime.animation !== 'none' ? `${activeAtTime.animation} ${motionDuration}s linear(0, .194444 12.5%, .333333 25%, 1 100%) 1 both` : 'none';
-  const backgroundMotion = activeAtTime?.animation === 'vp-25d' ? `vp-25d-background ${motionDuration}s linear(0, .194444 12.5%, .333333 25%, 1 100%) 1 both` : activeAtTime?.animation?.startsWith('vp-ken-burns') ? `vp-ken-burns-background ${motionDuration}s linear(0, .194444 12.5%, .333333 25%, 1 100%) 1 both` : 'none';
+  const previewAnimation = activeAtTime?.animation && activeAtTime.animation !== 'none' ? `${activeAtTime.animation} ${motionDuration}s linear 1 both` : 'none';
+  const backgroundMotion = activeAtTime?.animation === 'vp-25d' ? `vp-25d-background ${motionDuration}s linear 1 both` : activeAtTime?.animation?.startsWith('vp-ken-burns') ? `vp-ken-burns-background ${motionDuration}s linear 1 both` : 'none';
   const transitionName = 'Cut';
   const transitionDuration = transitionName === 'Cut' ? 0 : transitionName === 'Fade' ? 420 : transitionName === 'Dissolve' ? 620 : transitionName === 'Zoom' ? 560 : transitionName === 'Slide' ? 520 : 360;
   const previewTransitionAnimation = transitionName !== 'Cut' && transitionAnimations[transitionName] ? `${transitionAnimations[transitionName]} ${transitionDuration}ms cubic-bezier(.22,.61,.36,1) 1 both` : 'none';
