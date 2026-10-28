@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Activity, ArrowDownRight, Bell, Camera, Check, ChevronRight, Crown, Gift, Menu, X,
   Gamepad2, Heart, ImagePlus, LoaderCircle, LogOut, MessageCircle, Plus,
-  RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap, Sun, Moon, Languages, MoreHorizontal, Trash2, Settings
+  RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap, Sun, Moon, Languages, MoreHorizontal, Trash2, Settings, Film
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -53,7 +53,7 @@ const menu = [
   ['home', 'Home', Activity], ['search', 'Find Players', Search], ['ranking', 'Ranking', Trophy], ['wallet', 'Wallet', Wallet],
   ['missions', 'Missions', Zap], ['battles', 'Photo Battles', Swords], ['games', 'Mini Games', Gamepad2],
   ['teams', 'Teams', Users], ['referrals', 'Referral', Gift], ['messages', 'Messages', MessageCircle],
-  ['notifications', 'Notifications', Bell], ['profile', 'My Profile', Shield]
+  ['notifications', 'Notifications', Bell], ['profile', 'My Profile', Shield], ['cinematic', 'Cinematic Studio', Film]
 ];
 
 function Avatar({ user, size = 'md' }) {
