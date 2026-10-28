@@ -500,3 +500,19 @@
   article { overflow-x: clip; }
   button { white-space: normal; }
 }
+
+
+/* VibePulse Studio motion keyframes: keep preview animation names backed by real keyframes. */
+@keyframes vp-ken-burns-in { from { transform: scale(1); } to { transform: scale(1.2); } }
+@keyframes vp-ken-burns-out { from { transform: scale(1.2); } to { transform: scale(1.03); } }
+@keyframes vp-ken-burns-left { from { transform: translateX(4%); } to { transform: translateX(-4%); } }
+@keyframes vp-ken-burns-right { from { transform: translateX(-4%); } to { transform: translateX(4%); } }
+@keyframes vp-ken-burns-up { from { transform: translateY(4%); } to { transform: translateY(-4%); } }
+@keyframes vp-ken-burns-down { from { transform: translateY(-4%); } to { transform: translateY(4%); } }
+@keyframes vp-25d { from { transform: translate3d(2%, 1%, 0) scale(1.05); } to { transform: translate3d(-2%, -1%, 0) scale(1.22); } }
+@keyframes vp-25d-background { from { transform: scale(1.1) translate3d(1%, 0, 0); } to { transform: scale(1.2) translate3d(-1%, 0, 0); } }
+@keyframes vp-ken-burns-background { from { transform: scale(1.1); } to { transform: scale(1.18); } }
+@keyframes vp-push { from { transform: scale(1.01); } to { transform: scale(1.1); } }
+@keyframes vp-zoom-out { from { transform: scale(1.2); } to { transform: scale(1.03); } }
+@keyframes vp-drift-right { from { transform: translateX(-4.5%); } to { transform: translateX(4.5%); } }
+@keyframes vp-fade { from { opacity: 0; } to { opacity: 1; } }
