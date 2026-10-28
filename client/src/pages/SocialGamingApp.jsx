@@ -776,6 +776,7 @@ function SocialGamingApp() {
 
   const navTo = (key) => {
     setMenuOpen(false);
+    if (key === 'cinematic') { navigate('/cinematic'); return; }
     setSection(key);
     if (key === 'home') {
       setFeedTab('home');
