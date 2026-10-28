@@ -281,9 +281,26 @@ export default function ProfessionalVideoEditor() {
       });
       recorder.stop(); await stopped; stream.getTracks().forEach(t=>t.stop());
       if(audioEl)audioEl.pause(); if(audioCtx)await audioCtx.close();
-      const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});
+      const webmBlob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});
+      if(audioEl)audioEl.pause(); if(audioCtx&&audioCtx.state!=='closed')await audioCtx.close();
+      setNotice('Rendering MP4… This can take a while on mobile devices.');
+      // Convert the browser-recorded WebM to a widely compatible H.264/AAC MP4.
+      const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+      const { toBlobURL } = await import('@ffmpeg/util');
+      const ffmpeg = new FFmpeg();
+      const coreBase='https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(coreBase+'/ffmpeg-core.js','text/javascript'),
+        wasmURL: await toBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm')
+      });
+      const inputName='vibepulse-input.webm', outputName='vibepulse-studio.mp4';
+      await ffmpeg.writeFile(inputName,new Uint8Array(await webmBlob.arrayBuffer()));
+      await ffmpeg.exec(['-i',inputName,'-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','160k',outputName]);
+      const mp4Data=await ffmpeg.readFile(outputName);
+      const mp4Blob=new Blob([mp4Data],{type:'video/mp4'});
       if(exportUrl)URL.revokeObjectURL(exportUrl);
-      setExportUrl(URL.createObjectURL(blob)); setNotice('Export complete. Download your WebM video below. Video clip audio is not mixed yet; imported music is included.');
+      setExportUrl(URL.createObjectURL(mp4Blob)); setNotice('MP4 render complete. Your video is ready to download. Original video clip audio is not mixed yet; imported music is included.');
+      ffmpeg.terminate();
     } catch(e){setNotice(e?.message||'Export failed. Try again in Chrome or Edge.');}
     finally{setExporting(false);}
   };
@@ -329,7 +346,7 @@ export default function ProfessionalVideoEditor() {
           {clips.length>0&&<div className="mt-3 flex flex-wrap gap-2">{clips.map((c,i)=><div key={c.id} className="flex items-center gap-1 rounded-lg bg-white/5 p-1"><button onClick={()=>moveClip(i,-1)} disabled={!i} className="rounded px-2 py-1 text-xs hover:bg-white/10 disabled:opacity-20">←</button><button onClick={()=>moveClip(i,1)} disabled={i===clips.length-1} className="rounded px-2 py-1 text-xs hover:bg-white/10 disabled:opacity-20">→</button><button onClick={()=>removeClip(c.id)} className="rounded px-2 py-1 text-xs text-red-300 hover:bg-red-500/20" title="Remove clip"><Trash2 size={13}/></button></div>)}</div>}
         </section>
         {notice&&<div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/10 p-3 text-sm text-violet-100">{notice}</div>}
-        {exportUrl&&<a href={exportUrl} download="vibepulse-studio.webm" className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-black"><Download size={16}/> Download exported video</a>}
+        {exportUrl&&<a href={exportUrl} download="vibepulse-studio.mp4" className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-black"><Download size={16}/> Download MP4 video</a>}
       </main>
       <aside className="border-t border-white/10 bg-[#0d1019] p-4 lg:border-l lg:border-t-0">
         <div className="mb-4 flex items-center gap-2"><Settings2 size={17} className="text-violet-300"/><div className="font-bold">Inspector</div></div>
