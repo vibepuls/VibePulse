@@ -295,12 +295,29 @@ export default function ProfessionalVideoEditor() {
         const pct=Math.max(0,Math.min(100,Math.round((progress||0)*100)));
         setNotice('MP4 render চলছে… '+pct+'%');
       });
-      const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
       setNotice('MP4 encoder লোড হচ্ছে… প্রথমবার কিছুটা সময় লাগতে পারে।');
-      await ffmpeg.load({
-        coreURL: await toBlobURL(coreBase+'/ffmpeg-core.js','text/javascript'),
-        wasmURL: await toBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm')
-      });
+      // Use a matching, stable FFmpeg core release and retry a second CDN if needed.
+      const coreBases=[
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd',
+        'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
+      ];
+      let coreLoaded=false, coreError=null;
+      for(const coreBase of coreBases){
+        try{
+          const [coreResponse,wasmResponse]=await Promise.all([
+            fetch(coreBase+'/ffmpeg-core.js',{cache:'force-cache'}),
+            fetch(coreBase+'/ffmpeg-core.wasm',{cache:'force-cache'})
+          ]);
+          if(!coreResponse.ok||!wasmResponse.ok)throw new Error('FFmpeg core CDN returned '+coreResponse.status+'/'+wasmResponse.status);
+          const [coreCode,wasmBytes]=await Promise.all([coreResponse.text(),wasmResponse.arrayBuffer()]);
+          const coreURL=URL.createObjectURL(new Blob([coreCode],{type:'text/javascript'}));
+          const wasmURL=URL.createObjectURL(new Blob([wasmBytes],{type:'application/wasm'}));
+          await ffmpeg.load({coreURL,wasmURL});
+          URL.revokeObjectURL(coreURL);URL.revokeObjectURL(wasmURL);
+          coreLoaded=true;break;
+        }catch(err){coreError=err;console.warn('FFmpeg core CDN failed:',coreBase,err);}
+      }
+      if(!coreLoaded)throw new Error('FFmpeg encoder could not load from either CDN. Check internet/ad-blocker and reload. '+(coreError?.message||''));
       const inputName='vibepulse-input.webm', outputName='vibepulse-studio.mp4';
       setNotice('ভিডিও MP4-এ কনভার্ট হচ্ছে…');
       await ffmpeg.writeFile(inputName,new Uint8Array(await webmBlob.arrayBuffer()));
