@@ -133,8 +133,8 @@ export default function ProfessionalVideoEditor() {
     setPlayhead(Math.max(0,Math.min(duration,((event.clientX-rect.left)/rect.width)*duration)));
   };
   const motionDuration = activeAtTime ? Math.max(8, activeAtTime.duration || 8) : 8;
-  const previewAnimation = activeAtTime?.animation && activeAtTime.animation !== 'none' ? `${activeAtTime.animation} ${motionDuration}s cubic-bezier(.2,.18,.35,1) 1 both` : 'none';
-  const backgroundMotion = activeAtTime?.animation === 'vp-25d' ? `vp-25d-background ${motionDuration}s cubic-bezier(.2,.18,.35,1) 1 both` : activeAtTime?.animation?.startsWith('vp-ken-burns') ? `vp-ken-burns-background ${motionDuration}s cubic-bezier(.2,.18,.35,1) 1 both` : 'none';
+  const previewAnimation = activeAtTime?.animation && activeAtTime.animation !== 'none' ? `${activeAtTime.animation} ${motionDuration}s cubic-bezier(.3,.2,.7,.8) 1 both` : 'none';
+  const backgroundMotion = activeAtTime?.animation === 'vp-25d' ? `vp-25d-background ${motionDuration}s cubic-bezier(.3,.2,.7,.8) 1 both` : activeAtTime?.animation?.startsWith('vp-ken-burns') ? `vp-ken-burns-background ${motionDuration}s cubic-bezier(.3,.2,.7,.8) 1 both` : 'none';
   const transitionName = 'Cut';
   const transitionDuration = transitionName === 'Cut' ? 0 : transitionName === 'Fade' ? 420 : transitionName === 'Dissolve' ? 620 : transitionName === 'Zoom' ? 560 : transitionName === 'Slide' ? 520 : 360;
   const previewTransitionAnimation = transitionName !== 'Cut' && transitionAnimations[transitionName] ? `${transitionAnimations[transitionName]} ${transitionDuration}ms cubic-bezier(.22,.61,.36,1) 1 both` : 'none';
@@ -182,7 +182,7 @@ export default function ProfessionalVideoEditor() {
           const t=Math.min(total,(now-start)/1000); let offset=0; let item=loaded[loaded.length-1];
           for(const candidate of loaded){if(t<offset+candidate.c.duration){item=candidate;break;}offset+=candidate.c.duration;}
           ctx.fillStyle='#050711';ctx.fillRect(0,0,w,h);
-          const progress=Math.min(1,(t-offset)/item.c.duration); const easedProgress=1-Math.pow(1-progress,2.2); const scale=Math.max(w/item.img.width,h/item.img.height)*(1+easedProgress*.07);
+          const progress=Math.min(1,(t-offset)/item.c.duration); const easedProgress=1-Math.pow(1-progress,1.25); const scale=Math.max(w/item.img.width,h/item.img.height)*(1+easedProgress*.07);
           const dw=item.img.width*scale,dh=item.img.height*scale;
           ctx.save();ctx.filter=item.c.filter||'none';ctx.drawImage(item.img,(w-dw)/2,(h-dh)/2,dw,dh);ctx.restore();
           const grad=ctx.createLinearGradient(0,h*.5,0,h);grad.addColorStop(0,'transparent');grad.addColorStop(1,'rgba(0,0,0,.65)');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
