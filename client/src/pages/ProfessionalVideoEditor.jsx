@@ -288,20 +288,29 @@ export default function ProfessionalVideoEditor() {
       const { FFmpeg } = await import('@ffmpeg/ffmpeg');
       const { toBlobURL } = await import('@ffmpeg/util');
       const ffmpeg = new FFmpeg();
-      const coreBase='https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
+      ffmpeg.on('log', ({message}) => {
+        if (/error|failed|invalid/i.test(message||'')) setNotice('MP4 encoder: '+message.slice(0,180));
+      });
+      ffmpeg.on('progress', ({progress}) => {
+        const pct=Math.max(0,Math.min(100,Math.round((progress||0)*100)));
+        setNotice('MP4 render চলছে… '+pct+'%');
+      });
+      const coreBase='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+      setNotice('MP4 encoder লোড হচ্ছে… প্রথমবার কিছুটা সময় লাগতে পারে।');
       await ffmpeg.load({
         coreURL: await toBlobURL(coreBase+'/ffmpeg-core.js','text/javascript'),
         wasmURL: await toBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm')
       });
       const inputName='vibepulse-input.webm', outputName='vibepulse-studio.mp4';
+      setNotice('ভিডিও MP4-এ কনভার্ট হচ্ছে…');
       await ffmpeg.writeFile(inputName,new Uint8Array(await webmBlob.arrayBuffer()));
-      await ffmpeg.exec(['-i',inputName,'-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','160k',outputName]);
+      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','160k',outputName]);
       const mp4Data=await ffmpeg.readFile(outputName);
       const mp4Blob=new Blob([mp4Data],{type:'video/mp4'});
       if(exportUrl)URL.revokeObjectURL(exportUrl);
       setExportUrl(URL.createObjectURL(mp4Blob)); setNotice('MP4 render complete. Your video is ready to download. Original video clip audio is not mixed yet; imported music is included.');
       ffmpeg.terminate();
-    } catch(e){setNotice(e?.message||'Export failed. Try again in Chrome or Edge.');}
+    } catch(e){console.error('VibePulse MP4 export failed:',e);setNotice('রেন্ডার ব্যর্থ: '+(e?.message||String(e)||'Unknown error')+'. Chrome-এ আবার চেষ্টা করুন; সমস্যা থাকলে এই error message-টি পাঠান।');}
     finally{setExporting(false);}
   };
 
