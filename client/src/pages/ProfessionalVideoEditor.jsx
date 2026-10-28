@@ -255,7 +255,9 @@ export default function ProfessionalVideoEditor() {
         const src=audioCtx.createMediaElementSource(audioEl); const gain=audioCtx.createGain(); audioGain=gain; const dest=audioCtx.createMediaStreamDestination();
         const targetVolume=Math.max(0,Math.min(1,audioVolume/100)); gain.gain.setValueAtTime(audioFadeIn>0?0:targetVolume,audioCtx.currentTime); if(audioFadeIn>0)gain.gain.linearRampToValueAtTime(targetVolume,audioCtx.currentTime+audioFadeIn); src.connect(gain); gain.connect(dest); dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t)); await audioCtx.resume(); await audioEl.play().catch(()=>{});
       }
-      const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+      // Prefer a native H.264 MP4 recording when the browser supports it.
+      // This avoids downloading a large FFmpeg WebAssembly encoder on supported devices.
+      const mime=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
       const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined); const chunks=[];
       recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
       const stopped=new Promise(resolve=>recorder.onstop=resolve); recorder.start(250);
@@ -281,9 +283,16 @@ export default function ProfessionalVideoEditor() {
       });
       recorder.stop(); await stopped; stream.getTracks().forEach(t=>t.stop());
       if(audioEl)audioEl.pause(); if(audioCtx)await audioCtx.close();
-      const webmBlob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});
+      const recordedType=recorder.mimeType||mime||'video/webm';
+      const recordedBlob=new Blob(chunks,{type:recordedType});
       if(audioEl)audioEl.pause(); if(audioCtx&&audioCtx.state!=='closed')await audioCtx.close();
-      setNotice('Rendering MP4… This can take a while on mobile devices.');
+      if(recordedType.toLowerCase().includes('mp4')){
+        if(exportUrl)URL.revokeObjectURL(exportUrl);
+        setExportUrl(URL.createObjectURL(recordedBlob));
+        setNotice('MP4 render complete. Your video is ready to download. This browser recorded MP4 directly; imported music is included.');
+        return;
+      }
+      setNotice('এই ব্রাউজারে সরাসরি MP4 রেকর্ডিং নেই। এখন MP4 কনভার্ট করার চেষ্টা করছি…');
       // Convert the browser-recorded WebM to a widely compatible H.264/AAC MP4.
       const { FFmpeg } = await import('@ffmpeg/ffmpeg');
       const { toBlobURL } = await import('@ffmpeg/util');
@@ -320,7 +329,7 @@ export default function ProfessionalVideoEditor() {
       if(!coreLoaded)throw new Error('FFmpeg encoder could not load from either CDN. Check internet/ad-blocker and reload. '+(coreError?.message||''));
       const inputName='vibepulse-input.webm', outputName='vibepulse-studio.mp4';
       setNotice('ভিডিও MP4-এ কনভার্ট হচ্ছে…');
-      await ffmpeg.writeFile(inputName,new Uint8Array(await webmBlob.arrayBuffer()));
+      await ffmpeg.writeFile(inputName,new Uint8Array(await recordedBlob.arrayBuffer()));
       await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','160k',outputName]);
       const mp4Data=await ffmpeg.readFile(outputName);
       const mp4Blob=new Blob([mp4Data],{type:'video/mp4'});
