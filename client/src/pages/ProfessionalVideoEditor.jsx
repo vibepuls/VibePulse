@@ -30,7 +30,6 @@ export default function ProfessionalVideoEditor() {
   const audioRef = useRef(null);
   const active = clips.find(c => c.id === selected) || clips[0] || null;
   const duration = Math.max(1, clips.reduce((sum,c)=>sum+c.duration,0));
-  const activeIndex = clips.findIndex(c => c.id === active?.id);
   const activeAtTime = useMemo(() => {
     let cursor = 0;
     for (const c of clips) { if (playhead < cursor + c.duration) return c; cursor += c.duration; }
@@ -48,6 +47,8 @@ export default function ProfessionalVideoEditor() {
     if (!el || activeAtTime?.type !== 'video') return;
     const src = activeAtTime.url;
     if (el.src !== src) { el.src = src; el.currentTime = activeAtTime.trimStart || 0; }
+    el.playbackRate = activeAtTime.speed || 1;
+    el.volume = Math.max(0, Math.min(1, (activeAtTime.volume ?? 100) / 100));
     if (playing) el.play().catch(()=>{}); else el.pause();
   }, [activeAtTime, playing]);
 
