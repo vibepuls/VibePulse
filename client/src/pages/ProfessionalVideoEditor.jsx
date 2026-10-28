@@ -103,16 +103,16 @@ export default function ProfessionalVideoEditor() {
     if (!clips.length) { setNotice('Import some video or images first, then run Auto Edit.'); return; }
     snapshot();
     const grades=['contrast(1.12) saturate(.88) sepia(.12)','saturate(1.12) sepia(.18)','saturate(1.25) contrast(1.05)','brightness(1.06) saturate(.9)','contrast(1.18) saturate(1.08)'];
-    const motions=['vp-ken-burns-in','vp-ken-burns-left','vp-25d','vp-ken-burns-right','vp-ken-burns-out','vp-ken-burns-up'];
+    const motions=['vp-ken-burns-in','vp-25d','vp-ken-burns-left','vp-ken-burns-out','vp-25d','vp-ken-burns-right','vp-ken-burns-up','vp-25d','vp-ken-burns-down','vp-ken-burns-in'];
     const fx=['vp-cinema','vp-bloom','vp-grain','vp-retro','vp-chromatic'];
     setClips(old=>old.map((clip,i)=>({...clip,filter:grades[i%grades.length],animation:motions[i%motions.length],effect:fx[i%fx.length],transition:i===0?'Fade':['Dissolve','Zoom','Slide','Fade'][i%4],speed:clip.type==='video'?[1,1.05,.95,1.1][i%4]:clip.speed})).map((clip,i)=>({...clip,start:old.slice(0,i).reduce((sum,x)=>sum+x.duration,0)})));
     setSelected(clips[0].id); setPlayhead(0); setPlaying(true);
-    setNotice('✨ AI Auto Edit applied to every photo/video. Preview is playing automatically with varied motion, cinematic color, effects and transitions across the whole timeline.');
+    setNotice('✨ AI Auto Edit applied to every photo/video: Ken Burns zoom/pan and 2.5D Parallax are distributed across the full timeline. Preview is playing automatically.');
   };
   const applyProAnimationPack = () => {
     if (!clips.length) { setNotice('Import media first to apply the animation pack.'); return; }
     snapshot();
-    const pack=['vp-ken-burns-in','vp-ken-burns-left','vp-25d','vp-ken-burns-right','vp-ken-burns-out','vp-ken-burns-down'];
+    const pack=['vp-ken-burns-in','vp-25d','vp-ken-burns-left','vp-ken-burns-right','vp-25d','vp-ken-burns-out','vp-ken-burns-up','vp-25d','vp-ken-burns-down','vp-ken-burns-in'];
     setClips(old=>old.map((clip,i)=>({...clip,animation:pack[i%pack.length],transition:i===0?'Fade':['Dissolve','Zoom','Slide','Flash'][i%4]})));
     setNotice('Pro Motion Pack applied across your timeline. Animations currently play in preview; full rendered export support is separate.');
   };
