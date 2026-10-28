@@ -106,8 +106,8 @@ export default function ProfessionalVideoEditor() {
     const motions=['vp-ken-burns-in','vp-ken-burns-left','vp-25d','vp-ken-burns-right','vp-ken-burns-out','vp-ken-burns-up'];
     const fx=['vp-cinema','vp-bloom','vp-grain','vp-retro','vp-chromatic'];
     setClips(old=>old.map((clip,i)=>({...clip,filter:grades[i%grades.length],animation:motions[i%motions.length],effect:fx[i%fx.length],transition:i===0?'Fade':['Dissolve','Zoom','Slide','Fade'][i%4],speed:clip.type==='video'?[1,1.05,.95,1.1][i%4]:clip.speed})).map((clip,i)=>({...clip,start:old.slice(0,i).reduce((sum,x)=>sum+x.duration,0)})));
-    setSelected(clips[0].id); setPlayhead(0); setPlaying(false);
-    setNotice('✨ Auto Edit applied: cinematic color grading, varied motion, visual effects and transitions. Review each clip in the preview before exporting.');
+    setSelected(clips[0].id); setPlayhead(0); setPlaying(true);
+    setNotice('✨ AI Auto Edit applied to every photo/video. Preview is playing automatically with varied motion, cinematic color, effects and transitions across the whole timeline.');
   };
   const applyProAnimationPack = () => {
     if (!clips.length) { setNotice('Import media first to apply the animation pack.'); return; }
