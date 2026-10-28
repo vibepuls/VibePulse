@@ -244,7 +244,7 @@ export default function ProfessionalVideoEditor() {
       const loaded=await Promise.all(clips.map(c=>new Promise((resolve,reject)=>{
         if(c.type==='image'){const img=new Image();img.onload=()=>resolve({c,media:img,width:img.naturalWidth,height:img.naturalHeight});img.onerror=reject;img.src=c.url;return;}
         const video=document.createElement('video');video.src=c.url;video.muted=true;video.playsInline=true;video.preload='auto';
-        const ready=()=>{video.pause();resolve({c,media:video,width:video.videoWidth||1280,height:video.videoHeight||720});};
+        const ready=()=>{video.playbackRate=c.speed||1;video.play().catch(()=>{});resolve({c,media:video,width:video.videoWidth||1280,height:video.videoHeight||720});};
         video.addEventListener('loadedmetadata',ready,{once:true});video.addEventListener('error',reject,{once:true});video.load();
       })));
       const stream=canvas.captureStream(30);
@@ -270,7 +270,7 @@ export default function ProfessionalVideoEditor() {
             const sourceTime=(item.c.trimStart||0)+Math.max(0,t-offset)*(item.c.speed||1);
             const sourceEnd=item.c.trimEnd;
             if(Number.isFinite(sourceEnd)&&sourceTime>=sourceEnd){item.media.currentTime=Math.max(item.c.trimStart||0,sourceEnd-.04);}
-            else if(Math.abs(item.media.currentTime-sourceTime)>.18){try{item.media.currentTime=Math.min(sourceEnd||sourceTime,sourceTime);}catch{}}
+            else if(Math.abs(item.media.currentTime-sourceTime)>.75){try{item.media.currentTime=Math.min(sourceEnd||sourceTime,sourceTime);}catch{}}
           }
           ctx.save();ctx.filter=item.c.filter||'none';try{ctx.drawImage(item.media,(w-dw)/2,(h-dh)/2,dw,dh);}catch{}ctx.restore();
           const grad=ctx.createLinearGradient(0,h*.5,0,h);grad.addColorStop(0,'transparent');grad.addColorStop(1,'rgba(0,0,0,.65)');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
