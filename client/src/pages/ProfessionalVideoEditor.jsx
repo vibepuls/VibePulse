@@ -232,11 +232,6 @@ export default function ProfessionalVideoEditor() {
   const exportVideo = async () => {
     setNotice('');
     if (!clips.length) { setNotice('Import a video or image first.'); return; }
-    const onlyImages = clips.every(c=>c.type==='image');
-    if (!onlyImages) {
-      setNotice('This browser-only exporter currently exports image-based edits. Video clip timeline editing and preview are available; native video export needs a rendering engine. Your original clips are unchanged.');
-      return;
-    }
     if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
       setNotice('Export is not supported by this browser. Try the latest Chrome or Edge.'); return;
     }
@@ -247,7 +242,10 @@ export default function ProfessionalVideoEditor() {
       canvas.width=w; canvas.height=h;
       const ctx=canvas.getContext('2d');
       const loaded=await Promise.all(clips.map(c=>new Promise((resolve,reject)=>{
-        const img=new Image(); img.onload=()=>resolve({c,img}); img.onerror=reject; img.src=c.url;
+        if(c.type==='image'){const img=new Image();img.onload=()=>resolve({c,media:img,width:img.naturalWidth,height:img.naturalHeight});img.onerror=reject;img.src=c.url;return;}
+        const video=document.createElement('video');video.src=c.url;video.muted=true;video.playsInline=true;video.preload='auto';
+        const ready=()=>{video.pause();resolve({c,media:video,width:video.videoWidth||1280,height:video.videoHeight||720});};
+        video.addEventListener('loadedmetadata',ready,{once:true});video.addEventListener('error',reject,{once:true});video.load();
       })));
       const stream=canvas.captureStream(30);
       let audioCtx=null, audioEl=null, audioGain=null;
@@ -266,9 +264,15 @@ export default function ProfessionalVideoEditor() {
           const t=Math.min(total,(now-start)/1000); let offset=0; let item=loaded[loaded.length-1];
           for(const candidate of loaded){if(t<offset+candidate.c.duration){item=candidate;break;}offset+=candidate.c.duration;}
           ctx.fillStyle='#050711';ctx.fillRect(0,0,w,h);
-          const progress=Math.min(1,(t-offset)/item.c.duration); const easedProgress=progress<.25?(16*progress-16*progress*progress)/9:(8*progress+1)/9; const scale=Math.max(w/item.img.width,h/item.img.height)*(1+easedProgress*.07);
-          const dw=item.img.width*scale,dh=item.img.height*scale;
-          ctx.save();ctx.filter=item.c.filter||'none';ctx.drawImage(item.img,(w-dw)/2,(h-dh)/2,dw,dh);ctx.restore();
+          const progress=Math.min(1,(t-offset)/item.c.duration); const easedProgress=progress<.25?(16*progress-16*progress*progress)/9:(8*progress+1)/9; const scale=Math.max(w/item.width,h/item.height)*(1+easedProgress*.07);
+          const dw=item.width*scale,dh=item.height*scale;
+          if(item.c.type==='video'){
+            const sourceTime=(item.c.trimStart||0)+Math.max(0,t-offset)*(item.c.speed||1);
+            const sourceEnd=item.c.trimEnd;
+            if(Number.isFinite(sourceEnd)&&sourceTime>=sourceEnd){item.media.currentTime=Math.max(item.c.trimStart||0,sourceEnd-.04);}
+            else if(Math.abs(item.media.currentTime-sourceTime)>.18){try{item.media.currentTime=Math.min(sourceEnd||sourceTime,sourceTime);}catch{}}
+          }
+          ctx.save();ctx.filter=item.c.filter||'none';try{ctx.drawImage(item.media,(w-dw)/2,(h-dh)/2,dw,dh);}catch{}ctx.restore();
           const grad=ctx.createLinearGradient(0,h*.5,0,h);grad.addColorStop(0,'transparent');grad.addColorStop(1,'rgba(0,0,0,.65)');ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
           if(title){ctx.fillStyle='white';ctx.textAlign='center';ctx.font='bold '+Math.round(w*.045*textSize)+'px Arial';ctx.fillText(title,w/2,h*(1-textY/100),w*.85);}
           if(t>=total)resolve();else requestAnimationFrame(draw);
@@ -278,7 +282,7 @@ export default function ProfessionalVideoEditor() {
       if(audioEl)audioEl.pause(); if(audioCtx)await audioCtx.close();
       const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});
       if(exportUrl)URL.revokeObjectURL(exportUrl);
-      setExportUrl(URL.createObjectURL(blob)); setNotice('Export complete. Download your WebM video below.');
+      setExportUrl(URL.createObjectURL(blob)); setNotice('Export complete. Download your WebM video below. Video clip audio is not mixed yet; imported music is included.');
     } catch(e){setNotice(e?.message||'Export failed. Try again in Chrome or Edge.');}
     finally{setExporting(false);}
   };
