@@ -160,7 +160,7 @@ const templateInput = z.object({
   trending: z.boolean().default(false),
   popular: z.boolean().default(false),
   published: z.boolean().default(false)
-}).refine(data => !data.musicUrl || Boolean(data.musicLicense?.trim()), {message:'Music rights/license information is required when a music URL is provided', path:['musicLicense']});
+});
 const cleanTemplate = (item:any) => ({
   ...item,
   thumbnailUrl: item.thumbnailUrl || '',
@@ -183,6 +183,7 @@ app.get('/api/admin/templates', auth, admin, async (_req:any,res) => {
 app.post('/api/admin/templates', auth, admin, async (req:any,res) => {
   const parsed = templateInput.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({error:'Invalid template details', details:parsed.error.flatten()});
+  if (parsed.data.musicUrl && !parsed.data.musicLicense.trim()) return res.status(400).json({error:'Music rights/license information is required when a music URL is provided'});
   try {
     const item = await prisma.videoTemplate.create({data:{
       ...parsed.data,
@@ -199,6 +200,9 @@ app.patch('/api/admin/templates/:id', auth, admin, async (req:any,res) => {
   if (!parsed.success) return res.status(400).json({error:'Invalid template details', details:parsed.error.flatten()});
   const exists = await prisma.videoTemplate.findUnique({where:{id:req.params.id}});
   if (!exists) return res.status(404).json({error:'Template not found'});
+  const nextMusicUrl = parsed.data.musicUrl === undefined ? exists.musicUrl : parsed.data.musicUrl;
+  const nextMusicLicense = parsed.data.musicLicense === undefined ? exists.musicLicense : parsed.data.musicLicense;
+  if (nextMusicUrl && !nextMusicLicense.trim()) return res.status(400).json({error:'Music rights/license information is required when a music URL is provided'});
   try {
     const data:any = {...parsed.data};
     for (const key of ['thumbnailUrl','previewUrl','musicUrl']) if (key in data) data[key] = data[key] || null;
