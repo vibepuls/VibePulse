@@ -140,6 +140,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const clipboardRef = useRef(null);
   const [tracks, setTracks] = useState(TRACKS);
   const [activeTool, setActiveTool] = useState('select');
+  const [editMode, setEditMode] = useState('overwrite');
   const [markers, setMarkers] = useState([]);
   const [timelineMaximized, setTimelineMaximized] = useState(false);
   const [timelineHeight, setTimelineHeight] = useState(() => Number(localStorage.getItem('vibepulse-autocut-timeline-height') || 58));
@@ -483,7 +484,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
     const url = URL.createObjectURL(source.file);
     mediaUrlRef.current.push(url);
     const item = { id: idOf(), sourceId: source.id, file: source.file, name: source.name, type, url, kind: 'visual', track, start: startAt, duration, sourceDuration, trimStart: Number(source.trimStart || 0), trimEnd: Number(source.trimEnd || sourceDuration), speed: Number(source.speed || 1) };
-    setClips(old => [...old, item]);
+    setClips(old => { let next=old.filter(c=>!(editMode==='overwrite'&&c.track===track&&c.start<startAt+duration&&c.start+c.duration>startAt)); if(editMode==='insert') next=next.map(c=>c.track===track&&c.start>=startAt?{...c,start:c.start+duration}:c); return [...next,item]; });
     setSelectedId(item.id);
     setMessage('Placed ' + source.name + ' on ' + track + ' at ' + timecode(startAt) + '. Voiceover playback can continue.');
   };
@@ -513,7 +514,10 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
     const file = event.dataTransfer.files?.[0];
     if (file && file.type.startsWith('audio/')) return importTrackAudio(file, track);
     if (clipId) {
-      setClips(old => old.map(c => c.id === clipId ? { ...c, start: snapTime(start, c.id), track } : c));
+      const moving = clips.find(c => c.id === clipId);
+      const startAt = snapTime(start, clipId);
+      if (!moving) return;
+      setClips(old => { let next = old.filter(c => !(editMode === 'overwrite' && c.id !== clipId && c.track === track && c.start < startAt + moving.duration && c.start + c.duration > startAt)); if (editMode === 'insert') next = next.map(c => c.id !== clipId && c.track === track && c.start >= startAt ? { ...c, start: c.start + moving.duration } : c); return next.map(c => c.id === clipId ? { ...c, start: startAt, track } : c); });
       return;
     }
     if (sourceId) return placeMedia(mediaById.get(sourceId), track, start);
@@ -661,7 +665,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
     <div className="flex flex-wrap items-center gap-1 border-b border-[#454545] bg-[#292929] px-2 py-1.5"><button type="button" onClick={undoClips} disabled={!clipHistoryRef.current.past.length} title="Undo timeline edit" className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] disabled:opacity-30">↶ Undo</button><button type="button" onClick={redoClips} disabled={!clipHistoryRef.current.future.length} title="Redo timeline edit" className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] disabled:opacity-30">↷ Redo</button>
       <button type="button" title="Copy selected clip (Ctrl+C)" onClick={copySelectedClip} disabled={!selectedClip} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] disabled:opacity-30">Copy</button><button type="button" title="Paste clip at playhead (Ctrl+V)" onClick={pasteClip} disabled={!clipboardRef.current} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] disabled:opacity-30">Paste</button><button type="button" title="Duplicate selected clip (Ctrl+D)" onClick={duplicateSelectedClip} disabled={!selectedClip} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] disabled:opacity-30">Duplicate</button><button type="button" title="Ripple delete selected clip" onClick={rippleDeleteSelected} disabled={!selectedClip} className="border border-rose-900 bg-rose-950/50 px-2 py-1 text-[10px] text-rose-100 disabled:opacity-30">Ripple delete</button><button type="button" title="Selection tool (V)" onClick={()=>setActiveTool("select")} className={"border px-2 py-1 text-[10px] "+(activeTool==="select"?"border-sky-400 bg-sky-900/60 text-white":"border-[#555] bg-[#383838] text-slate-300")}>V · Select</button>
       <button type="button" title="Razor tool (C): click a clip to split" onClick={()=>setActiveTool("razor")} className={"border px-2 py-1 text-[10px] "+(activeTool==="razor"?"border-rose-400 bg-rose-900/60 text-white":"border-[#555] bg-[#383838] text-slate-300")}>C · Razor</button>
-      <button type="button" title="Add editable title on V4" onClick={()=>addGraphic("title")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] text-slate-300">T · Title</button><button type="button" title="Add editable documentary map graphic on V5" onClick={()=>addGraphic("map")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] text-slate-300">Map · Graphic</button><button type="button" title="Add marker at playhead (M)" onClick={addMarker} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] text-slate-300">M · Marker</button>
+      <button type="button" title="Add editable title on V4" onClick={()=>addGraphic("title")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] text-slate-300">T · Title</button><button type="button" title="Add editable documentary map graphic on V5" onClick={()=>addGraphic("map")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] text-slate-300">Map · Graphic</button><button type="button" title="Insert edit shifts later clips; overwrite replaces overlaps" onClick={()=>setEditMode(x=>x==="insert"?"overwrite":"insert")} className={"border px-2 py-1 text-[10px] "+(editMode==="insert"?"border-amber-500 bg-amber-950 text-amber-100":"border-[#555] bg-[#383838] text-slate-300")}>{editMode==="insert"?"Insert Edit":"Overwrite Edit"}</button><button type="button" title="Add marker at playhead (M)" onClick={addMarker} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] text-slate-300">M · Marker</button>
       <button type="button" onClick={()=>setSnap(x=>!x)} className={"border px-2 py-1 text-[10px] "+(snap?"border-emerald-500 bg-emerald-950 text-emerald-200":"border-[#555] bg-[#383838] text-slate-300")}>Snap {snap?"On":"Off"}</button>
       <button onClick={() => setPlaying(true)} disabled={!voiceUrl} className="inline-flex items-center gap-1 border border-[#3977a8] bg-[#24669a] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[#2d79b4] disabled:opacity-40"><Play size={14}/> Play</button>
       <button onClick={() => setPlaying(false)} className="inline-flex items-center gap-1 border border-[#555] bg-[#383838] px-3 py-1.5 text-[11px] hover:bg-[#484848]"><Pause size={14}/> Pause</button>
