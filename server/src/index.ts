@@ -160,7 +160,7 @@ const templateInput = z.object({
   trending: z.boolean().default(false),
   popular: z.boolean().default(false),
   published: z.boolean().default(false)
-});
+}).refine(data => !data.musicUrl || Boolean(data.musicLicense?.trim()), {message:'Music rights/license information is required when a music URL is provided', path:['musicLicense']});
 const cleanTemplate = (item:any) => ({
   ...item,
   thumbnailUrl: item.thumbnailUrl || '',
