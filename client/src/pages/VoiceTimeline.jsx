@@ -148,7 +148,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const [, setClipHistoryVersion] = useState(0);
   const toggleTrackState = (trackId, key) => setTrackStates(old => ({ ...old, [trackId]: { ...(old[trackId] || {}), [key]: !(old[trackId]?.[key]) } }));
   const isTrackLocked = trackId => Boolean(trackStates[trackId]?.locked);
-  const isTrackMuted = trackId => Boolean(trackStates[trackId]?.muted) || (tracks.some(t => t.kind === 'audio' && trackStates[t.id]?.solo) && !trackStates[trackId]?.solo);
+  const isTrackMuted = trackId => Boolean(trackStates[trackId]?.muted) || ((Boolean(trackStates.A1?.solo) || tracks.some(t => t.kind === 'audio' && trackStates[t.id]?.solo)) && !trackStates[trackId]?.solo);
   const isTrackHidden = trackId => Boolean(trackStates[trackId]?.hidden);
   const splitClipAt = (clip, at) => {
     if (!clip || isTrackLocked(clip.track)) return;
@@ -371,6 +371,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   }, [selectedId, playhead, voiceUrl, clips, projectName, activeProjectId, thresholdDb, minSilence, waveform, playing, activeTool, markers]);
 
   useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = isTrackMuted('A1');
     const activeVideos = clips.filter(c => c.kind === 'visual' && c.type === 'video' && !isTrackHidden(c.track) && playhead >= c.start && playhead < c.start + c.duration);
     activeVideos.forEach(target => {
       const element = videoClipRefs.current[target.id];
@@ -438,6 +439,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   };
 
   const importVoice = async (file) => {
+    if (isTrackLocked('A1')) { setMessage('A1 is locked. Unlock the voiceover track before replacing narration.'); return; }
     if (!file || !file.type.startsWith('audio/')) { setMessage('Choose a supported audio narration file.'); return; }
     if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
     const url = URL.createObjectURL(file);
@@ -670,7 +672,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
           {Array.from({ length: Math.ceil(visibleDuration / 5) + 1 }, (_, i) => <div key={i} style={{ left: i * 5 * pxPerSecond, position: 'absolute' }} className="border-l border-[#444] pl-1 text-[10px] text-[#aaa]">{timecode(i * 5)}</div>)}
         </div>
         <div className="relative flex min-h-[104px] border-b border-[#454545] bg-[#252525]">
-          <div className="absolute left-0 top-0 z-10 flex h-full w-36 flex-col justify-center border-r border-[#454545] bg-[#303030] px-2 py-2 text-[11px] font-semibold text-[#8fc7f4]"><span>A1 · Voiceover</span><span className="mt-1 text-[9px] font-normal text-slate-400">{waveform ? (waveform.silences?.length || 0) + ' pauses detected' : 'Import voice to analyze'}</span></div>
+          <div className="absolute left-0 top-0 z-10 flex h-full w-36 flex-col justify-center border-r border-[#454545] bg-[#303030] px-1.5 py-2 text-[11px] font-semibold text-[#8fc7f4]"><span>A1 · Voiceover</span><span className="mt-1 text-[9px] font-normal text-slate-400">{waveform ? (waveform.silences?.length || 0) + ' pauses detected' : 'Import voice to analyze'}</span><div className="mt-1 flex items-center gap-1"><button type="button" title={isTrackMuted("A1")?"Unmute voiceover":"Mute voiceover"} onClick={()=>toggleTrackState("A1","muted")} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackMuted("A1")?<VolumeX size={11}/>:<Volume2 size={11}/>}</button><button type="button" title={trackStates.A1?.solo?"Disable voiceover solo":"Solo voiceover"} onClick={()=>toggleTrackState("A1","solo")} className={"rounded px-1 text-[9px] "+(trackStates.A1?.solo?"bg-amber-500 text-black":"text-slate-300 hover:bg-white/10")}>S</button><button type="button" title={isTrackLocked("A1")?"Unlock voiceover":"Lock voiceover"} onClick={()=>toggleTrackState("A1","locked")} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackLocked("A1")?<Lock size={11}/>:<Unlock size={11}/>}</button></div></div>
           <div className="ml-36 min-h-[104px] cursor-crosshair" style={{ width: Math.max(0, pixelsWide - 144) }} onClick={e => { const r = e.currentTarget.getBoundingClientRect(); seekTo((e.clientX - r.left + rulerRef.current.scrollLeft) / pxPerSecond); }}>
             <div className="relative min-h-[104px]">{renderWave()}</div>
           </div>
