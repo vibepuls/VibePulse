@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ArrowLeft, AudioLines, Clapperboard, Download, Film, ImagePlus, Music2, Pause, Play, Plus, Scissors, Settings2, Sparkles, Trash2, Type, Undo2, Redo2, Volume2, WandSparkles } from 'lucide-react';
 
 const id = () => globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
@@ -15,6 +16,9 @@ const filters = [
 ];
 
 export default function ProfessionalVideoEditor() {
+  const location = useLocation();
+  const templateLaunchRef = useRef(false);
+  const [templateMode, setTemplateMode] = useState(false);
   const [clips, setClips] = useState([]);
   const [audio, setAudio] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -70,6 +74,40 @@ export default function ProfessionalVideoEditor() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    const launch = location.state;
+    if (!autosaveReady || templateLaunchRef.current || !launch?.templateFiles?.length) return;
+    templateLaunchRef.current = true;
+    setTemplateMode(true);
+    const templateId = launch.templateId || 'cinematic-gold';
+    const presets = {
+      'cinematic-gold': ['contrast(1.12) saturate(.88) sepia(.12)', 'vp-ken-burns-in', 'vp-cinema', 3.2],
+      'love-moments': ['saturate(1.12) sepia(.12)', 'vp-ken-burns-out', 'vp-bloom', 2.5],
+      'travel-diary': ['saturate(1.2) contrast(1.05)', 'vp-25d', 'vp-edge', 2.6],
+      'birthday-recap': ['saturate(1.35) contrast(1.05)', 'vp-push', 'vp-glow', 1.8],
+      'dark-attitude': ['grayscale(.25) contrast(1.3) brightness(.82)', 'vp-ken-burns-left', 'vp-chromatic', 1.7],
+      'memories-sad': ['saturate(.75) hue-rotate(12deg) brightness(.9)', 'vp-ken-burns-down', 'vp-dream', 3],
+      'photo-beat': ['saturate(1.3) contrast(1.1)', 'vp-ken-burns-in', 'vp-flash', 1.4],
+      'reel-flash': ['saturate(1.35) contrast(1.15)', 'vp-drift-right', 'vp-flash', 1.3],
+      'docu-story': ['contrast(1.1) saturate(.85)', 'vp-25d', 'vp-grain', 4],
+      'city-lights': ['contrast(1.2) saturate(1.25) hue-rotate(8deg)', 'vp-ken-burns-right', 'vp-neon', 2.8],
+      'summer-trip': ['saturate(1.25) brightness(1.04)', 'vp-ken-burns-up', 'vp-bloom', 2.2],
+      'soft-love': ['saturate(1.12) sepia(.08)', 'vp-ken-burns-in', 'vp-bloom', 2.4],
+      'minimal-story': ['contrast(1.08) saturate(.88)', 'vp-ken-burns-out', 'none', 3.5],
+      'party-night': ['saturate(1.45) contrast(1.12)', 'vp-push', 'vp-glow', 1.5],
+      'birthday-film': ['saturate(1.2) brightness(1.05)', 'vp-ken-burns-in', 'vp-bloom', 2.5],
+      'slow-moments': ['saturate(.78) hue-rotate(10deg)', 'vp-ken-burns-down', 'vp-dream', 3.4],
+    };
+    const preset = presets[templateId] || ['contrast(1.1) saturate(.95)', 'vp-ken-burns-in', 'vp-cinema', 2.5];
+    const incoming = launch.templateFiles.filter(file => file && (file.type.startsWith('image/') || file.type.startsWith('video/'))).map((file, index) => {
+      const type = file.type.startsWith('video/') ? 'video' : 'image';
+      const clipDuration = type === 'video' ? Math.min(8, preset[3] * 2) : preset[3];
+      return { id: id(), file, name: file.name || ((type === 'image' ? 'Photo ' : 'Video ') + (index + 1)), type, url: URL.createObjectURL(file), duration: clipDuration, trimStart: 0, trimEnd: clipDuration, filter: preset[0], speed: templateId === 'reel-flash' || templateId === 'party-night' ? 1.15 : 1, volume: 100, scale: 1, positionX: 0, positionY: 0, startScale: 1.02, endScale: templateId === 'dark-attitude' ? 1.18 : 1.12, animation: preset[1], effect: preset[2], transition: 'Cut', start: 0 };
+    }).map((clip, index, all) => ({ ...clip, start: all.slice(0, index).reduce((sum, item) => sum + item.duration, 0) }));
+    if (!incoming.length) { setNotice('Please choose photos or videos for this template.'); return; }
+    setClips(incoming); setSelected(incoming[0].id); setAspect('9:16'); setTitle(''); setPanel('media'); setPlayhead(0); setPlaying(true);
+    setNotice((launch.templateTitle || 'Template') + ' applied! Your media now has automatic motion, color grading and effects in a vertical 9:16 video. Add your own music if you want, then export.');
+  }, [autosaveReady, location.key]);
   useEffect(() => {
     if (!autosaveReady) return;
     const timer = window.setTimeout(async () => {
@@ -367,11 +405,11 @@ export default function ProfessionalVideoEditor() {
   return <div className="min-h-screen bg-[#090b12] text-slate-100">
     <style>{`@keyframes vp-zoom{from{transform:scale(1)}to{transform:scale(1.04)}}@keyframes vp-ken-burns-in{0%{transform:scale(1.02)}100%{transform:scale(1.20)}}@keyframes vp-ken-burns-out{0%{transform:scale(1.20)}100%{transform:scale(1.03)}}@keyframes vp-ken-burns-left{0%{transform:scale(1.16) translateX(6%)}100%{transform:scale(1.16) translateX(-6%)}}@keyframes vp-ken-burns-right{0%{transform:scale(1.12) translateX(-4%)}100%{transform:scale(1.12) translateX(4%)}}@keyframes vp-ken-burns-up{0%{transform:scale(1.16) translateY(6%)}100%{transform:scale(1.16) translateY(-6%)}}@keyframes vp-ken-burns-down{0%{transform:scale(1.12) translateY(-4%)}100%{transform:scale(1.12) translateY(4%)}}@keyframes vp-25d{0%{transform:perspective(1000px) scale(1.05) translate3d(3%,1.2%,0) rotateY(-1.6deg)}50%{transform:perspective(1000px) scale(1.15) translate3d(-3%,-1.6%,0) rotateY(2deg)}100%{transform:perspective(1000px) scale(1.22) translate3d(-4%,1.2%,0) rotateY(1.6deg)}}@keyframes vp-25d-background{0%{transform:scale(1.14) translate3d(-3%,0,0)}50%{transform:scale(1.20) translate3d(3%,2%,0)}100%{transform:scale(1.16) translate3d(4%,-1%,0)}}@keyframes vp-ken-burns-background{0%{transform:scale(1.14) translate3d(3%,0,0)}100%{transform:scale(1.20) translate3d(-3%,0,0)}}@keyframes vp-zoom-out{from{transform:scale(1.035)}to{transform:scale(1.015)}}@keyframes vp-fade{from{opacity:.15}to{opacity:1}}@keyframes vp-ken-burns{0%{transform:scale(1.02) translate(0,0)}100%{transform:scale(1.04) translate(-2%,1%)}}@keyframes vp-float{0%,100%{transform:scale(1.02) translateY(0)}50%{transform:scale(1.055) translateY(-1%)}}@keyframes vp-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}@keyframes vp-flash{0%,100%{opacity:1}50%{opacity:.72}}@keyframes vp-bounce{0%{transform:translateY(10%) scale(.92);opacity:.4}60%{transform:translateY(-2%) scale(1.02);opacity:1}100%{transform:translateY(0) scale(1)}}@keyframes vp-rotate-in{from{transform:rotate(-7deg) scale(.88);opacity:0}to{transform:rotate(0) scale(1);opacity:1}}@keyframes vp-pop{0%{transform:scale(.72);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}@keyframes vp-push{from{transform:scale(1.01)}to{transform:scale(1.035)}}@keyframes vp-drift-right{from{transform:scale(1.16) translateX(-4.5%)}to{transform:scale(1.16) translateX(4.5%)}}@keyframes vp-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}@keyframes vp-swing{0%,100%{transform:rotate(0)}25%{transform:rotate(1deg)}75%{transform:rotate(-1deg)}}@keyframes vp-blur-reveal{from{filter:blur(12px);opacity:.3;transform:scale(1.04)}to{filter:blur(0);opacity:1;transform:scale(1)}}@keyframes vp-glitch{0%,92%,100%{transform:translate(0)}93%{transform:translate(-3px,1px)}96%{transform:translate(3px,-1px)}}@keyframes vp-transition-fade{from{opacity:0}to{opacity:1}}@keyframes vp-transition-dissolve{0%{opacity:0;filter:blur(8px)}100%{opacity:1;filter:blur(0)}}@keyframes vp-transition-zoom{0%{opacity:0;transform:scale(1.035)}100%{opacity:1;transform:scale(1)}}@keyframes vp-transition-slide{0%{opacity:.2;transform:translateX(9%)}100%{opacity:1;transform:translateX(0)}}@keyframes vp-transition-flash{0%{opacity:0;filter:brightness(2.4)}35%{opacity:1;filter:brightness(1.5)}100%{opacity:1;filter:brightness(1)}}.vp-glow{filter:brightness(1.08) saturate(1.2) drop-shadow(0 0 16px rgba(167,139,250,.55))}.vp-vhs{filter:contrast(1.2) saturate(1.25) sepia(.12)}.vp-dream{filter:brightness(1.08) saturate(.9) blur(.5px)}.vp-vintage{filter:sepia(.32) contrast(1.08) saturate(.78)}.vp-neon{filter:saturate(1.8) contrast(1.15) hue-rotate(8deg) drop-shadow(0 0 8px rgba(56,189,248,.5))}.vp-grain{filter:contrast(1.1) saturate(.9)}.vp-chromatic{filter:saturate(1.5) contrast(1.12) hue-rotate(-8deg) drop-shadow(2px 0 rgba(255,0,100,.35)) drop-shadow(-2px 0 rgba(0,220,255,.3))}.vp-cinema{filter:contrast(1.22) saturate(.86) brightness(.96)}.vp-bloom{filter:brightness(1.12) saturate(1.08) drop-shadow(0 0 10px rgba(255,255,255,.22))}.vp-night{filter:brightness(.8) contrast(1.25) saturate(1.25) hue-rotate(55deg)}.vp-retro{filter:sepia(.22) saturate(.82) contrast(.96) brightness(1.04)}.vp-edge{filter:contrast(1.35) saturate(1.25) drop-shadow(0 0 2px rgba(255,255,255,.25))}`}</style>
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0c0f18]/95 px-4 py-3 backdrop-blur">
-      <div className="flex items-center gap-3"><a href="/" className="rounded-lg p-2 hover:bg-white/10" title="Back to VibePulse"><ArrowLeft size={18}/></a><span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500"><Clapperboard size={20}/></span><div><div className="font-black tracking-tight">VibePulse <span className="text-violet-300">Studio</span></div><div className="text-[11px] text-slate-500">Professional video workspace</div></div></div>
+      <div className="flex items-center gap-3"><a href="/" className="rounded-lg p-2 hover:bg-white/10" title="Back to VibePulse"><ArrowLeft size={18}/></a><span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500"><Clapperboard size={20}/></span><div><div className="font-black tracking-tight">VibePulse <span className="text-violet-300">{templateMode ? (location.state?.templateTitle || "Template") : "Studio"}</span></div><div className="text-[11px] text-slate-500">{templateMode ? "Template ready · 9:16 vertical video" : "Professional video workspace"}</div></div></div>
       <div className="flex flex-wrap items-center gap-2">{button('Undo',<Undo2 size={15}/>,undo)}{button('Redo',<Redo2 size={15}/>,redoEdit)}<select value={aspect} onChange={e=>setAspect(e.target.value)} className="rounded-lg border border-white/10 bg-[#171b28] px-3 py-2 text-sm"><option>16:9</option><option>9:16</option><option>1:1</option></select><button onClick={exportVideo} disabled={exporting} className="flex items-center gap-2 rounded-lg bg-violet-500 px-4 py-2 text-sm font-bold text-white hover:bg-violet-400 disabled:opacity-50"><Download size={16}/>{exporting?'Exporting…':'Export video'}</button></div>
     </header>
-    <div className="grid min-h-[calc(100vh-65px)] grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)_270px]">
-      <aside className="border-b border-white/10 bg-[#0d1019] p-3 lg:border-b-0 lg:border-r">
+    <div className={"grid min-h-[calc(100vh-65px)] grid-cols-1 " + (templateMode ? "lg:grid-cols-[minmax(0,1fr)]" : "lg:grid-cols-[230px_minmax(0,1fr)_270px]")}>
+      {!templateMode && <aside className="border-b border-white/10 bg-[#0d1019] p-3 lg:border-b-0 lg:border-r">
         <div className="mb-3 text-xs font-bold uppercase tracking-[.18em] text-slate-500">Editor tools</div>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">{button('Media',<Film size={17}/>,()=>setPanel('media'),panel==='media')}{button('Audio',<Music2 size={17}/>,()=>setPanel('audio'),panel==='audio')}{button('Text',<Type size={17}/>,()=>setPanel('text'),panel==='text')}{button('Effects',<Sparkles size={17}/>,()=>setPanel('effects'),panel==='effects')}{button('Transitions',<WandSparkles size={17}/>,()=>setPanel('transitions'),panel==='transitions')}</div>
         <div className="mt-5 rounded-xl border border-dashed border-white/15 p-4">
@@ -382,7 +420,7 @@ export default function ProfessionalVideoEditor() {
           {panel==='transitions'&&<><WandSparkles className="mb-2 text-violet-300" size={22}/><div className="text-sm font-semibold">Transitions</div><p className="my-2 text-xs text-slate-500">Transitions are disabled for the documentary look; photos cut directly to the next image.</p>{active&&<select value={active.transition||'Cut'} onChange={e=>changeClip({transition:e.target.value})} className="w-full rounded-lg border border-white/10 bg-[#171b28] px-3 py-2 text-sm">{transitions.map(t=><option key={t}>{t}</option>)}</select>}<p className="mt-2 text-xs leading-5 text-slate-500">Transition choice is saved per clip.</p></>}
         </div>
         <div className="mt-5 text-xs text-slate-500">{clips.length} clips · {fmt(duration)} total</div>
-      </aside>
+      </aside>}
       <main className="min-w-0 p-3 sm:p-5">
         <div className="mb-3 flex items-center justify-between"><div><div className="text-xs uppercase tracking-widest text-slate-500">Preview monitor</div><div className="text-sm text-slate-300">{activeAtTime?.name||'Import media to begin'}</div></div><div className="flex items-center gap-2 text-xs text-slate-500"><span className="rounded bg-white/5 px-2 py-1">{aspect}</span><span>{fmt(playhead)} / {fmt(duration)}</span></div></div>
         <div onDragOver={e=>e.preventDefault()} onDrop={handleMediaDrop} className="relative mx-auto flex w-full max-w-5xl items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl" style={{aspectRatio:aspect.replace(':',' / '),maxHeight:'56vh',width:'100%'}}>
@@ -392,7 +430,7 @@ export default function ProfessionalVideoEditor() {
           {title&&<div onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);e.currentTarget.dataset.dragging='true';}} onPointerMove={e=>{if(e.currentTarget.dataset.dragging!=='true'||!(e.buttons&1))return;const r=e.currentTarget.parentElement.getBoundingClientRect();setTextY(Math.max(2,Math.min(45,Math.round((r.bottom-e.clientY)/r.height*100))));}} onPointerUp={e=>{e.currentTarget.dataset.dragging='false';}} onPointerCancel={e=>{e.currentTarget.dataset.dragging='false';}} className="absolute inset-x-5 cursor-move touch-none select-none text-center font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,1)]" style={{bottom:textY+'%',fontSize:'clamp(1rem, '+(1.5*textSize)+'vw, '+(2.25*textSize)+'rem)'}} title="Drag to reposition title">{title}</div>}
         </div>
         <div className="mx-auto mt-3 flex max-w-5xl flex-wrap items-center justify-center gap-3">{button(playing?'Pause':'Play',playing?<Pause size={17}/>:<Play size={17}/>,()=>setPlaying(p=>!p))}<button onClick={()=>{setPlayhead(0);setPlaying(false);}} className="rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10">Reset</button><button onClick={undo} disabled={!history.length} className="rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-30"><Undo2 size={15} className="mr-1 inline"/> Undo</button><button onClick={redoEdit} disabled={!redo.length} className="rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 disabled:opacity-30"><Redo2 size={15} className="mr-1 inline"/> Redo</button><span className="text-xs text-slate-500">Space: Play/Pause · C: Split · Delete: Remove · Ctrl+Z: Undo</span></div>
-        <section className="mt-6 rounded-2xl border border-white/10 bg-[#0d1019] p-3 sm:p-4">
+        {!templateMode && <section className="mt-6 rounded-2xl border border-white/10 bg-[#0d1019] p-3 sm:p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><div className="font-bold">Timeline</div><div className="text-xs text-slate-500">Select · drag purple edges to trim · split · reorder · zoom · edit clip properties</div></div><div className="flex flex-wrap items-center gap-2"><button onClick={splitAtPlayhead} className="flex items-center gap-1 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-xs text-violet-100 hover:bg-violet-500/20"><Scissors size={14}/> Split at playhead</button><button onClick={()=>setTimelineZoom(z=>Math.max(.5,z/1.25))} className="rounded-lg border border-white/10 px-2 py-2 text-xs hover:bg-white/5" title="Zoom out">−</button><span className="min-w-10 text-center text-xs text-slate-400">{Math.round(timelineZoom*100)}%</span><button onClick={()=>setTimelineZoom(z=>Math.min(4,z*1.25))} className="rounded-lg border border-white/10 px-2 py-2 text-xs hover:bg-white/5" title="Zoom in">+</button><button onClick={()=>mediaRef.current?.click()} className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs hover:bg-white/5"><Plus size={14}/> Add media</button></div></div>
           <div className="mb-2 flex items-center justify-between text-[10px] text-slate-500"><span>00:00</span><span>{fmt(duration)}</span></div>
           <div ref={timelineRef} onClick={seekTimeline} className="relative mb-3 h-4 cursor-crosshair rounded bg-[#202638]"><div className="absolute inset-y-0 left-0 rounded bg-violet-500/30" style={{width:`${playhead/duration*100}%`}}/><div className="absolute -top-1 bottom-[-5px] z-10 w-[2px] bg-pink-300" style={{left:`${playhead/duration*100}%`}}/></div>
@@ -402,11 +440,12 @@ export default function ProfessionalVideoEditor() {
             <div className="flex items-center gap-2"><span className="w-12 shrink-0 text-[10px] font-bold uppercase text-slate-500">Text</span><div className="flex h-8 min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-lg border border-pink-500/25 bg-pink-500/10 px-3 text-xs text-pink-200"><Type size={13}/><span className="truncate">{title||'No title overlay'}</span></div></div>
           </div>
           {clips.length>0&&<div className="mt-3 flex flex-wrap gap-2">{clips.map((c,i)=><div key={c.id} className="flex items-center gap-1 rounded-lg bg-white/5 p-1"><button onClick={()=>moveClip(i,-1)} disabled={!i} className="rounded px-2 py-1 text-xs hover:bg-white/10 disabled:opacity-20">←</button><button onClick={()=>moveClip(i,1)} disabled={i===clips.length-1} className="rounded px-2 py-1 text-xs hover:bg-white/10 disabled:opacity-20">→</button><button onClick={()=>removeClip(c.id)} className="rounded px-2 py-1 text-xs text-red-300 hover:bg-red-500/20" title="Remove clip"><Trash2 size={13}/></button></div>)}</div>}
-        </section>
+        </section>}
+        {templateMode && <div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center justify-center gap-3"><button onClick={()=>mediaRef.current?.click()} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold hover:bg-white/10">Add more photos/videos</button><button onClick={()=>audioRef.current?.click()} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold hover:bg-white/10">Add music</button><input ref={mediaRef} type="file" accept="video/*,image/*" multiple hidden onChange={e=>{importFiles(e.target.files);e.target.value="";}}/><input ref={audioRef} type="file" accept="audio/*" hidden onChange={e=>setAudioFile(e.target.files?.[0])}/><button onClick={()=>{setTemplateMode(false);setNotice("Full Studio controls are now available.")}} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold hover:bg-white/10">Advanced editing</button></div>}
         {notice&&<div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/10 p-3 text-sm text-violet-100">{notice}</div>}
         {exportUrl&&<a href={exportUrl} download="vibepulse-studio.mp4" className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-bold text-black"><Download size={16}/> Download MP4 video</a>}
       </main>
-      <aside className="border-t border-white/10 bg-[#0d1019] p-4 lg:border-l lg:border-t-0">
+      {!templateMode && <aside className="border-t border-white/10 bg-[#0d1019] p-4 lg:border-l lg:border-t-0">
         <div className="mb-4 flex items-center gap-2"><Settings2 size={17} className="text-violet-300"/><div className="font-bold">Inspector</div></div>
         {active?<><div className="mb-4 break-words text-sm font-semibold">{active.name}</div><div className="mb-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg bg-white/5 p-2"><div className="text-slate-500">Media type</div><div className="mt-1 font-semibold">{active.type==='video'?'Video clip':'Image clip'}</div></div><div className="rounded-lg bg-white/5 p-2"><div className="text-slate-500">Clip length</div><div className="mt-1 font-semibold">{fmt(active.duration)}</div></div></div>
           <label className="mb-2 block text-xs font-semibold text-slate-400">Timeline duration (seconds)</label><input type="number" min=".5" max="120" step=".5" value={active.duration} onChange={e=>changeClip({duration:Math.max(.5,Math.min(120,Number(e.target.value)||.5))})} className="mb-4 w-full rounded-lg border border-white/10 bg-[#171b28] px-3 py-2 text-sm"/>
@@ -420,7 +459,7 @@ export default function ProfessionalVideoEditor() {
           <button onClick={()=>removeClip(active.id)} className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/30 px-3 py-2 text-sm text-red-300 hover:bg-red-500/10"><Trash2 size={15}/> Delete selected clip</button>
         </>:<div className="rounded-xl border border-dashed border-white/10 p-4 text-sm text-slate-500">Select a timeline clip to edit its properties.</div>}
         <div className="mt-6 rounded-xl bg-white/[.03] p-3 text-xs leading-5 text-slate-500"><Scissors size={16} className="mb-2 text-violet-300"/><div className="font-semibold text-slate-300">Editing controls</div>Timeline duration, source trim, playback speed, filters, motion animations, visual effects, transitions, clip volume, clip ordering and deletion are available here. Video exports that require encoding original video clips need a dedicated render backend.</div>
-      </aside>
+      </aside>}
     </div>
   </div>;
 }
