@@ -86,14 +86,14 @@ export default function TemplatesPage() {
       <div className="mt-5 flex items-center justify-between text-sm text-slate-400"><span>{filtered.length} templates</span><span className="inline-flex items-center gap-1"><TrendingUp size={15}/> Sorted for discovery</span></div>
       {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
         {filtered.map((t,i)=><article key={t.id} className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] transition hover:-translate-y-1 hover:border-violet-300/40 hover:bg-white/[0.07]">
-          <button onClick={()=>setPreview(t)} className="relative block aspect-[3/4] w-full overflow-hidden bg-slate-900 text-left">
+          <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setPreview(t)}}} onClick={()=>setPreview(t)} className="relative block aspect-[3/4] w-full cursor-pointer overflow-hidden bg-slate-900 text-left">
             <img src={imageUrl(t.image)} alt={t.title} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105"/>
             <div className={`absolute inset-0 bg-gradient-to-t ${t.color} opacity-50 mix-blend-multiply`}/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-black/10"/>
             {t.trend>=90&&<span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500/90 px-2 py-1 text-[10px] font-black uppercase"><Flame size={11}/> Trending</span>}
             <button onClick={e=>{e.stopPropagation();toggleSaved(t.id)}} aria-label={saved.includes(t.id)?'Remove favorite':'Save favorite'} className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/50 backdrop-blur hover:bg-black/80">{saved.includes(t.id)?<Check size={16} className="text-violet-200"/>:<Bookmark size={15}/>}</button>
             <span className="absolute bottom-3 left-3 right-3"><span className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-violet-200"><Play size={11} fill="currentColor"/> Preview</span><span className="block text-base font-black leading-tight sm:text-lg">{t.title}</span></span>
-          </button>
+          </div>
           <div className="p-3"><div className="flex items-center justify-between gap-2 text-xs text-slate-400"><span className="truncate">{t.category}</span><span className="inline-flex shrink-0 items-center gap-1"><Clock3 size={12}/>{t.duration}</span></div><p className="mt-2 line-clamp-2 min-h-8 text-xs leading-4 text-slate-400">{t.description}</p><button onClick={()=>useTemplate(t)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-3 py-2.5 text-xs font-black transition hover:bg-violet-400"><WandSparkles size={14}/> Use Template</button></div>
         </article>)}
       </div> : <div className="mt-6 rounded-2xl border border-dashed border-white/15 p-12 text-center text-slate-400">No templates match this search. Try another keyword or category.</div>}
