@@ -94,7 +94,7 @@ app.post('/api/media/upload', auth, (req:any,res:any,next:any)=>upload.single('f
 
 const videoUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     const allowed = ['video/mp4','video/quicktime','video/webm'];
     if (!allowed.includes(file.mimetype)) return cb(new Error('Only MP4, MOV, or WEBM videos are allowed'));
@@ -105,7 +105,8 @@ function hasValidVideoSignature(buffer:Buffer, mime:string) {
   if (mime === 'video/webm') return buffer.length >= 4 && buffer.subarray(0,4).equals(Buffer.from([0x1A,0x45,0xDF,0xA3]));
   return buffer.length >= 12 && buffer.subarray(4,8).toString('ascii') === 'ftyp';
 }
-app.post('/api/media/video-upload', auth, (req:any,res:any,next:any)=>videoUpload.single('file')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid video upload'});next();}), async (req:any,res:any) => {
+const videoUploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, message: {error:'Video upload limit reached. Please wait before uploading again.'} });
+app.post('/api/media/video-upload', auth, videoUploadLimiter, (req:any,res:any,next:any)=>videoUpload.single('file')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid video upload'});next();}), async (req:any,res:any) => {
   const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, '').replace(/\/(?:rest\/v1|storage\/v1)$/i, '');
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'vibepulse-media';
@@ -116,7 +117,7 @@ app.post('/api/media/video-upload', auth, (req:any,res:any,next:any)=>videoUploa
   const encodedPath = objectPath.split('/').map((part:string)=>encodeURIComponent(part)).join('/');
   try {
     const bucketHeaders = {Authorization:`Bearer ${serviceKey}`, apikey:serviceKey, 'Content-Type':'application/json'};
-    await fetch(`${supabaseUrl}/storage/v1/bucket/${encodeURIComponent(bucket)}`, {method:'PUT',headers:bucketHeaders,body:JSON.stringify({public:true,file_size_limit:104857600,allowed_mime_types:['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime','video/webm']})});
+    await fetch(`${supabaseUrl}/storage/v1/bucket/${encodeURIComponent(bucket)}`, {method:'PUT',headers:bucketHeaders,body:JSON.stringify({public:true,file_size_limit:52428800,allowed_mime_types:['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime','video/webm']})});
     const uploadUrl = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${encodedPath}`;
     let response = await fetch(uploadUrl,{method:'POST',headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'Content-Type':req.file.mimetype,'x-upsert':'false'},body:req.file.buffer});
     if (response.status === 404) {
