@@ -111,6 +111,18 @@ export default function ProfessionalVideoEditor() {
       'fitness-motivation': ['contrast(1.22) saturate(1.3)', 'vp-push', 'vp-flash', 1.3],
       'pet-moments': ['saturate(1.15) brightness(1.04)', 'vp-ken-burns-in', 'vp-bloom', 2.1],
       'nature-escape': ['saturate(1.08) contrast(1.04)', 'vp-ken-burns-out', 'vp-cinema', 3.0],
+      'velocity-rush': ['contrast(1.25) saturate(1.4)', 'vp-drift-right', 'vp-chromatic', 1.2],
+      'beat-drop': ['saturate(1.35) contrast(1.12)', 'vp-push', 'vp-flash', 1.35],
+      'glow-up': ['brightness(1.08) saturate(1.2)', 'vp-ken-burns-in', 'vp-bloom', 2.3],
+      'aesthetic-dream': ['brightness(1.06) saturate(.9) sepia(.06)', 'vp-ken-burns-out', 'vp-dream', 2.8],
+      '3d-photo-depth': ['contrast(1.08) saturate(1.08)', 'vp-25d', 'vp-edge', 2.5],
+      'meme-reaction': ['contrast(1.12) saturate(1.15)', 'vp-push', 'vp-glitch', 1.4],
+      'makeup-transition': ['brightness(1.05) saturate(1.08)', 'vp-ken-burns-in', 'vp-bloom', 2.1],
+      'couple-story': ['saturate(1.1) sepia(.1)', 'vp-ken-burns-out', 'vp-bloom', 2.7],
+      'flash-fit-check': ['contrast(1.16) saturate(1.2)', 'vp-push', 'vp-flash', 1.25],
+      'concert-hype': ['contrast(1.18) saturate(1.45)', 'vp-drift-right', 'vp-glow', 1.4],
+      'mini-vlog': ['saturate(1.15) contrast(1.04)', 'vp-ken-burns-left', 'vp-edge', 2.0],
+      'pet-comedy': ['saturate(1.2) brightness(1.05)', 'vp-push', 'vp-bloom', 1.7],
     };
     const preset = presets[templateId] || ['contrast(1.1) saturate(.95)', 'vp-ken-burns-in', 'vp-cinema', 2.5];
     const incoming = launch.templateFiles.filter(file => file && (file.type.startsWith('image/') || file.type.startsWith('video/'))).map((file, index) => {
