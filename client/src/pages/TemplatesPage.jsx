@@ -49,7 +49,7 @@ const templates = [
   { id:'pet-comedy', title:'Pet Comedy', category:'Pets', duration:'11s', clips:6, trend:88, color:'from-amber-200 via-orange-600 to-black', image:'photo-1450778869180-41d0601e046e', description:'Cute reactions with playful punch-in motion' }
 ];
 
-const imageUrl = (id) => !id ? '' : (/^https?:\\/\\//i.test(id) ? id : `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`);
+const imageUrl = (id) => !id ? '' : (id.startsWith('http://') || id.startsWith('https://') ? id : `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`);
 
 const templateMotion = {
   'cinematic-gold':'vp-template-kenburns','love-moments':'vp-template-romance','travel-diary':'vp-template-parallax',
