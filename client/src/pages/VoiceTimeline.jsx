@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AudioLines, Play, Pause, Square, SkipBack, SkipForward, Plus, Save, FolderOpen, Scissors, Trash2, ZoomIn, ZoomOut, ImagePlus, Music2, Eye, EyeOff, Lock, Unlock, Volume2, VolumeX } from 'lucide-react';
+import { AudioLines, Play, Pause, Square, SkipBack, SkipForward, Plus, Save, FolderOpen, Scissors, Trash2, ZoomIn, ZoomOut, ImagePlus, Music2, Eye, EyeOff, Lock, Unlock, Volume2, VolumeX, Download } from 'lucide-react';
 
 const DB_NAME = 'vibepulse-voice-timeline';
 const DB_VERSION = 1;
@@ -112,6 +112,11 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const audioUrlRef = useRef('');
   const playbackStateRef = useRef({ playhead: 0, clips: [], voiceUrl: '', playing: false, timelineDuration: 1 });
   const fallbackClockRef = useRef({ startedAt: 0, startTime: 0 });
+  const exportCanvasRef = useRef(null);
+  const exportRecorderRef = useRef(null);
+  const exportRafRef = useRef(0);
+  const imageCacheRef = useRef({});
+  const [exportingTimeline, setExportingTimeline] = useState(false);
   const mediaUrlRef = useRef([]);
   const [voiceFile, setVoiceFile] = useState(null);
   const [voiceUrl, setVoiceUrl] = useState('');
@@ -179,6 +184,34 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const pixelsWide = visibleDuration * pxPerSecond;
   playbackStateRef.current = { playhead, clips, voiceUrl, playing, timelineDuration };
   const visualTrackOrder = clip => Number(String(clip.track || '').slice(1)) || 0;
+  const renderExportFrame = () => {
+    const canvas = exportCanvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d'); if (!ctx) return;
+    const state = playbackStateRef.current; const at = state.playhead; const w = canvas.width; const h = canvas.height;
+    ctx.fillStyle = '#05070a'; ctx.fillRect(0,0,w,h);
+    const layers = state.clips.filter(c => c.kind === 'visual' && ['image','video'].includes(c.type) && !isTrackHidden(c.track) && at >= c.start && at < c.start + c.duration).sort((a,b)=>visualTrackOrder(a)-visualTrackOrder(b));
+    const drawFit = media => { const sw=media.videoWidth||media.naturalWidth||0, sh=media.videoHeight||media.naturalHeight||0; if(!sw||!sh)return; const scale=Math.min(w/sw,h/sh); const dw=sw*scale,dh=sh*scale; ctx.drawImage(media,(w-dw)/2,(h-dh)/2,dw,dh); };
+    layers.forEach(layer => { if(layer.type==='image'){ let img=imageCacheRef.current[layer.url]; if(!img){img=new Image();img.src=layer.url;imageCacheRef.current[layer.url]=img;} if(img.complete)drawFit(img); } else { const video=videoClipRefs.current[layer.id]; if(video&&video.readyState>=2)drawFit(video); } });
+    const titleClip=state.clips.filter(c=>c.type==='title'&&!isTrackHidden(c.track)&&at>=c.start&&at<c.start+c.duration).sort((a,b)=>visualTrackOrder(b)-visualTrackOrder(a))[0];
+    const mapClip=state.clips.filter(c=>c.type==='map'&&!isTrackHidden(c.track)&&at>=c.start&&at<c.start+c.duration).sort((a,b)=>visualTrackOrder(b)-visualTrackOrder(a))[0];
+    if(mapClip){ctx.fillStyle='rgba(5,20,28,.82)';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#3e777d';ctx.lineWidth=3;for(let i=0;i<6;i++){ctx.beginPath();ctx.moveTo(i*w/5,0);ctx.lineTo((i+1)*w/5,h);ctx.stroke();}ctx.strokeStyle='#fbbf24';ctx.lineWidth=8;ctx.setLineDash([16,12]);ctx.lineDashOffset=-((at-mapClip.start)/Math.max(.25,mapClip.duration))*w*.45;ctx.beginPath();ctx.moveTo(w*.18,h*.72);ctx.quadraticCurveTo(w*.45,h*.2,w*.8,h*.36);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f87171';[[.18,.72],[.8,.36]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(w*x,h*y,12,0,Math.PI*2);ctx.fill();});ctx.fillStyle='#fff';ctx.font='bold 34px system-ui';ctx.fillText(mapClip.text||'Documentary route',48,56);}
+    if(titleClip){const p=Math.min(1,Math.max(0,(at-titleClip.start)/.8));ctx.globalAlpha=titleClip.animation==='fade'?p:1;ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(w*.06,h*.76,w*.88,h*.15);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 42px system-ui';const slide=titleClip.animation==='slide'?(1-p)*40:0;const scale=titleClip.animation==='pop'?Math.max(.2,p):1;ctx.save();ctx.translate(w/2,h*.835+slide);ctx.scale(scale,scale);ctx.fillText(titleClip.text||titleClip.name,0,0,w*.82);ctx.restore();ctx.globalAlpha=1;ctx.textAlign='start';ctx.textBaseline='alphabetic';}
+  };
+  const exportTimeline = () => {
+    if (!clips.length) { setMessage('Add media to the timeline before exporting.'); return; }
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) { setMessage('This browser does not support timeline recording export. Use a current Chrome/Edge browser.'); return; }
+    const canvas=document.createElement('canvas'); canvas.width=1280; canvas.height=720; exportCanvasRef.current=canvas; renderExportFrame();
+    const stream=canvas.captureStream(30);
+    const audioElements=[audioRef.current,...Object.values(audioTrackRefs.current)].filter(Boolean);
+    audioElements.forEach(element=>{try{const audioStream=element.captureStream?.()||element.mozCaptureStream?.();audioStream?.getAudioTracks().forEach(track=>stream.addTrack(track));}catch{}});
+    const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(type=>MediaRecorder.isTypeSupported(type));
+    if(!mime){setMessage('This browser does not provide a supported WebM recording codec.');return;}
+    const chunks=[]; const recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:8000000}); exportRecorderRef.current=recorder;
+    recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
+    recorder.onerror=()=>{setExportingTimeline(false);setPlaying(false);setMessage('Timeline export failed in the browser recorder.');};
+    recorder.onstop=()=>{setExportingTimeline(false);setPlaying(false);const blob=new Blob(chunks,{type:mime});stream.getTracks().forEach(track=>track.stop());const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=(projectName||'vibepulse-timeline').replace(/[^a-z0-9-_]/gi,'-')+'.webm';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);setMessage('Timeline export created as WebM ('+(blob.size/1024/1024).toFixed(1)+' MB). Check the downloaded video and audio before publishing.');};
+    setPlayhead(0); if(audioRef.current)try{audioRef.current.currentTime=0;}catch{}; setExportingTimeline(true); setPlaying(true); recorder.start(250); setMessage('Recording timeline composition and audio to WebM…');
+  };
 
   useEffect(() => {
     let active = true;
@@ -190,6 +223,17 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
     }).catch(() => {});
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!exportingTimeline) return;
+    const draw = () => { renderExportFrame(); exportRafRef.current = requestAnimationFrame(draw); };
+    exportRafRef.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(exportRafRef.current);
+  }, [exportingTimeline]);
+
+  useEffect(() => {
+    if (exportingTimeline && playhead >= timelineDuration) { const recorder=exportRecorderRef.current; if(recorder && recorder.state==='recording') recorder.stop(); }
+  }, [exportingTimeline, playhead, timelineDuration]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -569,7 +613,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   return <section className={"mt-2 flex min-h-[420px] flex-col overflow-hidden border border-[#454545] bg-[#242424] p-0 font-sans text-[#d4d4d4] shadow-2xl " + (timelineMaximized ? "fixed inset-2 z-[100] max-h-none" : "max-h-[58vh]")}>
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#454545] bg-[#303030] px-4 py-3">
       <div><h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-[#eeeeee]"><AudioLines size={17} className="text-[#83b9ef]" /> AutoCut · Timeline</h2><p className="mt-1 text-[11px] text-[#a9a9a9]">Sequence · synchronized narration · multitrack editing</p></div>
-      <div className="flex flex-wrap gap-1"><button onClick={() => addTrack("visual")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px]">+ Video track</button><button onClick={() => addTrack("audio")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px]">+ Audio track</button><button onClick={saveProject} className="inline-flex items-center gap-1 border border-[#555] bg-[#383838] px-3 py-1.5 text-[11px] hover:bg-[#484848]"><Save size={14}/> Save timeline</button><select aria-label="Open saved timeline" value="" onChange={e => { if (e.target.value) loadProject(e.target.value); }} className="border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-[11px] text-[#ddd]"><option value="">Open saved…</option>{savedProjects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.clipCount})</option>)}</select></div>
+      <div className="flex flex-wrap gap-1"><button onClick={() => addTrack("visual")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px]">+ Video track</button><button onClick={() => addTrack("audio")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px]">+ Audio track</button><button onClick={saveProject} className="inline-flex items-center gap-1 border border-[#555] bg-[#383838] px-3 py-1.5 text-[11px] hover:bg-[#484848]"><Save size={14}/> Save timeline</button><button onClick={exportTimeline} disabled={exportingTimeline||!clips.length} className="inline-flex items-center gap-1 border border-emerald-700 bg-emerald-900/70 px-3 py-1.5 text-[11px] text-emerald-100 disabled:opacity-40"><Download size={13}/>{exportingTimeline?"Exporting…":"Export WebM"}</button>{exportingTimeline&&<button onClick={()=>exportRecorderRef.current?.stop()} className="border border-rose-800 bg-rose-950/70 px-2 py-1.5 text-[11px] text-rose-100">Cancel</button>}<select aria-label="Open saved timeline" value="" onChange={e => { if (e.target.value) loadProject(e.target.value); }} className="border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-[11px] text-[#ddd]"><option value="">Open saved…</option>{savedProjects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.clipCount})</option>)}</select></div>
     </div>
     <div className="grid gap-px border-b border-[#454545] bg-[#454545] md:grid-cols-[1fr_1fr]">
       <label className="bg-[#2d2d2d] p-3 text-[11px] text-[#bcbcbc]">Project name<input value={projectName} onChange={e => setProjectName(e.target.value)} className="mt-1 w-full border border-[#555] bg-[#1d1d1d] px-2 py-1.5 text-sm text-[#eee]" /></label>
