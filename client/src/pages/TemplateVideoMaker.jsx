@@ -229,7 +229,6 @@ export default function TemplateVideoMaker() {
     if (!valid) { setNotice('Only JPG, PNG, WEBP, MP4, MOV and WEBM files are supported.'); setReplaceTarget(''); return; }
     if (file.size > (file.type.startsWith('video/') ? 100 : 15) * 1024 * 1024) { setNotice('Images must be under 15 MB and videos under 50 MB.'); setReplaceTarget(''); return; }
     const url = URL.createObjectURL(file);
-    const isVideo=file.type.startsWith('video/');
     setClips(old => old.map(clip => { if (clip.id !== replaceTarget) return clip; if (clip.url) URL.revokeObjectURL(clip.url); return {...clip,file,name:file.name,type:isVideo?'video':'image',url,duration:isVideo?Math.min(8,clipDuration*2):clipDuration,trimStart:0,trimEnd:0,sourceDuration:0}; }));
     if(isVideo){const probe=document.createElement('video');probe.preload='metadata';probe.onloadedmetadata=()=>{const duration=Number.isFinite(probe.duration)?probe.duration:clipDuration*2;setClips(old=>old.map(c=>c.id===replaceTarget?{...c,sourceDuration:duration,trimEnd:Math.min(duration,c.duration),duration:Math.min(duration,Math.max(.25,c.duration))}:c));probe.src='';};probe.src=url;}
     setSelected(replaceTarget); setReplaceTarget(''); setExportUrl(''); setNotice('Media replaced. Preview the video again before exporting.');
