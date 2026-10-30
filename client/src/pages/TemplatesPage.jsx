@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Check, Clock3, Film, Flame, Play, Search, Sparkles, TrendingUp, WandSparkles } from 'lucide-react';
 
-const categories = ['For You', 'Trending', 'Cinematic', 'Love', 'Photo Slideshow', 'Travel', 'Birthday', 'Sad', 'Attitude', 'Reels & Shorts', 'Documentary'];
+const categories = ['For You', 'Trending', 'Cinematic', 'Love', 'Photo Slideshow', 'Travel', 'Birthday', 'Sad', 'Attitude', 'Reels & Shorts', 'Documentary', 'Gaming', 'Sports', 'Fashion', 'Food', 'Islamic', 'News', 'Business', 'Festival', 'Wedding', 'Fitness', 'Pets', 'Nature'];
 
 const templates = [
   { id:'cinematic-gold', title:'Golden Hour Cinema', category:'Cinematic', duration:'15s', clips:8, trend:98, color:'from-amber-300 via-orange-600 to-slate-950', image:'photo-1470252649378-9c29740c9fa8', description:'Warm cinematic color and slow zooms' },
@@ -21,6 +21,18 @@ const templates = [
   { id:'party-night', title:'Party Night', category:'Reels & Shorts', duration:'13s', clips:9, trend:90, color:'from-purple-400 via-pink-600 to-orange-500', image:'photo-1492684223066-81342ee5ff30', description:'Vibrant party recap for vertical video' },
   { id:'birthday-film', title:'Birthday Film', category:'Birthday', duration:'20s', clips:10, trend:80, color:'from-orange-300 via-pink-600 to-violet-950', image:'photo-1464349153735-7db50ed83c84', description:'A highlight reel for a special day' },
   { id:'slow-moments', title:'Slow Moments', category:'Sad', duration:'18s', clips:6, trend:78, color:'from-slate-300 via-blue-800 to-black', image:'photo-1470770841072-f978cf4d019e', description:'Quiet pacing and atmospheric movement' },
+  { id:'gaming-highlight', title:'Gaming Highlight', category:'Gaming', duration:'12s', clips:7, trend:93, color:'from-fuchsia-500 via-violet-800 to-black', image:'photo-1542751371-adc38448a05e', description:'Punchy edits for gameplay and streamer moments' },
+  { id:'sports-hype', title:'Sports Hype', category:'Sports', duration:'10s', clips:6, trend:92, color:'from-orange-400 via-red-700 to-black', image:'photo-1461896836934-闭', description:'Fast action cuts for match-day highlights' },
+  { id:'fashion-editorial', title:'Fashion Editorial', category:'Fashion', duration:'15s', clips:8, trend:88, color:'from-pink-300 via-rose-700 to-black', image:'photo-1483985988355-763728e1935b', description:'Polished looks, smooth motion and editorial color' },
+  { id:'food-reel', title:'Food Reel', category:'Food', duration:'12s', clips:7, trend:90, color:'from-yellow-300 via-orange-600 to-red-950', image:'photo-1504674900247-0877df9cc836', description:'Appetizing close-ups and quick food-story pacing' },
+  { id:'islamic-reflection', title:'Peaceful Reflection', category:'Islamic', duration:'20s', clips:8, trend:85, color:'from-emerald-300 via-teal-800 to-slate-950', image:'photo-1519817650390-64a93db51149', description:'Calm visuals for reflections, reminders and quotes' },
+  { id:'news-explainer', title:'News Explainer', category:'News', duration:'25s', clips:8, trend:91, color:'from-red-400 via-red-900 to-slate-950', image:'photo-1504711434969-e33886168f5c', description:'Bold headline pacing for explainers and updates' },
+  { id:'business-story', title:'Business Story', category:'Business', duration:'18s', clips:7, trend:81, color:'from-cyan-300 via-blue-800 to-slate-950', image:'photo-1497366754035-f200968a6e72', description:'Clean, professional edits for brands and founders' },
+  { id:'festival-vibes', title:'Festival Vibes', category:'Festival', duration:'15s', clips:9, trend:89, color:'from-yellow-300 via-pink-600 to-purple-950', image:'photo-1492684223066-81342ee5ff30', description:'Colorful celebration montage with energetic rhythm' },
+  { id:'wedding-film', title:'Wedding Film', category:'Wedding', duration:'24s', clips:10, trend:86, color:'from-rose-200 via-amber-600 to-stone-950', image:'photo-1519741497674-611481863552', description:'Romantic wedding highlights with gentle cinematic movement' },
+  { id:'fitness-motivation', title:'Fitness Motivation', category:'Fitness', duration:'12s', clips:6, trend:87, color:'from-lime-300 via-emerald-700 to-black', image:'photo-1534438327276-14e5300c3a48', description:'Energetic workout recap with bold contrast' },
+  { id:'pet-moments', title:'Pet Moments', category:'Pets', duration:'14s', clips:7, trend:83, color:'from-amber-200 via-orange-600 to-stone-950', image:'photo-1450778869180-41d0601e046e', description:'Cute, warm moments for your favorite companions' },
+  { id:'nature-escape', title:'Nature Escape', category:'Nature', duration:'20s', clips:9, trend:84, color:'from-green-300 via-emerald-800 to-slate-950', image:'photo-1441974231531-c6227db76b6e', description:'Slow scenic motion and natural cinematic tones' },
 ];
 
 const imageUrl = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`;
