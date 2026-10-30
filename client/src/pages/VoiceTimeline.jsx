@@ -497,7 +497,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
     try { analysis = await cachedWaveform(file, thresholdDb, minSilence); } catch {}
     const duration = Number(analysis?.duration || 30);
     const item = { id: idOf(), file, name: file.name, type: 'audio', kind: 'audio', track, start: playhead, duration, sourceDuration: duration, trimStart: 0, trimEnd: duration, url, waveform: analysis };
-    setClips(old => [...old, item]);
+    setClips(old => { let next=old.filter(c=>!(editMode==='overwrite'&&c.track===track&&c.start<playhead+duration&&c.start+c.duration>playhead)); if(editMode==='insert') next=next.map(c=>c.track===track&&c.start>=playhead?{...c,start:c.start+duration}:c); return [...next,item]; });
     if (track === 'A2') { setMusicFile(file); setMusicUrl(url); }
     else setSfxFiles(old => [...old, item]);
     setMessage('Added ' + file.name + ' to ' + track + '.');
