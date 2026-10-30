@@ -474,7 +474,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const visualForPreview = activeVisual(playhead);
   const trackColor = (track) => track === 'V1' ? 'border-violet-400/60 bg-violet-500/25' : track === 'V2' ? 'border-sky-400/60 bg-sky-500/20' : track === 'V3' ? 'border-amber-400/60 bg-amber-500/20' : track === 'V4' ? 'border-pink-400/60 bg-pink-500/20' : 'border-emerald-400/60 bg-emerald-500/20';
 
-  return <section className="mt-2 flex min-h-[420px] max-h-[58vh] flex-col overflow-hidden border border-[#454545] bg-[#242424] p-0 font-sans text-[#d4d4d4] shadow-2xl">
+  return <section className="mt-2 flex min-h-[420px] max-h-[42vh] flex-col overflow-hidden border border-[#454545] bg-[#242424] p-0 font-sans text-[#d4d4d4] shadow-2xl">
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#454545] bg-[#303030] px-4 py-3">
       <div><h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-[#eeeeee]"><AudioLines size={17} className="text-[#83b9ef]" /> AutoCut · Timeline</h2><p className="mt-1 text-[11px] text-[#a9a9a9]">Sequence · synchronized narration · multitrack editing</p></div>
       <div className="flex flex-wrap gap-2"><button onClick={saveProject} className="inline-flex items-center gap-1 border border-[#555] bg-[#383838] px-3 py-1.5 text-[11px] hover:bg-[#484848]"><Save size={14}/> Save timeline</button><select aria-label="Open saved timeline" value="" onChange={e => { if (e.target.value) loadProject(e.target.value); }} className="border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-[11px] text-[#ddd]"><option value="">Open saved…</option>{savedProjects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.clipCount})</option>)}</select></div>
