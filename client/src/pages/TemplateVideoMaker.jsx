@@ -173,7 +173,7 @@ export default function TemplateVideoMaker() {
     };
     rafRef.current=requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [playing, clips, clipDuration, motion, filter, transition, beatSync, beatTimes, aspect, totalDuration, visualEffect, effectIntensity, colorControls, title, textAnimation, textColor, textFont, textOutline, textShadow]);
+  }, [playing, clips, clipDuration, motion, filter, transition, beatSync, beatTimes, aspect, totalDuration, visualEffect, effectIntensity, colorControls, title, textAnimation, textColor, textFont, textOutline, textShadow, motionSpeed]);
 
   useEffect(() => () => {
     clips.forEach(c=>{ if(c.url) URL.revokeObjectURL(c.url); });
