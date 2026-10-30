@@ -53,6 +53,7 @@ model Post {
  id String @id @default(cuid())
  authorId String
  imageUrl String?
+ mediaType String @default("IMAGE")
  caption String @default("")
  privacy String @default("PUBLIC")
  points Int @default(0)
