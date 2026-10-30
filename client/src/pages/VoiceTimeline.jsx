@@ -282,7 +282,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const onDropTrack = (event, track) => {
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
-    const start = Math.max(0, (event.clientX - rect.left + event.currentTarget.scrollLeft) / pxPerSecond);
+    const labelOffset = event.currentTarget === rulerRef.current ? 0 : 144;
+    const start = Math.max(0, (event.clientX - rect.left + event.currentTarget.scrollLeft - labelOffset) / pxPerSecond);
     const sourceId = event.dataTransfer.getData('application/x-vibepulse-media');
     const clipId = event.dataTransfer.getData('application/x-vibepulse-timeline-clip');
     const file = event.dataTransfer.files?.[0];
@@ -434,14 +435,14 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       <label>Minimum silence: {minSilence.toFixed(2)}s<input type="range" min="0.25" max="2.5" step="0.05" value={minSilence} onChange={e => { const value = Number(e.target.value); setMinSilence(value); if (voiceFile) analyzeVoice(voiceFile, thresholdDb, value); }} className="ml-2 w-32 align-middle" /></label>
       <span className="text-amber-200">{waveform?.silences?.length || 0} silence regions</span>
     </div>
-    <div ref={rulerRef} className="mt-3 overflow-x-auto rounded-xl border border-white/10 bg-black/30" onClick={e => { if (e.target.closest('[data-clip]')) return; seekFromPointer(e); }} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const rect = rulerRef.current.getBoundingClientRect(); const t = Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft) / pxPerSecond); onDropTrack(e, pendingTrack || 'V1'); seekTo(t); }}>
+    <div ref={rulerRef} className="mt-3 overflow-x-auto rounded-xl border border-white/10 bg-black/30" onClick={e => { if (e.target !== rulerRef.current) return; seekFromPointer(e); }} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const rect = rulerRef.current.getBoundingClientRect(); const t = Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft) / pxPerSecond); onDropTrack(e, pendingTrack || 'V1'); seekTo(t); }}>
       <div className="relative" style={{ width: Math.max(900, pixelsWide), minWidth: '100%' }}>
         <div className="sticky top-0 z-10 flex h-7 border-b border-white/10 bg-slate-950/95">
           {Array.from({ length: Math.ceil(visibleDuration / 5) + 1 }, (_, i) => <div key={i} style={{ left: i * 5 * pxPerSecond, position: 'absolute' }} className="text-[10px] text-slate-500">{timecode(i * 5)}</div>)}
         </div>
         <div className="relative flex min-h-[58px] border-b border-white/5 bg-emerald-950/10">
           <div className="absolute left-0 top-0 z-10 h-full w-36 border-r border-white/10 bg-slate-950/95 px-2 py-2 text-[11px] font-bold text-emerald-200">A1 · Voiceover</div>
-          <div className="ml-36 min-h-[58px] cursor-crosshair" style={{ width: Math.max(0, pixelsWide - 144) }} onClick={e => { const r = e.currentTarget.getBoundingClientRect(); seekTo((e.clientX - r.left + e.currentTarget.parentElement.scrollLeft) / pxPerSecond); }}>
+          <div className="ml-36 min-h-[58px] cursor-crosshair" style={{ width: Math.max(0, pixelsWide - 144) }} onClick={e => { const r = e.currentTarget.getBoundingClientRect(); seekTo((e.clientX - r.left + rulerRef.current.scrollLeft) / pxPerSecond); }}>
             <div className="relative h-[58px]">{renderWave()}</div>
           </div>
         </div>
