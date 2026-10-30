@@ -109,6 +109,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const dragRef = useRef(null);
   const edgeDragRef = useRef(null);
   const audioUrlRef = useRef('');
+  const playbackStateRef = useRef({ playhead: 0, clips: [], voiceUrl: '', playing: false, timelineDuration: 1 });
+  const fallbackClockRef = useRef({ startedAt: 0, startTime: 0 });
   const mediaUrlRef = useRef([]);
   const [voiceFile, setVoiceFile] = useState(null);
   const [voiceUrl, setVoiceUrl] = useState('');
@@ -174,6 +176,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const visibleDuration = Math.max(5, timelineDuration);
   const pxPerSecond = 70 * waveformZoom;
   const pixelsWide = visibleDuration * pxPerSecond;
+  playbackStateRef.current = { playhead, clips, voiceUrl, playing, timelineDuration };
+  const visualTrackOrder = clip => Number(String(clip.track || '').slice(1)) || 0;
 
   useEffect(() => {
     let active = true;
@@ -188,23 +192,60 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    const currentState = () => playbackStateRef.current;
+    const activeVideo = (at, clipsNow) => clipsNow.filter(c => c.kind === 'visual' && c.type === 'video' && !isTrackHidden(c.track) && at >= c.start && at < c.start + c.duration).sort((a,b)=>visualTrackOrder(b)-visualTrackOrder(a))[0];
     const tick = () => {
-      if (audio && !audio.paused && !audio.ended) {
-        const now = audio.currentTime || 0;
-        setPlayhead(now);
-        updateVideoAt(now);
-        rafRef.current = requestAnimationFrame(tick);
+      const state = currentState();
+      if (!state.playing) { cancelAnimationFrame(rafRef.current); return; }
+      let now = state.playhead;
+      if (state.voiceUrl && audio && !audio.paused && !audio.ended) {
+        now = audio.currentTime || 0;
       } else {
+        const videoClip = activeVideo(state.playhead, state.clips);
+        const video = videoRef.current;
+        if (videoClip && video && !video.paused && Number.isFinite(video.currentTime)) {
+          now = videoClip.start + video.currentTime - Number(videoClip.trimStart || 0);
+        } else {
+          const audioClip = state.clips.filter(c => c.kind === 'audio' && !isTrackMuted(c.track) && state.playhead >= c.start && state.playhead < c.start + c.duration).find(c => {
+            const element = audioTrackRefs.current[c.id];
+            return element && !element.paused && !element.ended;
+          });
+          const element = audioClip ? audioTrackRefs.current[audioClip.id] : null;
+          if (audioClip && element) now = audioClip.start + element.currentTime - Number(audioClip.trimStart || 0);
+          else now = fallbackClockRef.current.startTime + (performance.now() - fallbackClockRef.current.startedAt) / 1000;
+        }
+      }
+      if (now >= state.timelineDuration) {
+        setPlayhead(state.timelineDuration);
         setPlaying(false);
         cancelAnimationFrame(rafRef.current);
+        return;
       }
+      setPlayhead(Math.max(0, now));
+      rafRef.current = requestAnimationFrame(tick);
     };
-    if (playing && audio && voiceUrl) {
-      audio.play().then(() => { cancelAnimationFrame(rafRef.current); rafRef.current = requestAnimationFrame(tick); })
-        .catch(() => { setPlaying(false); setNotice('Browser blocked audio playback. Press Play again to allow it.'); });
-    } else if (audio) {
-      audio.pause();
+    if (playing) {
+      fallbackClockRef.current = { startedAt: performance.now(), startTime: playhead };
+      if (voiceUrl && audio) {
+        if (Math.abs(audio.currentTime - playhead) > 0.2 && playhead < (audio.duration || Infinity)) { try { audio.currentTime = playhead; } catch {} }
+        audio.play().catch(() => { setNotice('Browser blocked narration playback. Press Play again to allow it.'); });
+      } else {
+        const videoClip = activeVideo(playhead, clips);
+        if (videoClip && videoRef.current) {
+          try { videoRef.current.currentTime = Number(videoClip.trimStart || 0) + Math.max(0, playhead - videoClip.start); } catch {}
+          videoRef.current.play().catch(() => {});
+        } else {
+          const audioClip = clips.filter(c => c.kind === 'audio' && !isTrackMuted(c.track) && playhead >= c.start && playhead < c.start + c.duration)[0];
+          const element = audioClip ? audioTrackRefs.current[audioClip.id] : null;
+          if (element) { try { element.currentTime = Number(audioClip.trimStart || 0) + playhead - audioClip.start; } catch {} element.play().catch(() => {}); }
+        }
+      }
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
+      if (audio) audio.pause();
+      if (videoRef.current) videoRef.current.pause();
+      Object.values(audioTrackRefs.current).forEach(element => element?.pause());
       cancelAnimationFrame(rafRef.current);
     }
     return () => cancelAnimationFrame(rafRef.current);
