@@ -402,13 +402,14 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const renderWave = () => {
     if (!waveform?.peaks?.length) return <div className="px-2 py-3 text-xs text-slate-500">Import voiceover to analyze real audio samples.</div>;
     const width = Math.max(1, Math.ceil(waveform.peaks.length * waveformZoom));
-    return <svg width={Math.max(pixelsWide, width)} height="50" className="block" aria-label="Actual voiceover waveform">
+    return <svg width={Math.max(pixelsWide, width)} height="92" className="block cursor-crosshair" aria-label="Actual voiceover waveform; click to seek">
       {waveform.peaks.map((p, i) => {
         const x = i * (waveform.duration / waveform.peaks.length) * pxPerSecond;
-        const h = Math.max(1, p.peak * 44);
-        return <rect key={i} x={x} y={(50 - h) / 2} width={Math.max(1, pxPerSecond * waveform.duration / waveform.peaks.length * 0.72)} height={h} rx="1" fill={p.rms < Math.pow(10, thresholdDb / 20) ? '#64748b' : '#a78bfa'} opacity={p.rms < Math.pow(10, thresholdDb / 20) ? 0.65 : 0.95} />;
+        const h = Math.max(2, p.peak * 78);
+        const silent = p.rms < Math.pow(10, thresholdDb / 20);
+        return <rect key={i} x={x} y={(92 - h) / 2} width={Math.max(1, pxPerSecond * waveform.duration / waveform.peaks.length * 0.78)} height={h} rx="1" fill={silent ? '#64748b' : '#a78bfa'} opacity={silent ? 0.8 : 0.98} />;
       })}
-      {(waveform.silences || []).map((s, i) => <g key={'silence-' + i}><rect x={s.start * pxPerSecond} y="0" width={Math.max(2, s.duration * pxPerSecond)} height="50" fill="#f59e0b" opacity="0.16" /><text x={s.start * pxPerSecond + 3} y="12" fill="#fbbf24" fontSize="9">{s.duration.toFixed(1)}s silence</text></g>)}
+      {(waveform.silences || []).map((s, i) => <g key={'silence-' + i}><rect x={s.start * pxPerSecond} y="0" width={Math.max(2, s.duration * pxPerSecond)} height="92" fill="#f59e0b" opacity="0.22" /><line x1={s.start * pxPerSecond} x2={s.start * pxPerSecond} y1="0" y2="92" stroke="#fbbf24" strokeDasharray="3 3" opacity="0.85"/><line x1={(s.start + s.duration) * pxPerSecond} x2={(s.start + s.duration) * pxPerSecond} y1="0" y2="92" stroke="#fbbf24" strokeDasharray="3 3" opacity="0.85"/><text x={s.start * pxPerSecond + 3} y="12" fill="#fbbf24" fontSize="10">{s.duration.toFixed(1)}s PAUSE</text></g>)}
     </svg>;
   };
 
@@ -445,10 +446,10 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
         <div className="sticky top-0 z-10 flex h-7 border-b border-white/10 bg-slate-950/95">
           {Array.from({ length: Math.ceil(visibleDuration / 5) + 1 }, (_, i) => <div key={i} style={{ left: i * 5 * pxPerSecond, position: 'absolute' }} className="text-[10px] text-slate-500">{timecode(i * 5)}</div>)}
         </div>
-        <div className="relative flex min-h-[58px] border-b border-white/5 bg-emerald-950/10">
-          <div className="absolute left-0 top-0 z-10 h-full w-36 border-r border-white/10 bg-slate-950/95 px-2 py-2 text-[11px] font-bold text-emerald-200">A1 · Voiceover</div>
-          <div className="ml-36 min-h-[58px] cursor-crosshair" style={{ width: Math.max(0, pixelsWide - 144) }} onClick={e => { const r = e.currentTarget.getBoundingClientRect(); seekTo((e.clientX - r.left + rulerRef.current.scrollLeft) / pxPerSecond); }}>
-            <div className="relative h-[58px]">{renderWave()}</div>
+        <div className="relative flex min-h-[104px] border-b border-white/10 bg-emerald-950/20">
+          <div className="absolute left-0 top-0 z-10 flex h-full w-36 flex-col justify-center border-r border-white/10 bg-slate-950/95 px-2 py-2 text-[11px] font-bold text-emerald-200"><span>A1 · Voiceover</span><span className="mt-1 text-[9px] font-normal text-slate-400">{waveform ? (waveform.silences?.length || 0) + ' pauses detected' : 'Import voice to analyze'}</span></div>
+          <div className="ml-36 min-h-[104px] cursor-crosshair" style={{ width: Math.max(0, pixelsWide - 144) }} onClick={e => { const r = e.currentTarget.getBoundingClientRect(); seekTo((e.clientX - r.left + rulerRef.current.scrollLeft) / pxPerSecond); }}>
+            <div className="relative min-h-[104px]">{renderWave()}</div>
           </div>
         </div>
         {TRACKS.slice(1).map(track => <div key={track.id} className="relative flex min-h-[62px] border-b border-white/5" onDragOver={e => e.preventDefault()} onDrop={e => onDropTrack(e, track.id)} onClick={e => { if (!e.target.closest('[data-clip]')) { const rect = e.currentTarget.getBoundingClientRect(); seekTo(Math.max(0, (e.clientX - rect.left + e.currentTarget.scrollLeft - 144) / pxPerSecond)); setPendingTrack(track.id); } }}>
