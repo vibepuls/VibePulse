@@ -1,0 +1,46 @@
+name: VibePulse Templates Build Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - '.github/workflows/vibepulse-templates-build.yml'
+  push:
+    branches: [main, feature/vibepulse-templates-system]
+    paths:
+      - 'client/**'
+      - 'server/**'
+      - '.github/workflows/vibepulse-templates-build.yml'
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run build
+
+  backend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vibepulse?schema=social_gaming
+      AUTH_SECRET: build-check-only-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --include=dev
+      - run: npm run db:generate
+      - run: npm run build

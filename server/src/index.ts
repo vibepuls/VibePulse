@@ -91,6 +91,45 @@ app.post('/api/media/upload', auth, (req:any,res:any,next:any)=>upload.single('f
   }
 });
 
+
+const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['video/mp4','video/quicktime','video/webm'];
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Only MP4, MOV, or WEBM videos are allowed'));
+    cb(null, true);
+  }
+});
+function hasValidVideoSignature(buffer:Buffer, mime:string) {
+  if (mime === 'video/webm') return buffer.length >= 4 && buffer.subarray(0,4).equals(Buffer.from([0x1A,0x45,0xDF,0xA3]));
+  return buffer.length >= 12 && buffer.subarray(4,8).toString('ascii') === 'ftyp';
+}
+const videoUploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, message: {error:'Video upload limit reached. Please wait before uploading again.'} });
+app.post('/api/media/video-upload', auth, videoUploadLimiter, (req:any,res:any,next:any)=>videoUpload.single('file')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid video upload'});next();}), async (req:any,res:any) => {
+  const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, '').replace(/\/(?:rest\/v1|storage\/v1)$/i, '');
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'vibepulse-media';
+  if (!supabaseUrl || !serviceKey) return res.status(503).json({error:'Video uploads are not configured on the API yet'});
+  if (!req.file || !hasValidVideoSignature(req.file.buffer, req.file.mimetype)) return res.status(400).json({error:'Choose a valid MP4, MOV, or WEBM video'});
+  const extension:any = {'video/mp4':'mp4','video/quicktime':'mov','video/webm':'webm'};
+  const objectPath = `${req.user.id}/videos/${randomUUID()}.${extension[req.file.mimetype]}`;
+  const encodedPath = objectPath.split('/').map((part:string)=>encodeURIComponent(part)).join('/');
+  try {
+    const bucketHeaders = {Authorization:`Bearer ${serviceKey}`, apikey:serviceKey, 'Content-Type':'application/json'};
+    await fetch(`${supabaseUrl}/storage/v1/bucket/${encodeURIComponent(bucket)}`, {method:'PUT',headers:bucketHeaders,body:JSON.stringify({public:true,file_size_limit:52428800,allowed_mime_types:['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime','video/webm']})});
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/${encodeURIComponent(bucket)}/${encodedPath}`;
+    let response = await fetch(uploadUrl,{method:'POST',headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'Content-Type':req.file.mimetype,'x-upsert':'false'},body:req.file.buffer});
+    if (response.status === 404) {
+      await response.text();
+      const created = await fetch(`${supabaseUrl}/storage/v1/bucket`,{method:'POST',headers:bucketHeaders,body:JSON.stringify({id:bucket,name:bucket,public:true,file_size_limit:104857600,allowed_mime_types:['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime','video/webm']})});
+      if (created.ok || created.status === 409) response = await fetch(uploadUrl,{method:'POST',headers:{Authorization:`Bearer ${serviceKey}`,apikey:serviceKey,'Content-Type':req.file.mimetype,'x-upsert':'false'},body:req.file.buffer});
+    }
+    if (!response.ok) { console.error('Supabase video upload failed:',response.status,await response.text()); return res.status(502).json({error:'Video upload failed. Check the Storage bucket settings and available storage.'}); }
+    res.status(201).json({url:`${supabaseUrl}/storage/v1/object/public/${encodeURIComponent(bucket)}/${encodedPath}`,mediaType:'VIDEO',size:req.file.size});
+  } catch(error) { console.error('Video upload failed:',error); res.status(502).json({error:'Video upload failed. Please try again.'}); }
+});
+
 app.get('/api/seo/public-profiles', async (_req, res) => {
   const users = await prisma.user.findMany({
     where: { status: 'ACTIVE' },
@@ -103,6 +142,82 @@ app.get('/api/seo/public-profiles', async (_req, res) => {
     username: user.username,
     lastmod: user.createdAt.toISOString().slice(0, 10)
   })));
+});
+
+
+const templateInput = z.object({
+  title: z.string().trim().min(2).max(100),
+  description: z.string().max(1000).default(''),
+  category: z.string().trim().min(2).max(50),
+  thumbnailUrl: z.string().url().max(2000).optional().or(z.literal('')),
+  previewUrl: z.string().url().max(2000).optional().or(z.literal('')),
+  requiredSlots: z.number().int().min(1).max(30).default(6),
+  mediaMode: z.enum(['PHOTO','VIDEO','MIXED']).default('MIXED'),
+  durationSeconds: z.number().int().min(3).max(180).default(15),
+  aspectRatio: z.enum(['9:16','1:1','16:9']).default('9:16'),
+  config: z.record(z.any()).default({}),
+  musicUrl: z.string().url().max(2000).optional().or(z.literal('')),
+  musicLicense: z.string().max(500).default(''),
+  trending: z.boolean().default(false),
+  popular: z.boolean().default(false),
+  published: z.boolean().default(false)
+});
+const cleanTemplate = (item:any) => ({
+  ...item,
+  thumbnailUrl: item.thumbnailUrl || '',
+  previewUrl: item.previewUrl || '',
+  musicUrl: item.musicUrl || ''
+});
+app.get('/api/templates', async (req:any,res) => {
+  const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+  const where:any = { published: true };
+  if (category && !['For You','Trending','Popular','New Templates'].includes(category)) where.category = category;
+  if (category === 'Trending') where.trending = true;
+  if (category === 'Popular') where.popular = true;
+  const items = await prisma.videoTemplate.findMany({ where, orderBy: [{trending:'desc'},{popular:'desc'},{createdAt:'desc'}], take: 100 });
+  res.set('Cache-Control','public, max-age=60');
+  res.json(items.map(cleanTemplate));
+});
+app.get('/api/admin/templates', auth, admin, async (_req:any,res) => {
+  res.json((await prisma.videoTemplate.findMany({orderBy:{updatedAt:'desc'},take:200})).map(cleanTemplate));
+});
+app.post('/api/admin/templates', auth, admin, async (req:any,res) => {
+  const parsed = templateInput.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({error:'Invalid template details', details:parsed.error.flatten()});
+  if (parsed.data.musicUrl && !parsed.data.musicLicense.trim()) return res.status(400).json({error:'Music rights/license information is required when a music URL is provided'});
+  try {
+    const item = await prisma.videoTemplate.create({data:{
+      ...parsed.data,
+      thumbnailUrl: parsed.data.thumbnailUrl || null,
+      previewUrl: parsed.data.previewUrl || null,
+      musicUrl: parsed.data.musicUrl || null
+    }});
+    await prisma.adminAction.create({data:{actorId:req.user.id,action:'TEMPLATE_CREATE',targetType:'VIDEO_TEMPLATE',targetId:item.id,details:item.title}});
+    res.status(201).json(cleanTemplate(item));
+  } catch (error:any) { res.status(400).json({error:'Could not create template'}); }
+});
+app.patch('/api/admin/templates/:id', auth, admin, async (req:any,res) => {
+  const parsed = templateInput.partial().safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({error:'Invalid template details', details:parsed.error.flatten()});
+  const exists = await prisma.videoTemplate.findUnique({where:{id:req.params.id}});
+  if (!exists) return res.status(404).json({error:'Template not found'});
+  const nextMusicUrl = parsed.data.musicUrl === undefined ? exists.musicUrl : parsed.data.musicUrl;
+  const nextMusicLicense = parsed.data.musicLicense === undefined ? exists.musicLicense : parsed.data.musicLicense;
+  if (nextMusicUrl && !nextMusicLicense.trim()) return res.status(400).json({error:'Music rights/license information is required when a music URL is provided'});
+  try {
+    const data:any = {...parsed.data};
+    for (const key of ['thumbnailUrl','previewUrl','musicUrl']) if (key in data) data[key] = data[key] || null;
+    const item = await prisma.videoTemplate.update({where:{id:exists.id},data});
+    await prisma.adminAction.create({data:{actorId:req.user.id,action:'TEMPLATE_UPDATE',targetType:'VIDEO_TEMPLATE',targetId:item.id,details:item.title}});
+    res.json(cleanTemplate(item));
+  } catch (error:any) { res.status(400).json({error:'Could not update template'}); }
+});
+app.delete('/api/admin/templates/:id', auth, admin, async (req:any,res) => {
+  const item = await prisma.videoTemplate.findUnique({where:{id:req.params.id}});
+  if (!item) return res.status(404).json({error:'Template not found'});
+  await prisma.videoTemplate.delete({where:{id:item.id}});
+  await prisma.adminAction.create({data:{actorId:req.user.id,action:'TEMPLATE_DELETE',targetType:'VIDEO_TEMPLATE',targetId:item.id,details:item.title}});
+  res.json({success:true,id:item.id});
 });
 
 app.get('/api/health',(_req,res)=>res.json({ok:true,service:'VibePulse API'}));
@@ -181,8 +296,9 @@ app.get('/api/leaderboard/:period', async (req, res) => {
 
 app.get('/api/posts',async(req,res)=>{const page=Math.max(1,Number(req.query.page)||1);let viewerId:string|null=null;const header=req.headers.authorization;if(header?.startsWith('Bearer ')){try{const payload=jwt.verify(header.slice(7),AUTH_SECRET) as any;viewerId=String(payload.id)}catch{}}const privacyFilter:any=viewerId?{OR:[{privacy:'PUBLIC'},{authorId:viewerId},{privacy:'FOLLOWERS',author:{followsIn:{some:{followerId:viewerId}}}}]}:{privacy:'PUBLIC'};const sort=String(req.query.sort||'ranking').toLowerCase();const orderBy:any=sort==='recent'?[{createdAt:'desc'}]:[{points:'desc'},{createdAt:'desc'}];const posts=await prisma.post.findMany({where:{hidden:false,...privacyFilter},include:{author:{select:{username:true,displayName:true,avatarUrl:true}},_count:{select:{likes:true,comments:true}}},orderBy,skip:(page-1)*20,take:20});res.json(posts);});
 app.post('/api/posts',auth,async(req:any,res)=>{
-  const d=z.object({imageUrl:z.string().url().max(2000).optional().or(z.literal('')),caption:z.string().max(2000).default(''),privacy:z.enum(['PUBLIC','FOLLOWERS','PRIVATE']).default('PUBLIC')}).safeParse(req.body);
-  if(!d.success||(!d.data?.imageUrl&&!d.data?.caption?.trim()))return res.status(400).json({error:'Write something or choose a photo to post'});
+  const d=z.object({imageUrl:z.string().url().max(2000).optional().or(z.literal('')),mediaType:z.enum(['IMAGE','VIDEO']).default('IMAGE'),caption:z.string().max(2000).default(''),privacy:z.enum(['PUBLIC','FOLLOWERS','PRIVATE']).default('PUBLIC')}).safeParse(req.body);
+  if(!d.success||(!d.data?.imageUrl&&!d.data?.caption?.trim()))return res.status(400).json({error:'Write something or choose media or a caption to post'});
+  if(d.data.mediaType==='VIDEO' && !d.data.imageUrl) return res.status(400).json({error:'A video URL is required for video posts'});
   try {
     const result = await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${req.user.id}), hashtext('daily-post-reward'))`;

@@ -53,6 +53,7 @@ model Post {
  id String @id @default(cuid())
  authorId String
  imageUrl String?
+ mediaType String @default("IMAGE")
  caption String @default("")
  privacy String @default("PUBLIC")
  points Int @default(0)
@@ -331,4 +332,29 @@ model MysteryRewardClaim {
  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
  @@unique([userId,periodKey])
  @@schema("social_gaming")
+}
+
+model VideoTemplate {
+  id             String   @id @default(cuid())
+  title          String
+  description    String   @default("")
+  category       String
+  thumbnailUrl   String?
+  previewUrl     String?
+  requiredSlots  Int      @default(6)
+  mediaMode      String   @default("MIXED")
+  durationSeconds Int     @default(15)
+  aspectRatio    String   @default("9:16")
+  config         Json     @default("{}")
+  musicUrl       String?
+  musicLicense   String   @default("")
+  trending       Boolean  @default(false)
+  popular        Boolean  @default(false)
+  published      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([published, category])
+  @@index([trending, popular])
+  @@schema("social_gaming")
 }
