@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bookmark, Check, Clock3, Film, Flame, Play, Search, Sparkles, TrendingUp, WandSparkles } from 'lucide-react';
+import { ArrowLeft, Bookmark, Check, Clock3, Film, Flame, Music2, Play, Search, Sparkles, TrendingUp, WandSparkles } from 'lucide-react';
 
 const categories = ['For You', 'Trending', 'Popular', 'New Templates', 'Photo Templates', 'Video Templates', 'Beat Sync', 'Cinematic', 'Love', 'Sad / Emotional', 'Birthday', 'Travel', 'Slow Motion', 'Flash Transitions', 'Instagram / Reels Style', 'Velocity', 'Glow Up', 'Aesthetic', '3D Photo', 'Meme', 'Photo Slideshow', 'Attitude', 'Reels & Shorts', 'Documentary', 'Gaming', 'Sports', 'Fashion', 'Food', 'Islamic', 'News', 'Business', 'Festival', 'Wedding', 'Fitness', 'Pets', 'Nature'];
 
@@ -97,7 +97,7 @@ export default function TemplatesPage() {
   const fileInputRef = { current: null };
   const chooseTemplate = (template) => { setChosenTemplate(template); document.getElementById('vibepulse-template-media-picker')?.click(); };
   const onMediaPicked = (event) => {
-    const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
+    const files = Array.from(event.target.files || []).filter(file => (['image/jpeg','image/png','image/webp'].includes(file.type) || ['video/mp4','video/quicktime','video/webm'].includes(file.type)) && file.size <= (file.type.startsWith('video/') ? 100 : 15) * 1024 * 1024);
     if (!chosenTemplate) { event.target.value = ''; return; }
     if (!files.length) { event.target.value = ''; return; }
     if (files.length < chosenTemplate.clips) {
@@ -110,7 +110,7 @@ export default function TemplatesPage() {
 
   const allTemplates = useMemo(() => { const ids = new Set(remoteTemplates.map(t => t.id)); return [...remoteTemplates, ...templates.filter(t => !ids.has(t.id))]; }, [remoteTemplates]);
   const filtered = useMemo(() => allTemplates
-    .filter(t => category === 'For You' || (category === 'Trending' ? t.trend >= 90 : category === 'Popular' ? (t.trend >= 90 || t.popular) : category === 'New Templates' ? t.source === 'database' : category === 'Photo Templates' ? t.source !== 'database' || t.mediaType !== 'VIDEO' : category === 'Video Templates' ? Boolean(t.previewUrl) : category === 'Slow Motion' ? /slow/i.test(t.title + ' ' + t.description) : category === 'Flash Transitions' ? /flash/i.test(t.title + ' ' + t.description) : category === 'Sad / Emotional' ? ['Sad','Sad / Emotional'].includes(t.category) : category === 'Instagram / Reels Style' ? ['Reels & Shorts','Instagram / Reels Style'].includes(t.category) : t.category === category))
+    .filter(t => category === 'For You' || (category === 'Trending' ? t.trend >= 90 : category === 'Popular' ? (t.trend >= 90 || t.popular) : category === 'New Templates' ? t.source === 'database' : category === 'Photo Templates' ? !t.previewUrl : category === 'Video Templates' ? Boolean(t.previewUrl) : category === 'Slow Motion' ? /slow/i.test(t.title + ' ' + t.description) : category === 'Flash Transitions' ? /flash/i.test(t.title + ' ' + t.description) : category === 'Sad / Emotional' ? ['Sad','Sad / Emotional'].includes(t.category) : category === 'Instagram / Reels Style' ? ['Reels & Shorts','Instagram / Reels Style'].includes(t.category) : t.category === category))
     .filter(t => !query || (t.title + ' ' + t.category + ' ' + t.description).toLowerCase().includes(query.toLowerCase()))
     .filter(t => !savedOnly || saved.includes(t.id))
     .sort((a,b) => category === 'Trending' || category === 'Popular' || category === 'For You' ? b.trend-a.trend : 0), [allTemplates, category, query, savedOnly, saved]);
@@ -123,7 +123,7 @@ export default function TemplatesPage() {
 
   const useTemplate = (template) => navigate('/template-studio?template=' + encodeURIComponent(template.id), { state: { templateId: template.id, templateTitle: template.title, templateCategory: template.category, templateConfig: template.config || {}, templateRequiredSlots: template.clips, templateDuration: parseFloat(template.duration) || 15, templateAspectRatio: template.aspectRatio || '9:16', templateMusicUrl: template.musicUrl || '' } });
 
-  return <main className="min-h-screen bg-[#080b14] text-white">\n    <input id="vibepulse-template-media-picker" type="file" accept="image/*,video/*" multiple hidden onChange={onMediaPicked} />
+  return <main className="min-h-screen bg-[#080b14] text-white">\n    <input id="vibepulse-template-media-picker" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple hidden onChange={onMediaPicked} />
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080b14]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <button onClick={() => navigate('/')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"><ArrowLeft size={18}/> Back to VibePulse</button>
@@ -174,7 +174,7 @@ export default function TemplatesPage() {
             <button onClick={e=>{e.stopPropagation();toggleSaved(t.id)}} aria-label={saved.includes(t.id)?'Remove favorite':'Save favorite'} className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/50 backdrop-blur hover:bg-black/80">{saved.includes(t.id)?<Check size={16} className="text-violet-200"/>:<Bookmark size={15}/>}</button>
             <span className="absolute bottom-3 left-3 right-3"><span className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-violet-200"><Play size={11} fill="currentColor"/> Preview</span><span className="block text-base font-black leading-tight sm:text-lg">{t.title}</span></span>
           </div>
-          <div className="p-3"><div className="flex items-center justify-between gap-2 text-xs text-slate-400"><span className="truncate">{t.category}</span><span className="inline-flex shrink-0 items-center gap-1"><Clock3 size={12}/>{t.duration}</span></div><p className="mt-2 line-clamp-2 min-h-8 text-xs leading-4 text-slate-400">{t.description}</p><button onClick={()=>chooseTemplate(t)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-3 py-2.5 text-xs font-black transition hover:bg-violet-400"><WandSparkles size={14}/> Use Template</button></div>
+          <div className="p-3"><div className="flex items-center justify-between gap-2 text-xs text-slate-400"><span className="truncate">{t.category}</span><span className="inline-flex shrink-0 items-center gap-1"><Clock3 size={12}/>{t.duration}</span></div><div className="mt-1 flex flex-wrap gap-2 text-[10px] text-slate-500"><span>{t.clips} media slots</span><span>·</span><span>{t.aspectRatio || '9:16'}</span>{t.musicUrl&&<span className="inline-flex items-center gap-1"><Music2 size={10}/> Music</span>}</div><p className="mt-2 line-clamp-2 min-h-8 text-xs leading-4 text-slate-400">{t.description}</p><button onClick={()=>chooseTemplate(t)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-3 py-2.5 text-xs font-black transition hover:bg-violet-400"><WandSparkles size={14}/> Use Template</button></div>
         </article>)}
       </div> : <div className="mt-6 rounded-2xl border border-dashed border-white/15 p-12 text-center text-slate-400">No templates match this search. Try another keyword or category.</div>}
       <p className="mt-8 text-center text-xs leading-5 text-slate-500">Choose a template, select your own photos or videos, and VibePulse will automatically apply its look, motion and vertical 9:16 format.</p>
