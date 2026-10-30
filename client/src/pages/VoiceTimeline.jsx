@@ -128,13 +128,14 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const [snap, setSnap] = useState(true);
   const [pendingTrack, setPendingTrack] = useState('V1');
   const [trackStates, setTrackStates] = useState({});
+  const [tracks, setTracks] = useState(TRACKS);
   const [activeTool, setActiveTool] = useState('select');
   const [markers, setMarkers] = useState([]);
   const [timelineMaximized, setTimelineMaximized] = useState(false);
   const [trackHeights, setTrackHeights] = useState({});
   const toggleTrackState = (trackId, key) => setTrackStates(old => ({ ...old, [trackId]: { ...(old[trackId] || {}), [key]: !(old[trackId]?.[key]) } }));
   const isTrackLocked = trackId => Boolean(trackStates[trackId]?.locked);
-  const isTrackMuted = trackId => Boolean(trackStates[trackId]?.muted);
+  const isTrackMuted = trackId => Boolean(trackStates[trackId]?.muted) || (tracks.some(t => t.kind === 'audio' && trackStates[t.id]?.solo) && !trackStates[trackId]?.solo);
   const isTrackHidden = trackId => Boolean(trackStates[trackId]?.hidden);
   const splitClipAt = (clip, at) => {
     if (!clip || isTrackLocked(clip.track)) return;
@@ -149,6 +150,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   };
   const addMarker = () => { const marker = { id: idOf(), time: playhead, label: 'Marker ' + (markers.length + 1) }; setMarkers(old => [...old, marker].sort((a,b)=>a.time-b.time)); setMessage('Marker added at ' + timecode(playhead) + '.'); };
   const setTrackHeight = (trackId, delta) => setTrackHeights(old => ({ ...old, [trackId]: clamp((old[trackId] || 70) + delta, 48, 180) }));
+  const addTrack = kind => { const prefix = kind === 'visual' ? 'V' : 'A'; const number = Math.max(1, ...tracks.filter(t => t.kind === kind).map(t => Number(t.id.slice(1)) || 0)) + 1; const track = { id: prefix + number, label: prefix + number + (kind === 'visual' ? ' · Additional video/graphics' : ' · Additional audio'), kind }; setTracks(old => kind === 'visual' ? [track, ...old] : [...old, track]); setMessage('Added track ' + track.id + '.'); };
+  const renameTrack = track => { const label = window.prompt('Rename track', track.label); if (label?.trim()) setTracks(old => old.map(t => t.id === track.id ? { ...t, label: label.trim() } : t)); };
   const [frameStep, setFrameStep] = useState(1);
   const [musicFile, setMusicFile] = useState(null);
   const [musicUrl, setMusicUrl] = useState('');
@@ -439,7 +442,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const saveProject = async () => {
     try {
       const db = await openDb();
-      const record = { id: activeProjectId || idOf(), name: projectName, voiceFile, clips: clips.map(({ url, ...c }) => c), thresholdDb, minSilence, waveform, updatedAt: new Date().toISOString(), playhead };
+      const record = { id: activeProjectId || idOf(), name: projectName, voiceFile, clips: clips.map(({ url, ...c }) => c), thresholdDb, minSilence, waveform, updatedAt: new Date().toISOString(), playhead, tracks, trackStates, trackHeights, markers };
       const tx = db.transaction('projects', 'readwrite');
       await req(tx.objectStore('projects').put(record));
       db.close();
@@ -470,6 +473,10 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       const restored = (project.clips || []).map(c => ({ ...c, url: URL.createObjectURL(c.file) }));
       restored.forEach(c => mediaUrlRef.current.push(c.url));
       setClips(restored);
+      setTracks(project.tracks || TRACKS);
+      setTrackStates(project.trackStates || {});
+      setTrackHeights(project.trackHeights || {});
+      setMarkers(project.markers || []);
       setSelectedId(restored[0]?.id || '');
       setProjectName(project.name || 'Voiceover edit');
       setActiveProjectId(project.id);
@@ -505,7 +512,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   return <section className={"mt-2 flex min-h-[420px] flex-col overflow-hidden border border-[#454545] bg-[#242424] p-0 font-sans text-[#d4d4d4] shadow-2xl " + (timelineMaximized ? "fixed inset-2 z-[100] max-h-none" : "max-h-[58vh]")}>
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#454545] bg-[#303030] px-4 py-3">
       <div><h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-[#eeeeee]"><AudioLines size={17} className="text-[#83b9ef]" /> AutoCut · Timeline</h2><p className="mt-1 text-[11px] text-[#a9a9a9]">Sequence · synchronized narration · multitrack editing</p></div>
-      <div className="flex flex-wrap gap-2"><button onClick={saveProject} className="inline-flex items-center gap-1 border border-[#555] bg-[#383838] px-3 py-1.5 text-[11px] hover:bg-[#484848]"><Save size={14}/> Save timeline</button><select aria-label="Open saved timeline" value="" onChange={e => { if (e.target.value) loadProject(e.target.value); }} className="border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-[11px] text-[#ddd]"><option value="">Open saved…</option>{savedProjects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.clipCount})</option>)}</select></div>
+      <div className="flex flex-wrap gap-1"><button onClick={() => addTrack("visual")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px]">+ Video track</button><button onClick={() => addTrack("audio")} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px]">+ Audio track</button><button onClick={saveProject} className="inline-flex items-center gap-1 border border-[#555] bg-[#383838] px-3 py-1.5 text-[11px] hover:bg-[#484848]"><Save size={14}/> Save timeline</button><select aria-label="Open saved timeline" value="" onChange={e => { if (e.target.value) loadProject(e.target.value); }} className="border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-[11px] text-[#ddd]"><option value="">Open saved…</option>{savedProjects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.clipCount})</option>)}</select></div>
     </div>
     <div className="grid gap-px border-b border-[#454545] bg-[#454545] md:grid-cols-[1fr_1fr]">
       <label className="bg-[#2d2d2d] p-3 text-[11px] text-[#bcbcbc]">Project name<input value={projectName} onChange={e => setProjectName(e.target.value)} className="mt-1 w-full border border-[#555] bg-[#1d1d1d] px-2 py-1.5 text-sm text-[#eee]" /></label>
@@ -542,8 +549,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
             <div className="relative min-h-[104px]">{renderWave()}</div>
           </div>
         </div>
-        {TRACKS.map(track => <div key={track.id} className="relative border-b border-[#383838] bg-[linear-gradient(to_right,rgba(170,170,170,0.10)_1px,transparent_1px)]" style={{ height: (trackHeights[track.id] || 70) + 'px', backgroundSize: (pxPerSecond * 5) + 'px 100%' }} onDragOver={e => e.preventDefault()} onDrop={e => onDropTrack(e, track.id)} onClick={e => { if (!e.target.closest('[data-clip]')) { const rect = rulerRef.current.getBoundingClientRect(); seekTo(Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft - 144) / pxPerSecond)); setPendingTrack(track.id); } }}>
-          <div className="absolute left-0 top-0 z-10 flex h-full w-36 flex-col justify-center border-r border-[#454545] bg-[#303030] px-1.5"><span className="truncate text-[10px] font-semibold text-[#c5c5c5]">{track.label}</span><div className="mt-1 flex items-center gap-1"><button type="button" title="Decrease track height" onClick={e=>{e.stopPropagation();setTrackHeight(track.id,-10);}} className="px-0.5 text-[9px] text-slate-400 hover:text-white">−</button><button type="button" title="Increase track height" onClick={e=>{e.stopPropagation();setTrackHeight(track.id,10);}} className="px-0.5 text-[9px] text-slate-400 hover:text-white">+</button>{track.kind === "visual" && <button type="button" title={isTrackHidden(track.id) ? "Show track" : "Hide track"} onClick={e => { e.stopPropagation(); toggleTrackState(track.id, "hidden"); }} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackHidden(track.id) ? <EyeOff size={11}/> : <Eye size={11}/>}</button>}{track.kind === "audio" && <button type="button" title={isTrackMuted(track.id) ? "Unmute track" : "Mute track"} onClick={e => { e.stopPropagation(); toggleTrackState(track.id, "muted"); }} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackMuted(track.id) ? <VolumeX size={11}/> : <Volume2 size={11}/>}</button>}<button type="button" title={isTrackLocked(track.id) ? "Unlock track" : "Lock track"} onClick={e => { e.stopPropagation(); toggleTrackState(track.id, "locked"); }} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackLocked(track.id) ? <Lock size={11}/> : <Unlock size={11}/>}</button>{isTrackLocked(track.id) && <span className="text-[9px] text-amber-300">LOCKED</span>}</div></div>
+        {tracks.map(track => <div key={track.id} className="relative border-b border-[#383838] bg-[linear-gradient(to_right,rgba(170,170,170,0.10)_1px,transparent_1px)]" style={{ height: (trackHeights[track.id] || 70) + 'px', backgroundSize: (pxPerSecond * 5) + 'px 100%' }} onDragOver={e => e.preventDefault()} onDrop={e => onDropTrack(e, track.id)} onClick={e => { if (!e.target.closest('[data-clip]')) { const rect = rulerRef.current.getBoundingClientRect(); seekTo(Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft - 144) / pxPerSecond)); setPendingTrack(track.id); } }}>
+          <div className="absolute left-0 top-0 z-10 flex h-full w-36 flex-col justify-center border-r border-[#454545] bg-[#303030] px-1.5"><button type="button" title="Rename track" onClick={e=>{e.stopPropagation();renameTrack(track);}} className="block max-w-full truncate text-left text-[10px] font-semibold text-[#c5c5c5] hover:text-white">{track.label} ✎</button><div className="mt-1 flex items-center gap-1"><button type="button" title="Decrease track height" onClick={e=>{e.stopPropagation();setTrackHeight(track.id,-10);}} className="px-0.5 text-[9px] text-slate-400 hover:text-white">−</button><button type="button" title="Increase track height" onClick={e=>{e.stopPropagation();setTrackHeight(track.id,10);}} className="px-0.5 text-[9px] text-slate-400 hover:text-white">+</button>{track.kind === "visual" && <button type="button" title={isTrackHidden(track.id) ? "Show track" : "Hide track"} onClick={e => { e.stopPropagation(); toggleTrackState(track.id, "hidden"); }} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackHidden(track.id) ? <EyeOff size={11}/> : <Eye size={11}/>}</button>}{track.kind === "audio" && <><button type="button" title={isTrackMuted(track.id) ? "Unmute track" : "Mute track"} onClick={e => { e.stopPropagation(); toggleTrackState(track.id, "muted"); }} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackMuted(track.id) ? <VolumeX size={11}/> : <Volume2 size={11}/>}</button><button type="button" title={trackStates[track.id]?.solo ? "Disable solo" : "Solo this track"} onClick={e=>{e.stopPropagation();toggleTrackState(track.id,"solo");}} className={"rounded px-1 text-[9px] "+(trackStates[track.id]?.solo?"bg-amber-500 text-black":"text-slate-300 hover:bg-white/10")}>S</button></>}<button type="button" title={isTrackLocked(track.id) ? "Unlock track" : "Lock track"} onClick={e => { e.stopPropagation(); toggleTrackState(track.id, "locked"); }} className="rounded px-1 text-slate-300 hover:bg-white/10">{isTrackLocked(track.id) ? <Lock size={11}/> : <Unlock size={11}/>}</button>{isTrackLocked(track.id) && <span className="text-[9px] text-amber-300">LOCKED</span>}</div></div>
           <div className="relative ml-36 min-h-[62px]" style={{ width: Math.max(0, pixelsWide - 144) }}>
             {track.id === 'A2' && <label className="absolute left-2 top-2 z-10 cursor-pointer rounded bg-emerald-900/80 px-2 py-1 text-[10px] text-emerald-100"><Music2 size={10} className="mr-1 inline"/>Add music<input type="file" accept="audio/*" hidden onChange={e => { importTrackAudio(e.target.files?.[0], 'A2'); e.target.value = ''; }}/></label>}
             {track.id === 'A3' && <label className="absolute left-2 top-2 z-10 cursor-pointer rounded bg-emerald-900/80 px-2 py-1 text-[10px] text-emerald-100">Add SFX<input type="file" accept="audio/*" hidden onChange={e => { importTrackAudio(e.target.files?.[0], 'A3'); e.target.value = ''; }}/></label>}
