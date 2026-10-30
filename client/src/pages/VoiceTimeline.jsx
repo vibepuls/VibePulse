@@ -283,7 +283,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const onDropTrack = (event, track) => {
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
-    const labelOffset = event.currentTarget === rulerRef.current ? 0 : 144;
+    const labelOffset = 144;
     const start = Math.max(0, (event.clientX - rect.left + event.currentTarget.scrollLeft - labelOffset) / pxPerSecond);
     const sourceId = event.dataTransfer.getData('application/x-vibepulse-media');
     const clipId = event.dataTransfer.getData('application/x-vibepulse-timeline-clip');
@@ -438,7 +438,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       <label>Minimum silence: {minSilence.toFixed(2)}s<input type="range" min="0.25" max="2.5" step="0.05" value={minSilence} onChange={e => { const value = Number(e.target.value); setMinSilence(value); if (voiceFile) analyzeVoice(voiceFile, thresholdDb, value); }} className="ml-2 w-32 align-middle" /></label>
       <span className="text-amber-200">{waveform?.silences?.length || 0} silence regions</span>
     </div>
-    <div ref={rulerRef} className="mt-3 overflow-x-auto rounded-xl border border-white/10 bg-black/30" onClick={e => { if (e.target !== rulerRef.current) return; seekFromPointer(e); }} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const rect = rulerRef.current.getBoundingClientRect(); const t = Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft) / pxPerSecond); onDropTrack(e, pendingTrack || 'V1'); seekTo(t); }}>
+    <div ref={rulerRef} className="mt-3 overflow-x-auto rounded-xl border border-white/10 bg-black/30" onClick={e => { if (e.target !== rulerRef.current) return; seekFromPointer(e); }} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const rect = rulerRef.current.getBoundingClientRect(); const t = Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft - 144) / pxPerSecond); onDropTrack(e, pendingTrack || 'V1'); seekTo(t); }}>
       <div className="relative" style={{ width: Math.max(900, pixelsWide), minWidth: '100%' }}>
         <div className="sticky top-0 z-10 flex h-7 border-b border-white/10 bg-slate-950/95">
           {Array.from({ length: Math.ceil(visibleDuration / 5) + 1 }, (_, i) => <div key={i} style={{ left: i * 5 * pxPerSecond, position: 'absolute' }} className="text-[10px] text-slate-500">{timecode(i * 5)}</div>)}
