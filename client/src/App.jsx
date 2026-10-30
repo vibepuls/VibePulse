@@ -30,6 +30,7 @@ export default function App() {
       <Route path="/cinematic" element={isAuthenticated ? <ProfessionalVideoEditor /> : <Navigate to="/login" replace />} />
       <Route path="/templates" element={<TemplatesPage />} />
       <Route path="/template-studio" element={<TemplateVideoMaker />} />
+      <Route path="/autocut-studio" element={<TemplateVideoMaker />} />
       <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <PublicProfile />} />
       <Route path="/*" element={isAuthenticated ? <SocialGamingApp /> : <GuestBrowse />} />
     </Routes>
