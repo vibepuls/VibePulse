@@ -59,7 +59,11 @@ const templateMotion = {
   'fashion-editorial':'vp-template-editorial','food-reel':'vp-template-push','islamic-reflection':'vp-template-slow-pan',
   'news-explainer':'vp-template-news','business-story':'vp-template-zoomout','festival-vibes':'vp-template-party',
   'wedding-film':'vp-template-romance','fitness-motivation':'vp-template-shake','pet-moments':'vp-template-bounce',
-  'nature-escape':'vp-template-parallax'
+  'nature-escape':'vp-template-parallax',
+  'velocity-rush':'vp-template-shake','beat-drop':'vp-template-beat','glow-up':'vp-template-flash',
+  'aesthetic-dream':'vp-template-romance','3d-photo-depth':'vp-template-parallax','meme-reaction':'vp-template-bounce',
+  'makeup-transition':'vp-template-editorial','couple-story':'vp-template-romance','flash-fit-check':'vp-template-flash',
+  'concert-hype':'vp-template-party','mini-vlog':'vp-template-drift','pet-comedy':'vp-template-bounce',
 };
 const templateOverlay = {
   'photo-beat':'vp-template-overlay-beat','reel-flash':'vp-template-overlay-flash',
@@ -71,10 +75,6 @@ const templateOverlay = {
   'love-moments':'vp-template-overlay-soft','soft-love':'vp-template-overlay-soft',
   'birthday-recap':'vp-template-overlay-party','birthday-film':'vp-template-overlay-party'
 };
-  'velocity-rush':'vp-template-shake','beat-drop':'vp-template-beat','glow-up':'vp-template-flash',
-  'aesthetic-dream':'vp-template-romance','3d-photo-depth':'vp-template-parallax','meme-reaction':'vp-template-bounce',
-  'makeup-transition':'vp-template-editorial','couple-story':'vp-template-romance','flash-fit-check':'vp-template-flash',
-  'concert-hype':'vp-template-party','mini-vlog':'vp-template-drift','pet-comedy':'vp-template-bounce',
 const motionFor = (template) => templateMotion[template?.id] || 'vp-template-kenburns';
 const overlayFor = (template) => templateOverlay[template?.id] || 'vp-template-overlay-cinema';
 
