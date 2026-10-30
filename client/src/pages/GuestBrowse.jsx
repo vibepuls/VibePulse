@@ -69,7 +69,7 @@ function GuestBrowse() {
                   </Link>
                   <span className="shrink-0 rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-sm font-bold text-amber-200"><Trophy size={13} className="mr-1 inline"/> {fmt(post.points)} points</span>
                 </div>
-                {post.imageUrl && <img src={post.imageUrl} alt={post.caption || 'Public post'} loading="lazy" className="mt-2 max-h-[650px] w-full rounded-2xl border border-white/10 bg-black object-contain"/>}
+                {post.imageUrl && (post.mediaType === 'VIDEO' ? <video src={post.imageUrl} controls playsInline preload="metadata" className="mt-2 max-h-[650px] w-full rounded-2xl border border-white/10 bg-black object-contain" /> : <img src={post.imageUrl} alt={post.caption || 'Public post'} loading="lazy" className="mt-2 max-h-[650px] w-full rounded-2xl border border-white/10 bg-black object-contain"/>)}
                 {post.caption && <p className="whitespace-pre-wrap break-words px-4 py-4 text-slate-100">{post.caption}</p>}
                 <div className="flex items-center gap-5 border-t border-white/10 px-4 py-3 text-sm text-slate-400">
                   <span><Heart size={16} className="mr-1 inline"/> {fmt(post._count?.likes)} likes</span>
