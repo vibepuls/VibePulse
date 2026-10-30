@@ -332,3 +332,27 @@ model MysteryRewardClaim {
  @@unique([userId,periodKey])
  @@schema("social_gaming")
 }
+
+model VideoTemplate {
+  id             String   @id @default(cuid())
+  title          String
+  description    String   @default("")
+  category       String
+  thumbnailUrl   String?
+  previewUrl     String?
+  requiredSlots  Int      @default(6)
+  durationSeconds Int     @default(15)
+  aspectRatio    String   @default("9:16")
+  config         Json     @default("{}")
+  musicUrl       String?
+  musicLicense   String   @default("")
+  trending       Boolean  @default(false)
+  popular        Boolean  @default(false)
+  published      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([published, category])
+  @@index([trending, popular])
+  @@schema("social_gaming")
+}
