@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Check, Clock3, Film, Flame, Play, Search, Sparkles, TrendingUp, WandSparkles } from 'lucide-react';
 
-const categories = ['For You', 'Trending', 'Cinematic', 'Love', 'Photo Slideshow', 'Travel', 'Birthday', 'Sad', 'Attitude', 'Reels & Shorts', 'Documentary', 'Gaming', 'Sports', 'Fashion', 'Food', 'Islamic', 'News', 'Business', 'Festival', 'Wedding', 'Fitness', 'Pets', 'Nature'];
+const categories = ['For You', 'Trending', 'Velocity', 'Beat Sync', 'Glow Up', 'Aesthetic', '3D Photo', 'Meme', 'Cinematic', 'Love', 'Photo Slideshow', 'Travel', 'Birthday', 'Sad', 'Attitude', 'Reels & Shorts', 'Documentary', 'Gaming', 'Sports', 'Fashion', 'Food', 'Islamic', 'News', 'Business', 'Festival', 'Wedding', 'Fitness', 'Pets', 'Nature'];
 
 const templates = [
   { id:'cinematic-gold', title:'Golden Hour Cinema', category:'Cinematic', duration:'15s', clips:8, trend:98, color:'from-amber-300 via-orange-600 to-slate-950', image:'photo-1470252649378-9c29740c9fa8', description:'Warm cinematic color and slow zooms' },
@@ -32,7 +32,19 @@ const templates = [
   { id:'wedding-film', title:'Wedding Film', category:'Wedding', duration:'24s', clips:10, trend:86, color:'from-rose-200 via-amber-600 to-stone-950', image:'photo-1519741497674-611481863552', description:'Romantic wedding highlights with gentle cinematic movement' },
   { id:'fitness-motivation', title:'Fitness Motivation', category:'Fitness', duration:'12s', clips:6, trend:87, color:'from-lime-300 via-emerald-700 to-black', image:'photo-1534438327276-14e5300c3a48', description:'Energetic workout recap with bold contrast' },
   { id:'pet-moments', title:'Pet Moments', category:'Pets', duration:'14s', clips:7, trend:83, color:'from-amber-200 via-orange-600 to-stone-950', image:'photo-1450778869180-41d0601e046e', description:'Cute, warm moments for your favorite companions' },
-  { id:'nature-escape', title:'Nature Escape', category:'Nature', duration:'20s', clips:9, trend:84, color:'from-green-300 via-emerald-800 to-slate-950', image:'photo-1441974231531-c6227db76b6e', description:'Slow scenic motion and natural cinematic tones' },
+  { id:'nature-escape', title:'Nature Escape', category:'Nature', duration:'20s', clips:9, trend:84, color:'from-green-300 via-emerald-800 to-slate-950', image:'photo-1441974231531-c6227db76b6e', description:'Slow scenic motion and natural cinematic tones' },,
+  { id:'velocity-rush', title:'Velocity Rush', category:'Velocity', duration:'10s', clips:7, trend:99, color:'from-red-400 via-fuchsia-700 to-black', image:'photo-1519608487953-e999c86e7455', description:'Fast slow-fast motion with punchy zooms' },
+  { id:'beat-drop', title:'Beat Drop Montage', category:'Beat Sync', duration:'12s', clips:8, trend:98, color:'from-violet-400 via-indigo-800 to-black', image:'photo-1492684223066-81342ee5ff30', description:'Rhythmic photo cuts and energetic flashes' },
+  { id:'glow-up', title:'Glow Up Transformation', category:'Glow Up', duration:'15s', clips:6, trend:96, color:'from-amber-200 via-pink-600 to-purple-950', image:'photo-1524504388940-b1c1722653e1', description:'Before-and-after reveal with a bright transition' },
+  { id:'aesthetic-dream', title:'Aesthetic Dream', category:'Aesthetic', duration:'15s', clips:8, trend:92, color:'from-pink-200 via-purple-500 to-indigo-950', image:'photo-1490730141103-6cac27aaab94', description:'Soft tones, gentle motion and dreamy light' },
+  { id:'3d-photo-depth', title:'3D Photo Depth', category:'3D Photo', duration:'10s', clips:5, trend:94, color:'from-cyan-300 via-blue-700 to-black', image:'photo-1470252649378-9c29740c9fa8', description:'Depth-inspired parallax movement for portraits' },
+  { id:'meme-reaction', title:'Meme Reaction', category:'Meme', duration:'9s', clips:5, trend:91, color:'from-yellow-300 via-orange-600 to-black', image:'photo-1534528741775-53994a69daeb', description:'Punch-in framing for funny reactions and captions' },
+  { id:'makeup-transition', title:'Beauty Switch', category:'Fashion', duration:'12s', clips:6, trend:90, color:'from-rose-300 via-fuchsia-700 to-black', image:'photo-1483985988355-763728e1935b', description:'Beauty transition with polished color and smooth zoom' },
+  { id:'couple-story', title:'Couple Story', category:'Love', duration:'18s', clips:9, trend:89, color:'from-rose-300 via-red-700 to-purple-950', image:'photo-1516589178581-6cd7833ae3b2', description:'Romantic timeline with soft transitions' },
+  { id:'flash-fit-check', title:'Fit Check Flash', category:'Fashion', duration:'8s', clips:5, trend:95, color:'from-orange-300 via-rose-600 to-black', image:'photo-1483985988355-763728e1935b', description:'Quick outfit reveals with flash cuts' },
+  { id:'concert-hype', title:'Concert Hype', category:'Festival', duration:'13s', clips:8, trend:93, color:'from-fuchsia-400 via-violet-800 to-black', image:'photo-1501386761578-eac5c94b800a', description:'Stage-light energy for concerts and live events' },
+  { id:'mini-vlog', title:'Mini Vlog Diary', category:'Reels & Shorts', duration:'20s', clips:10, trend:90, color:'from-teal-300 via-blue-700 to-black', image:'photo-1500534623283-312aaderf0e0', description:'A daily-vlog rhythm with clean transitions' },
+  { id:'pet-comedy', title:'Pet Comedy', category:'Pets', duration:'11s', clips:6, trend:88, color:'from-amber-200 via-orange-600 to-black', image:'photo-1450778869180-41d0601e046e', description:'Cute reactions with playful punch-in motion' }
 ];
 
 const imageUrl = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`;
@@ -59,6 +71,10 @@ const templateOverlay = {
   'love-moments':'vp-template-overlay-soft','soft-love':'vp-template-overlay-soft',
   'birthday-recap':'vp-template-overlay-party','birthday-film':'vp-template-overlay-party'
 };
+  'velocity-rush':'vp-template-shake','beat-drop':'vp-template-beat','glow-up':'vp-template-flash',
+  'aesthetic-dream':'vp-template-romance','3d-photo-depth':'vp-template-parallax','meme-reaction':'vp-template-bounce',
+  'makeup-transition':'vp-template-editorial','couple-story':'vp-template-romance','flash-fit-check':'vp-template-flash',
+  'concert-hype':'vp-template-party','mini-vlog':'vp-template-drift','pet-comedy':'vp-template-bounce',
 const motionFor = (template) => templateMotion[template?.id] || 'vp-template-kenburns';
 const overlayFor = (template) => templateOverlay[template?.id] || 'vp-template-overlay-cinema';
 
@@ -127,6 +143,12 @@ export default function TemplatesPage() {
         </div>
       </div>
 
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300">9:16 TikTok / Reels</span>
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300">Photo + video inputs</span>
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300">Animated previews</span>
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300">Save favorites</span>
+      </div>
       <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
         {categories.map(c=><button key={c} onClick={()=>setCategory(c)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition ${category===c?'border-violet-300 bg-violet-400/15 text-violet-200':'border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:text-white'}`}>{c}</button>)}
       </div>
