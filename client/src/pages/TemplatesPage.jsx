@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bookmark, Check, Clock3, Film, Flame, Play, Search, Sparkles, TrendingUp, WandSparkles } from 'lucide-react';
 
-const categories = ['For You', 'Trending', 'Velocity', 'Beat Sync', 'Glow Up', 'Aesthetic', '3D Photo', 'Meme', 'Cinematic', 'Love', 'Photo Slideshow', 'Travel', 'Birthday', 'Sad', 'Attitude', 'Reels & Shorts', 'Documentary', 'Gaming', 'Sports', 'Fashion', 'Food', 'Islamic', 'News', 'Business', 'Festival', 'Wedding', 'Fitness', 'Pets', 'Nature'];
+const categories = ['For You', 'Trending', 'Popular', 'New Templates', 'Photo Templates', 'Video Templates', 'Beat Sync', 'Cinematic', 'Love', 'Sad / Emotional', 'Birthday', 'Travel', 'Slow Motion', 'Flash Transitions', 'Instagram / Reels Style', 'Velocity', 'Glow Up', 'Aesthetic', '3D Photo', 'Meme', 'Photo Slideshow', 'Attitude', 'Reels & Shorts', 'Documentary', 'Gaming', 'Sports', 'Fashion', 'Food', 'Islamic', 'News', 'Business', 'Festival', 'Wedding', 'Fitness', 'Pets', 'Nature'];
 
 const templates = [
   { id:'cinematic-gold', title:'Golden Hour Cinema', category:'Cinematic', duration:'15s', clips:8, trend:98, color:'from-amber-300 via-orange-600 to-slate-950', image:'photo-1470252649378-9c29740c9fa8', description:'Warm cinematic color and slow zooms' },
@@ -47,7 +48,7 @@ const templates = [
   { id:'pet-comedy', title:'Pet Comedy', category:'Pets', duration:'11s', clips:6, trend:88, color:'from-amber-200 via-orange-600 to-black', image:'photo-1450778869180-41d0601e046e', description:'Cute reactions with playful punch-in motion' }
 ];
 
-const imageUrl = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`;
+const imageUrl = (id) => !id ? '' : (/^https?:\\/\\//i.test(id) ? id : `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`);
 
 const templateMotion = {
   'cinematic-gold':'vp-template-kenburns','love-moments':'vp-template-romance','travel-diary':'vp-template-parallax',
@@ -82,6 +83,9 @@ const overlayFor = (template) => templateOverlay[template?.id] || 'vp-template-o
 export default function TemplatesPage() {
   const navigate = useNavigate();
   const [category, setCategory] = useState('For You');
+  const [remoteTemplates, setRemoteTemplates] = useState([]);
+  const [templateLoadError, setTemplateLoadError] = useState('');
+  useEffect(() => { let active = true; api.get('/templates').then(({data}) => { if (!active) return; setRemoteTemplates((Array.isArray(data) ? data : []).map(item => ({ id:item.id, title:item.title, category:item.category, duration:`${item.durationSeconds || 15}s`, clips:item.requiredSlots || 6, trend:item.trending ? 99 : item.popular ? 94 : 70, color:'from-violet-400 via-fuchsia-700 to-slate-950', image:item.thumbnailUrl || '', previewUrl:item.previewUrl || '', description:item.description || '', aspectRatio:item.aspectRatio || '9:16', config:item.config || {}, musicUrl:item.musicUrl || '', musicLicense:item.musicLicense || '', source:'database' }))); }).catch(() => { if(active) setTemplateLoadError(''); }); return () => { active = false; }; }, []);
   const [query, setQuery] = useState('');
   const [saved, setSaved] = useState(() => {
     try { return JSON.parse(localStorage.getItem('vibepulse-saved-templates') || '[]'); } catch { return []; }
@@ -100,15 +104,16 @@ export default function TemplatesPage() {
       const proceed = window.confirm(`This template is designed for ${chosenTemplate.clips} photos/videos. You selected ${files.length}. Continue with these files?`);
       if (!proceed) { event.target.value = ''; return; }
     }
-    navigate('/template-studio?template=' + encodeURIComponent(chosenTemplate.id), { state: { templateId: chosenTemplate.id, templateTitle: chosenTemplate.title, templateCategory: chosenTemplate.category, templateFiles: files }, replace: false });
+    navigate('/template-studio?template=' + encodeURIComponent(chosenTemplate.id), { state: { templateId: chosenTemplate.id, templateTitle: chosenTemplate.title, templateCategory: chosenTemplate.category, templateFiles: files, templateConfig: chosenTemplate.config || {}, templateRequiredSlots: chosenTemplate.clips, templateDuration: parseFloat(chosenTemplate.duration) || 15, templateAspectRatio: chosenTemplate.aspectRatio || '9:16', templateMusicUrl: chosenTemplate.musicUrl || '' }, replace: false });
     event.target.value = '';
   };
 
-  const filtered = useMemo(() => templates
-    .filter(t => category === 'For You' || (category === 'Trending' ? t.trend >= 90 : t.category === category))
+  const allTemplates = useMemo(() => { const ids = new Set(remoteTemplates.map(t => t.id)); return [...remoteTemplates, ...templates.filter(t => !ids.has(t.id))]; }, [remoteTemplates]);
+  const filtered = useMemo(() => allTemplates
+    .filter(t => category === 'For You' || (category === 'Trending' ? t.trend >= 90 : category === 'Popular' ? (t.trend >= 90 || t.popular) : category === 'New Templates' ? t.source === 'database' : category === 'Photo Templates' ? t.source !== 'database' || t.mediaType !== 'VIDEO' : category === 'Video Templates' ? Boolean(t.previewUrl) : category === 'Slow Motion' ? /slow/i.test(t.title + ' ' + t.description) : category === 'Flash Transitions' ? /flash/i.test(t.title + ' ' + t.description) : category === 'Sad / Emotional' ? ['Sad','Sad / Emotional'].includes(t.category) : category === 'Instagram / Reels Style' ? ['Reels & Shorts','Instagram / Reels Style'].includes(t.category) : t.category === category))
     .filter(t => !query || (t.title + ' ' + t.category + ' ' + t.description).toLowerCase().includes(query.toLowerCase()))
     .filter(t => !savedOnly || saved.includes(t.id))
-    .sort((a,b) => category === 'Trending' || category === 'For You' ? b.trend-a.trend : 0), [category, query, savedOnly, saved]);
+    .sort((a,b) => category === 'Trending' || category === 'Popular' || category === 'For You' ? b.trend-a.trend : 0), [allTemplates, category, query, savedOnly, saved]);
 
   const toggleSaved = (id) => setSaved(old => {
     const next = old.includes(id) ? old.filter(x => x !== id) : [...old, id];
@@ -116,7 +121,7 @@ export default function TemplatesPage() {
     return next;
   });
 
-  const useTemplate = (template) => navigate('/template-studio?template=' + encodeURIComponent(template.id), { state: { templateId: template.id, templateTitle: template.title, templateCategory: template.category } });
+  const useTemplate = (template) => navigate('/template-studio?template=' + encodeURIComponent(template.id), { state: { templateId: template.id, templateTitle: template.title, templateCategory: template.category, templateConfig: template.config || {}, templateRequiredSlots: template.clips, templateDuration: parseFloat(template.duration) || 15, templateAspectRatio: template.aspectRatio || '9:16', templateMusicUrl: template.musicUrl || '' } });
 
   return <main className="min-h-screen bg-[#080b14] text-white">\n    <input id="vibepulse-template-media-picker" type="file" accept="image/*,video/*" multiple hidden onChange={onMediaPicked} />
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080b14]/90 backdrop-blur-xl">
@@ -162,7 +167,7 @@ export default function TemplatesPage() {
       {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
         {filtered.map((t,i)=><article key={t.id} className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] transition hover:-translate-y-1 hover:border-violet-300/40 hover:bg-white/[0.07]">
           <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setPreview(t)}}} onClick={()=>setPreview(t)} className="relative block aspect-[9/16] w-full cursor-pointer overflow-hidden bg-slate-900 text-left">
-            <img src={imageUrl(t.image)} alt={t.title} loading="lazy" className={`vp-template-motion h-full w-full object-cover ${motionFor(t)}`}/>
+            {t.previewUrl ? <video src={t.previewUrl} muted playsInline loop autoPlay preload="metadata" poster={imageUrl(t.image)} className={`vp-template-motion h-full w-full object-cover ${motionFor(t)}`} /> : <img src={imageUrl(t.image)} alt={t.title} loading="lazy" className={`vp-template-motion h-full w-full object-cover ${motionFor(t)}`} />}
             <div className={`absolute inset-0 bg-gradient-to-t ${t.color} opacity-50 mix-blend-multiply`}/><div className={`pointer-events-none absolute inset-0 ${overlayFor(t)}`}/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-black/10"/>
             {t.trend>=90&&<span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500/90 px-2 py-1 text-[10px] font-black uppercase"><Flame size={11}/> Trending</span>}
@@ -177,7 +182,7 @@ export default function TemplatesPage() {
 
     {preview&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={()=>setPreview(null)}>
       <div role="dialog" aria-modal="true" aria-label={preview.title} className="grid w-full max-w-3xl overflow-hidden rounded-3xl border border-white/15 bg-[#101321] md:grid-cols-2" onClick={e=>e.stopPropagation()}>
-        <div className="relative min-h-72 md:min-h-[430px]"><img src={imageUrl(preview.image)} alt={preview.title} className={`vp-template-motion absolute inset-0 h-full w-full object-cover ${motionFor(preview)}`}/><div className={`absolute inset-0 bg-gradient-to-t ${preview.color} opacity-50 mix-blend-multiply`}/><div className={`pointer-events-none absolute inset-0 ${overlayFor(preview)}`}/><div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"/><span className="absolute bottom-5 left-5 text-2xl font-black">{preview.title}</span></div>
+        <div className="relative min-h-72 md:min-h-[430px]">{preview.previewUrl ? <video src={preview.previewUrl} controls playsInline className="absolute inset-0 h-full w-full object-cover" poster={imageUrl(preview.image)} /> : <img src={imageUrl(preview.image)} alt={preview.title} className={`vp-template-motion absolute inset-0 h-full w-full object-cover ${motionFor(preview)}`} />}<div className={`absolute inset-0 bg-gradient-to-t ${preview.color} opacity-50 mix-blend-multiply`}/><div className={`pointer-events-none absolute inset-0 ${overlayFor(preview)}`}/><div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"/><span className="absolute bottom-5 left-5 text-2xl font-black">{preview.title}</span></div>
         <div className="flex flex-col p-6 sm:p-8"><div className="text-xs font-black uppercase tracking-widest text-violet-300">{preview.category}</div><h3 className="mt-3 text-2xl font-black">{preview.title}</h3><p className="mt-3 text-sm leading-6 text-slate-400">{preview.description}. Tap Use this template, choose your photos/videos, and VibePulse Studio will arrange them with this template’s color, motion, effects and vertical 9:16 layout.</p><div className="mt-5 grid grid-cols-2 gap-3"><div className="rounded-xl bg-white/5 p-3"><div className="text-xs text-slate-500">Duration</div><div className="mt-1 font-bold">{preview.duration}</div></div><div className="rounded-xl bg-white/5 p-3"><div className="text-xs text-slate-500">Required photo/video slots</div><div className="mt-1 font-bold">{preview.clips}</div></div></div><div className="mt-auto flex flex-col gap-2 pt-8"><button onClick={()=>{setPreview(null);chooseTemplate(preview)}} className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 font-bold hover:bg-violet-400"><WandSparkles size={17}/> Use this template</button><button onClick={()=>toggleSaved(preview.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 font-semibold hover:bg-white/5"><Bookmark size={16}/>{saved.includes(preview.id)?'Remove from favorites':'Save to favorites'}</button><button onClick={()=>setPreview(null)} className="rounded-xl px-4 py-2 text-sm text-slate-400 hover:text-white">Close preview</button></div></div>
       </div>
     </div>}
