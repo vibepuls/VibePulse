@@ -31,6 +31,52 @@ const DEFAULT_PRESET = { label:'Creator Mix', filter:'none', motion:'zoom', dura
 const makeId = () => globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
 const formatTime = (s) => { const n=Math.max(0,Number(s)||0); return Math.floor(n/60)+':'+String(Math.floor(n%60)).padStart(2,'0'); };
 
+async function detectBeatTimes(file) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return [];
+  const context = new AudioContextClass();
+  try {
+    const decoded = await context.decodeAudioData(await file.arrayBuffer());
+    const channel = decoded.getChannelData(0);
+    const windowSize = Math.max(512, Math.floor(decoded.sampleRate * 0.045));
+    const energies = [];
+    for (let start = 0; start < channel.length; start += windowSize) {
+      const end = Math.min(channel.length, start + windowSize);
+      let sum = 0;
+      for (let i = start; i < end; i += 1) sum += channel[i] * channel[i];
+      energies.push({ time: start / decoded.sampleRate, energy: Math.sqrt(sum / Math.max(1, end - start)) });
+    }
+    const average = energies.reduce((sum, item) => sum + item.energy, 0) / Math.max(1, energies.length);
+    const beats = [0];
+    let last = -1;
+    for (let i = 1; i < energies.length - 1; i += 1) {
+      const current = energies[i];
+      if (current.energy >= average * 1.35 && current.energy >= energies[i-1].energy && current.energy > energies[i+1].energy && current.time - last >= 0.28) {
+        beats.push(Number(current.time.toFixed(3))); last = current.time;
+      }
+    }
+    return beats.length > 1 ? beats : [];
+  } finally { await context.close().catch(() => {}); }
+}
+function frameTiming(elapsed, clips, beatSync, beatTimes) {
+  if (beatSync && beatTimes.length > 1) {
+    let index = 0;
+    for (let i = 1; i < beatTimes.length; i += 1) { if (beatTimes[i] > elapsed) break; index = i; }
+    index = Math.min(clips.length - 1, index);
+    const start = beatTimes[Math.min(index, beatTimes.length - 1)] || 0;
+    const end = beatTimes[index + 1] || (start + (clips[index]?.duration || 1));
+    return { index, progress: Math.max(0, Math.min(1, (elapsed - start) / Math.max(0.1, end - start))) };
+  }
+  let cursor = 0;
+  for (let i = 0; i < clips.length; i += 1) {
+    const duration = Math.max(0.1, Number(clips[i].duration) || 1);
+    if (elapsed < cursor + duration || i === clips.length - 1) return { index: i, progress: Math.max(0, Math.min(1, (elapsed - cursor) / duration)) };
+    cursor += duration;
+  }
+  return { index: Math.max(0, clips.length - 1), progress: 1 };
+}
+
+
 export default function TemplateVideoMaker() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,6 +95,7 @@ export default function TemplateVideoMaker() {
   const [music, setMusic] = useState(null);
   const [musicUrl, setMusicUrl] = useState('');
   const [musicVolume, setMusicVolume] = useState(0.9);
+  const [beatTimes, setBeatTimes] = useState([]);
   const [title, setTitle] = useState('');
   const [clipDuration, setClipDuration] = useState(preset.duration);
   const [motion, setMotion] = useState(preset.motion);
@@ -92,10 +139,10 @@ export default function TemplateVideoMaker() {
     const start = performance.now();
     const draw = (now) => {
       const elapsed = (now-start)/1000;
-      const slot = beatSync ? Math.max(.45, clipDuration*.65) : Math.max(.5, clipDuration);
-      const index = Math.min(clips.length-1, Math.floor(elapsed/slot));
+      const timing = frameTiming(elapsed, clips, beatSync, beatTimes);
+      const index = timing.index;
       const clip = clips[index];
-      const local = (elapsed % slot)/slot;
+      const local = timing.progress;
       canvas.width = aspect==='9:16' ? 540 : 960;
       canvas.height = aspect==='9:16' ? 960 : 540;
       drawClip(ctx, canvas, clip, local, motion, filter, transition, index);
@@ -104,7 +151,7 @@ export default function TemplateVideoMaker() {
     };
     rafRef.current=requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [playing, clips, clipDuration, motion, filter, transition, beatSync, aspect, totalDuration]);
+  }, [playing, clips, clipDuration, motion, filter, transition, beatSync, beatTimes, aspect, totalDuration]);
 
   useEffect(() => () => {
     clips.forEach(c=>{ if(c.url) URL.revokeObjectURL(c.url); });
@@ -146,11 +193,14 @@ export default function TemplateVideoMaker() {
     setClips(old=>{const next=[...old];[next[index],next[to]]=[next[to],next[index]];return next;});
     setExportUrl('');
   }
-  function chooseMusic(file) {
+  async function chooseMusic(file) {
     if(!file)return;
+    if(!file.type.startsWith('audio/') || file.size > 30 * 1024 * 1024) { setNotice('Choose an audio file smaller than 30 MB.'); return; }
     if(musicUrl)URL.revokeObjectURL(musicUrl);
-    setMusic(file);setMusicUrl(URL.createObjectURL(file));setNotice('Your music track is ready. Music is user-provided; no licensed TikTok music catalogue is included.');
-    setExportUrl('');
+    setMusic(file);setMusicUrl(URL.createObjectURL(file));setNotice('Analyzing music rhythm…');
+    try { const beats = await detectBeatTimes(file); setBeatTimes(beats); setNotice(beats.length > 1 ? `Detected ${beats.length - 1} beat candidates. Enable Music Beat Sync to align cuts to them.` : 'Music is ready. Clear beat peaks were not detected; normal timing remains available.'); }
+    catch { setBeatTimes([]); setNotice('Music is ready, but beat analysis was unavailable in this browser.'); }
+    setExportUrl(''); setExportMime('');
   }
   function drawClip(ctx,canvas,clip,progress,motionName,filterValue,transitionName,index) {
     ctx.fillStyle='#090b14';ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -200,12 +250,11 @@ export default function TemplateVideoMaker() {
       const chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
       const done=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=()=>reject(new Error('Recording failed'));});
       recorder.start(250);
-      const slot=beatSync?Math.max(.45,clipDuration*.65):Math.max(.5,clipDuration);
       const start=performance.now();
       await new Promise(resolve=>{
         const frame=now=>{
-          const elapsed=(now-start)/1000;const index=Math.min(clips.length-1,Math.floor(elapsed/slot));const progress=(elapsed%slot)/slot;
-          drawClip(ctx,canvas,clips[index],progress,motion,filter,transition,index);
+          const elapsed=(now-start)/1000;const timing=frameTiming(elapsed,clips,beatSync,beatTimes);const index=timing.index;
+          drawClip(ctx,canvas,clips[index],timing.progress,motion,filter,transition,index);
           if(elapsed<totalDuration)requestAnimationFrame(frame);else resolve();
         };requestAnimationFrame(frame);
       });
@@ -265,7 +314,7 @@ export default function TemplateVideoMaker() {
       </section>
       <aside className="space-y-4">
         <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-3 flex items-center gap-2 font-black"><Sparkles size={17} className="text-violet-300"/> Template style</h2>{requiredSlots>0&&<p className="mb-3 rounded-lg bg-violet-400/10 p-2 text-xs text-violet-200">Required media: {requiredSlots} · Selected: {clips.length}</p>}<label className="mb-3 block text-xs text-slate-400">Preset</label><select value={templateId} onChange={e=>selectPreset(e.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm">{templateOptions.map(([id,p])=><option key={id} value={id}>{p.label}</option>)}</select><p className="mt-2 text-xs leading-5 text-slate-400">Every preset has its own starting look, motion, clip timing and transition.</p></div>
-        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-4 font-black">Edit video</h2><label className="mb-2 block text-xs text-slate-400">Canvas ratio</label><select value={aspect} onChange={e=>setAspect(e.target.value)} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="9:16">9:16 TikTok / Reels / Shorts</option><option value="16:9">16:9 Landscape</option><option value="1:1">1:1 Square</option></select><label className="mb-2 block text-xs text-slate-400">Motion</label><select value={motion} onChange={e=>{setMotion(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="zoom">Slow zoom</option><option value="pan">Pan / parallax style</option><option value="shake">Shake / energetic</option><option value="none">None</option></select><label className="mb-2 block text-xs text-slate-400">Color filter</label><select value={filter} onChange={e=>{setFilter(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="none">Original</option><option value="contrast(1.12) saturate(.9)">Cinematic</option><option value="sepia(.2) saturate(1.1)">Warm vintage</option><option value="grayscale(1) contrast(1.1)">Black & white</option><option value="saturate(1.35) contrast(1.1)">Vivid</option><option value="brightness(1.08) saturate(.9)">Dreamy</option><option value="contrast(1.25) saturate(1.3)">Hype</option></select><label className="mb-2 block text-xs text-slate-400">Seconds per photo</label><input type="range" min=".5" max="5" step=".1" value={clipDuration} onChange={e=>{setClipDuration(Number(e.target.value));setClips(old=>old.map(c=>c.type==='image'?{...c,duration:Number(e.target.value)}:c));setExportUrl('');}} className="w-full"/><div className="mb-4 text-sm">{clipDuration.toFixed(1)} seconds</div><label className="mb-2 block text-xs text-slate-400">Transition</label><select value={transition} onChange={e=>{setTransition(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="cut">Cut</option><option value="fade">Fade</option><option value="flash">Flash</option><option value="slide">Slide (preview style)</option></select><label className="flex items-center gap-2 rounded-xl bg-black/20 p-3 text-sm"><input type="checkbox" checked={beatSync} onChange={e=>{setBeatSync(e.target.checked);setExportUrl('');}}/> Beat-paced cuts (faster timing; not audio beat analysis)</label><label className="mt-4 block text-xs text-slate-400">Video title (optional)</label><input value={title} onChange={e=>{setTitle(e.target.value);setExportUrl('');}} placeholder="Add a title..." className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"/></div>
+        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-4 font-black">Edit video</h2><label className="mb-2 block text-xs text-slate-400">Canvas ratio</label><select value={aspect} onChange={e=>setAspect(e.target.value)} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="9:16">9:16 TikTok / Reels / Shorts</option><option value="16:9">16:9 Landscape</option><option value="1:1">1:1 Square</option></select><label className="mb-2 block text-xs text-slate-400">Motion</label><select value={motion} onChange={e=>{setMotion(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="zoom">Slow zoom</option><option value="pan">Pan / parallax style</option><option value="shake">Shake / energetic</option><option value="none">None</option></select><label className="mb-2 block text-xs text-slate-400">Color filter</label><select value={filter} onChange={e=>{setFilter(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="none">Original</option><option value="contrast(1.12) saturate(.9)">Cinematic</option><option value="sepia(.2) saturate(1.1)">Warm vintage</option><option value="grayscale(1) contrast(1.1)">Black & white</option><option value="saturate(1.35) contrast(1.1)">Vivid</option><option value="brightness(1.08) saturate(.9)">Dreamy</option><option value="contrast(1.25) saturate(1.3)">Hype</option></select><label className="mb-2 block text-xs text-slate-400">Seconds per photo</label><input type="range" min=".5" max="5" step=".1" value={clipDuration} onChange={e=>{setClipDuration(Number(e.target.value));setClips(old=>old.map(c=>c.type==='image'?{...c,duration:Number(e.target.value)}:c));setExportUrl('');}} className="w-full"/><div className="mb-4 text-sm">{clipDuration.toFixed(1)} seconds</div><label className="mb-2 block text-xs text-slate-400">Transition</label><select value={transition} onChange={e=>{setTransition(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="cut">Cut</option><option value="fade">Fade</option><option value="flash">Flash</option><option value="slide">Slide (preview style)</option></select><label className="flex items-center gap-2 rounded-xl bg-black/20 p-3 text-sm"><input type="checkbox" checked={beatSync} onChange={e=>{setBeatSync(e.target.checked);setExportUrl('');}}/> Music Beat Sync (uses detected audio peaks)</label><label className="mt-4 block text-xs text-slate-400">Video title (optional)</label><input value={title} onChange={e=>{setTitle(e.target.value);setExportUrl('');}} placeholder="Add a title..." className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"/></div>
         <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-2 font-black">Export</h2><p className="mb-3 text-xs leading-5 text-slate-400">Renders in your browser, then attempts MP4 conversion with FFmpeg WebAssembly. Large projects can be slow or run out of memory on phones.</p><button onClick={exportVideo} disabled={exporting||!clips.length} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-3 font-black disabled:opacity-50"><Download size={17}/>{exporting?'Rendering…':'Export video'}</button>{exportUrl&&<a href={exportUrl} download={(title||'vibepulse-template-video').replace(/[^a-z0-9-_]/gi,'-')+(exportMime==='video/mp4' ? '.mp4' : '.webm')} className="mt-3 block rounded-xl bg-emerald-500 px-4 py-3 text-center font-bold text-white">Download finished video</a>}{exportUrl&&<button onClick={publishVideo} disabled={publishing} className="mt-2 block w-full rounded-xl bg-emerald-500 px-4 py-3 text-center font-bold text-white disabled:opacity-50">{publishing?'Publishing…':'Post to VibePulse'}</button>}</div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs leading-5 text-slate-300">{notice}</div>
       </aside>
