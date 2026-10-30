@@ -186,7 +186,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
         el.play().catch(() => {});
       } else { el.pause(); }
     });
-  }, [playhead, clips, playing, activeVisual]);
+  }, [playhead, clips, playing]);
 
   useEffect(() => () => {
     cancelAnimationFrame(rafRef.current);
