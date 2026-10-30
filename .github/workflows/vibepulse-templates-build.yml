@@ -25,8 +25,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: client/package-lock.json
       - run: npm install
       - run: npm run build
 
@@ -43,8 +41,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: server/package-lock.json
       - run: npm install --include=dev
       - run: npm run db:generate
       - run: npm run build
