@@ -133,6 +133,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const [markers, setMarkers] = useState([]);
   const [timelineMaximized, setTimelineMaximized] = useState(false);
   const [trackHeights, setTrackHeights] = useState({});
+  const clipHistoryRef = useRef({ past: [], future: [], current: null, signature: '', applying: false });
+  const [, setClipHistoryVersion] = useState(0);
   const toggleTrackState = (trackId, key) => setTrackStates(old => ({ ...old, [trackId]: { ...(old[trackId] || {}), [key]: !(old[trackId]?.[key]) } }));
   const isTrackLocked = trackId => Boolean(trackStates[trackId]?.locked);
   const isTrackMuted = trackId => Boolean(trackStates[trackId]?.muted) || (tracks.some(t => t.kind === 'audio' && trackStates[t.id]?.solo) && !trackStates[trackId]?.solo);
@@ -157,6 +159,16 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const [musicUrl, setMusicUrl] = useState('');
   const [sfxFiles, setSfxFiles] = useState([]);
   const selectedClip = clips.find(c => c.id === selectedId) || null;
+  useEffect(() => {
+    const snapshot = clips.map(c => ({ ...c }));
+    const signature = JSON.stringify(snapshot.map(({ url, ...c }) => c));
+    const history = clipHistoryRef.current;
+    if (history.applying) { history.applying = false; history.current = snapshot; history.signature = signature; setClipHistoryVersion(x => x + 1); return; }
+    if (history.current && history.signature !== signature) { history.past.push(history.current); if (history.past.length > 80) history.past.shift(); history.future = []; }
+    history.current = snapshot; history.signature = signature; setClipHistoryVersion(x => x + 1);
+  }, [clips]);
+  const undoClips = () => { const h = clipHistoryRef.current; if (!h.past.length) return; if (h.current) h.future.push(h.current); const previous = h.past.pop(); h.applying = true; h.current = previous; setClips(previous.map(c => ({ ...c }))); setMessage('Timeline edit undone.'); };
+  const redoClips = () => { const h = clipHistoryRef.current; if (!h.future.length) return; if (h.current) h.past.push(h.current); const next = h.future.pop(); h.applying = true; h.current = next; setClips(next.map(c => ({ ...c }))); setMessage('Timeline edit redone.'); };
   const timelineDuration = Math.max(voiceDuration, clips.reduce((max, c) => Math.max(max, c.start + c.duration), 0), 1);
   const visibleDuration = Math.max(5, timelineDuration);
   const pxPerSecond = 70 * waveformZoom;
@@ -519,7 +531,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       <label className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-slate-300">Import voiceover / narration<input type="file" accept="audio/*" onChange={e => { importVoice(e.target.files?.[0]); e.target.value = ''; }} className="mt-2 block w-full text-[11px] text-[#bbb]" /></label>
     </div>
     <audio ref={audioRef} src={voiceUrl || undefined} preload="auto" onLoadedMetadata={e => { if (Number.isFinite(e.currentTarget.duration) && !waveform) setVoiceDuration(e.currentTarget.duration); }} onEnded={() => { setPlaying(false); setPlayhead(voiceDuration); }} />
-    <div className="flex flex-wrap items-center gap-1 border-b border-[#454545] bg-[#292929] px-2 py-1.5">
+    <div className="flex flex-wrap items-center gap-1 border-b border-[#454545] bg-[#292929] px-2 py-1.5"><button type="button" onClick={undoClips} disabled={!clipHistoryRef.current.past.length} title="Undo timeline edit" className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] disabled:opacity-30">↶ Undo</button><button type="button" onClick={redoClips} disabled={!clipHistoryRef.current.future.length} title="Redo timeline edit" className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] disabled:opacity-30">↷ Redo</button>
       <button type="button" title="Selection tool (V)" onClick={()=>setActiveTool("select")} className={"border px-2 py-1 text-[10px] "+(activeTool==="select"?"border-sky-400 bg-sky-900/60 text-white":"border-[#555] bg-[#383838] text-slate-300")}>V · Select</button>
       <button type="button" title="Razor tool (C): click a clip to split" onClick={()=>setActiveTool("razor")} className={"border px-2 py-1 text-[10px] "+(activeTool==="razor"?"border-rose-400 bg-rose-900/60 text-white":"border-[#555] bg-[#383838] text-slate-300")}>C · Razor</button>
       <button type="button" title="Add marker at playhead (M)" onClick={addMarker} className="border border-[#555] bg-[#383838] px-2 py-1 text-[10px] text-slate-300">M · Marker</button>
