@@ -4,12 +4,15 @@ import { AudioLines, Play, Pause, Square, SkipBack, SkipForward, Plus, Save, Fol
 const DB_NAME = 'vibepulse-voice-timeline';
 const DB_VERSION = 1;
 const TRACKS = [
+  { id: 'V6', label: 'V6 · Additional graphics', kind: 'visual' },
+  { id: 'V5', label: 'V5 · Additional overlays', kind: 'visual' },
   { id: 'V4', label: 'V4 · Titles / captions', kind: 'visual' },
-  { id: 'V3', label: 'V3 · Overlays / effects', kind: 'visual' },
+  { id: 'V3', label: 'V3 · Effects / overlays', kind: 'visual' },
   { id: 'V2', label: 'V2 · Supporting B-roll', kind: 'visual' },
   { id: 'V1', label: 'V1 · Main video / images', kind: 'visual' },
   { id: 'A2', label: 'A2 · Background music', kind: 'audio' },
   { id: 'A3', label: 'A3 · Sound effects', kind: 'audio' },
+  { id: 'A4', label: 'A4 · Additional audio', kind: 'audio' },
 ];
 const idOf = () => globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -252,14 +255,14 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   }, []);
 
   const activeVisual = useCallback((at) => {
-    const order = { V1: 1, V2: 2, V3: 3, V4: 4 };
+    const order = { V1: 1, V2: 2, V3: 3, V4: 4, V5: 5, V6: 6 };
     return clips.filter(c => c.kind === 'visual' && at >= c.start && at < c.start + c.duration)
       .sort((a, b) => (order[b.track] || 0) - (order[a.track] || 0))[0] || null;
   }, [clips]);
 
   const updateVideoAt = (at) => {
     const target = clips.filter(c => c.kind === 'visual' && c.type === 'video' && at >= c.start && at < c.start + c.duration)
-      .sort((a, b) => ({ V1: 1, V2: 2, V3: 3, V4: 4 }[b.track] || 0) - ({ V1: 1, V2: 2, V3: 3, V4: 4 }[a.track] || 0))[0];
+      .sort((a, b) => ({ V1: 1, V2: 2, V3: 3, V4: 4, V5: 5, V6: 6 }[b.track] || 0) - ({ V1: 1, V2: 2, V3: 3, V4: 4, V5: 5, V6: 6 }[a.track] || 0))[0];
     if (target && videoRef.current) {
       const wanted = clamp(target.trimStart + (at - target.start), target.trimStart, target.trimStart + target.duration);
       if (!videoRef.current.seeking && Math.abs(videoRef.current.currentTime - wanted) > 0.18) {
@@ -471,7 +474,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const visualForPreview = activeVisual(playhead);
   const trackColor = (track) => track === 'V1' ? 'border-violet-400/60 bg-violet-500/25' : track === 'V2' ? 'border-sky-400/60 bg-sky-500/20' : track === 'V3' ? 'border-amber-400/60 bg-amber-500/20' : track === 'V4' ? 'border-pink-400/60 bg-pink-500/20' : 'border-emerald-400/60 bg-emerald-500/20';
 
-  return <section className="mt-2 overflow-hidden border border-[#454545] bg-[#242424] p-0 font-sans text-[#d4d4d4] shadow-2xl">
+  return <section className="mt-2 flex min-h-[420px] max-h-[42vh] flex-col overflow-hidden border border-[#454545] bg-[#242424] p-0 font-sans text-[#d4d4d4] shadow-2xl">
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#454545] bg-[#303030] px-4 py-3">
       <div><h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-[#eeeeee]"><AudioLines size={17} className="text-[#83b9ef]" /> AutoCut · Timeline</h2><p className="mt-1 text-[11px] text-[#a9a9a9]">Sequence · synchronized narration · multitrack editing</p></div>
       <div className="flex flex-wrap gap-2"><button onClick={saveProject} className="inline-flex items-center gap-1 border border-[#555] bg-[#383838] px-3 py-1.5 text-[11px] hover:bg-[#484848]"><Save size={14}/> Save timeline</button><select aria-label="Open saved timeline" value="" onChange={e => { if (e.target.value) loadProject(e.target.value); }} className="border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-[11px] text-[#ddd]"><option value="">Open saved…</option>{savedProjects.map(p => <option key={p.id} value={p.id}>{p.name} ({p.clipCount})</option>)}</select></div>
@@ -496,7 +499,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       <label>Minimum silence: {minSilence.toFixed(2)}s<input type="range" min="0.25" max="2.5" step="0.05" value={minSilence} onChange={e => { const value = Number(e.target.value); setMinSilence(value); if (voiceFile) analyzeVoice(voiceFile, thresholdDb, value); }} className="ml-2 w-32 align-middle" /></label>
       <span className="text-amber-200">{waveform?.silences?.length || 0} silence regions</span>
     </div>
-    <div ref={rulerRef} className="overflow-auto border-y border-[#454545] bg-[#1b1b1b]" onClick={e => { if (e.target !== rulerRef.current) return; seekFromPointer(e); }} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const rect = rulerRef.current.getBoundingClientRect(); const t = Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft - 144) / pxPerSecond); onDropTrack(e, pendingTrack || 'V1'); seekTo(t); }}>
+    <div ref={rulerRef} className="min-h-0 flex-1 overflow-auto border-y border-[#454545] bg-[#1b1b1b]" onClick={e => { if (e.target !== rulerRef.current) return; seekFromPointer(e); }} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const rect = rulerRef.current.getBoundingClientRect(); const t = Math.max(0, (e.clientX - rect.left + rulerRef.current.scrollLeft - 144) / pxPerSecond); onDropTrack(e, pendingTrack || 'V1'); seekTo(t); }}>
       <div className="relative" style={{ width: Math.max(900, pixelsWide), minWidth: '100%' }}>
         <div className="sticky top-0 z-10 flex h-8 border-b border-[#454545] bg-[#292929]">
           {Array.from({ length: Math.ceil(visibleDuration / 5) + 1 }, (_, i) => <div key={i} style={{ left: i * 5 * pxPerSecond, position: 'absolute' }} className="border-l border-[#444] pl-1 text-[10px] text-[#aaa]">{timecode(i * 5)}</div>)}
