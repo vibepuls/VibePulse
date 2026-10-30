@@ -115,6 +115,7 @@ export default function TemplateVideoMaker() {
   const [selected, setSelected] = useState('');
   const [aspect, setAspect] = useState(location.state?.templateAspectRatio || '9:16');
   const [requiredSlots, setRequiredSlots] = useState(Number(location.state?.templateRequiredSlots || 0));
+  const [requiredMediaMode, setRequiredMediaMode] = useState(location.state?.templateMediaMode || 'MIXED');
   const [publishing, setPublishing] = useState(false);
   const totalDuration = Math.max(0.1, clips.reduce((n,c)=>n+c.duration,0));
   const selectedClip = clips.find(c=>c.id===selected) || clips[0];
@@ -124,7 +125,7 @@ export default function TemplateVideoMaker() {
     if (incoming?.length) addFiles(incoming, true);
     if (location.state?.templateMusicUrl) { setMusicUrl(location.state.templateMusicUrl); setNotice('This template includes music. Confirm you have rights to use it before publishing.'); }
     const id = location.state?.templateId || new URLSearchParams(location.search).get('template');
-    if (id) api.get('/templates').then(({data}) => { const item = (Array.isArray(data) ? data : []).find(t => t.id === id); if (!item) return; const cfg = item.config || {}; const base = PRESETS[id] || DEFAULT_PRESET; setFilter(cfg.filter || base.filter); setMotion(cfg.motion || base.motion); setTransition(cfg.transition || base.transition); setClipDuration(Number(cfg.clipDuration || cfg.duration || base.duration)); setRequiredSlots(Number(item.requiredSlots || 0)); setAspect(item.aspectRatio || '9:16'); }).catch(()=>{});
+    if (id) api.get('/templates').then(({data}) => { const item = (Array.isArray(data) ? data : []).find(t => t.id === id); if (!item) return; const cfg = item.config || {}; const base = PRESETS[id] || DEFAULT_PRESET; setFilter(cfg.filter || base.filter); setMotion(cfg.motion || base.motion); setTransition(cfg.transition || base.transition); setClipDuration(Number(cfg.clipDuration || cfg.duration || base.duration)); setRequiredSlots(Number(item.requiredSlots || 0)); setRequiredMediaMode(item.mediaMode || 'MIXED'); setAspect(item.aspectRatio || '9:16'); }).catch(()=>{});
     // Apply a preset only on initial route entry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -181,7 +182,9 @@ export default function TemplateVideoMaker() {
   }
   function replaceClip(file) {
     if (!file || !replaceTarget) return;
-    const valid = ['image/jpeg','image/png','image/webp'].includes(file.type) || ['video/mp4','video/quicktime','video/webm'].includes(file.type);
+    const isImage = ['image/jpeg','image/png','image/webp'].includes(file.type);
+    const isVideo = ['video/mp4','video/quicktime','video/webm'].includes(file.type);
+    const valid = (isImage || isVideo) && (requiredMediaMode === 'MIXED' || (requiredMediaMode === 'PHOTO' && isImage) || (requiredMediaMode === 'VIDEO' && isVideo));
     if (!valid) { setNotice('Only JPG, PNG, WEBP, MP4, MOV and WEBM files are supported.'); setReplaceTarget(''); return; }
     if (file.size > (file.type.startsWith('video/') ? 100 : 15) * 1024 * 1024) { setNotice('Images must be under 15 MB and videos under 50 MB.'); setReplaceTarget(''); return; }
     const url = URL.createObjectURL(file);
