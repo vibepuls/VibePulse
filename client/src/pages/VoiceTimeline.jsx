@@ -4,13 +4,12 @@ import { AudioLines, Play, Pause, Square, SkipBack, SkipForward, Plus, Save, Fol
 const DB_NAME = 'vibepulse-voice-timeline';
 const DB_VERSION = 1;
 const TRACKS = [
-  { id: 'A1', label: 'A1 · Voiceover', kind: 'audio' },
+  { id: 'V4', label: 'V4 · Titles / captions', kind: 'visual' },
+  { id: 'V3', label: 'V3 · Overlays / effects', kind: 'visual' },
+  { id: 'V2', label: 'V2 · Supporting B-roll', kind: 'visual' },
+  { id: 'V1', label: 'V1 · Main video / images', kind: 'visual' },
   { id: 'A2', label: 'A2 · Background music', kind: 'audio' },
   { id: 'A3', label: 'A3 · Sound effects', kind: 'audio' },
-  { id: 'V1', label: 'V1 · Main video / images', kind: 'visual' },
-  { id: 'V2', label: 'V2 · Supporting B-roll', kind: 'visual' },
-  { id: 'V3', label: 'V3 · Overlays / effects', kind: 'visual' },
-  { id: 'V4', label: 'V4 · Titles / captions', kind: 'visual' },
 ];
 const idOf = () => globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -282,9 +281,9 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
 
   const onDropTrack = (event, track) => {
     event.preventDefault();
-    const rect = event.currentTarget.getBoundingClientRect();
+    const rect = rulerRef.current?.getBoundingClientRect() || event.currentTarget.getBoundingClientRect();
     const labelOffset = 144;
-    const start = Math.max(0, (event.clientX - rect.left + event.currentTarget.scrollLeft - labelOffset) / pxPerSecond);
+    const start = Math.max(0, (event.clientX - rect.left + (rulerRef.current?.scrollLeft || 0) - labelOffset) / pxPerSecond);
     const sourceId = event.dataTransfer.getData('application/x-vibepulse-media');
     const clipId = event.dataTransfer.getData('application/x-vibepulse-timeline-clip');
     const file = event.dataTransfer.files?.[0];
@@ -452,12 +451,12 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
             <div className="relative min-h-[104px]">{renderWave()}</div>
           </div>
         </div>
-        {TRACKS.slice(1).map(track => <div key={track.id} className="relative flex min-h-[62px] border-b border-white/5" onDragOver={e => e.preventDefault()} onDrop={e => onDropTrack(e, track.id)} onClick={e => { if (!e.target.closest('[data-clip]')) { const rect = e.currentTarget.getBoundingClientRect(); seekTo(Math.max(0, (e.clientX - rect.left + e.currentTarget.scrollLeft - 144) / pxPerSecond)); setPendingTrack(track.id); } }}>
+        {TRACKS.slice(1).map(track => <div key={track.id} className="relative flex min-h-[70px] border-b border-white/5" onDragOver={e => e.preventDefault()} onDrop={e => onDropTrack(e, track.id)} onClick={e => { if (!e.target.closest('[data-clip]')) { const rect = e.currentTarget.getBoundingClientRect(); seekTo(Math.max(0, (e.clientX - rect.left + e.currentTarget.scrollLeft - 144) / pxPerSecond)); setPendingTrack(track.id); } }}>
           <div className="absolute left-0 top-0 z-10 flex h-full w-36 items-center border-r border-white/10 bg-slate-950/95 px-2 text-[11px] font-bold text-slate-300">{track.label}</div>
           <div className="relative ml-36 min-h-[62px]" style={{ width: Math.max(0, pixelsWide - 144) }}>
             {track.id === 'A2' && <label className="absolute left-2 top-2 z-10 cursor-pointer rounded bg-emerald-900/80 px-2 py-1 text-[10px] text-emerald-100"><Music2 size={10} className="mr-1 inline"/>Add music<input type="file" accept="audio/*" hidden onChange={e => { importTrackAudio(e.target.files?.[0], 'A2'); e.target.value = ''; }}/></label>}
             {track.id === 'A3' && <label className="absolute left-2 top-2 z-10 cursor-pointer rounded bg-emerald-900/80 px-2 py-1 text-[10px] text-emerald-100">Add SFX<input type="file" accept="audio/*" hidden onChange={e => { importTrackAudio(e.target.files?.[0], 'A3'); e.target.value = ''; }}/></label>}
-            {clips.filter(c => c.track === track.id).map(c => <div key={c.id} data-clip="true" draggable onDragStart={e => { dragRef.current = c.id; e.dataTransfer.setData('application/x-vibepulse-timeline-clip', c.id); }} onClick={e => { e.stopPropagation(); setSelectedId(c.id); seekTo(c.start); }} className={'absolute top-2 h-10 overflow-hidden rounded-md border px-2 py-1 text-[10px] ' + trackColor(track.id) + (selectedId === c.id ? ' ring-2 ring-white' : '')} style={{ left: c.start * pxPerSecond, width: Math.max(34, c.duration * pxPerSecond) }} title={c.name + ' · ' + c.duration.toFixed(2) + 's'}><span className="block truncate font-bold">{c.name}</span><span>{c.duration.toFixed(1)}s</span>{c.kind === 'audio' && c.waveform?.peaks && <svg className="mt-1 block h-4 w-full" viewBox={'0 0 ' + Math.max(1,c.waveform.peaks.length) + ' 16'} preserveAspectRatio="none">{c.waveform.peaks.map((p,i)=><rect key={i} x={i} y={(16-Math.max(1,p.peak*14))/2} width="1" height={Math.max(1,p.peak*14)} fill={p.rms < Math.pow(10,thresholdDb/20) ? '#64748b' : '#6ee7b7'} />)}</svg>}{c.kind === 'audio' && <audio ref={el => { if (el) audioTrackRefs.current[c.id] = el; else delete audioTrackRefs.current[c.id]; }} src={c.url} preload="auto" className="hidden" /> }<button onClick={e => { e.stopPropagation(); setClips(old => old.filter(x => x.id !== c.id)); if (selectedId === c.id) setSelectedId(''); }} className="absolute right-0 top-0 rounded bg-black/40 p-0.5" aria-label="Delete clip"><Trash2 size={10}/></button></div>)}
+            {clips.filter(c => c.track === track.id).map(c => <div key={c.id} data-clip="true" draggable onDragStart={e => { dragRef.current = c.id; e.dataTransfer.setData('application/x-vibepulse-timeline-clip', c.id); }} onClick={e => { e.stopPropagation(); setSelectedId(c.id); seekTo(c.start); }} className={'absolute top-2 h-14 overflow-hidden rounded-md border px-2 py-1 text-[10px] shadow-md ' + trackColor(track.id) + (selectedId === c.id ? ' ring-2 ring-white' : '')} style={{ left: c.start * pxPerSecond, width: Math.max(34, c.duration * pxPerSecond) }} title={c.name + ' · ' + c.duration.toFixed(2) + 's'}>{c.type === 'image' && <img src={c.url} alt="" draggable="false" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"/>}<span className="relative block truncate font-bold">{c.name}</span><span className="relative">{timecode(c.start)} · {c.duration.toFixed(1)}s</span>{c.kind === 'audio' && c.waveform?.peaks && <svg className="mt-1 block h-4 w-full" viewBox={'0 0 ' + Math.max(1,c.waveform.peaks.length) + ' 16'} preserveAspectRatio="none">{c.waveform.peaks.map((p,i)=><rect key={i} x={i} y={(16-Math.max(1,p.peak*14))/2} width="1" height={Math.max(1,p.peak*14)} fill={p.rms < Math.pow(10,thresholdDb/20) ? '#64748b' : '#6ee7b7'} />)}</svg>}{c.kind === 'audio' && <audio ref={el => { if (el) audioTrackRefs.current[c.id] = el; else delete audioTrackRefs.current[c.id]; }} src={c.url} preload="auto" className="hidden" /> }<button onClick={e => { e.stopPropagation(); setClips(old => old.filter(x => x.id !== c.id)); if (selectedId === c.id) setSelectedId(''); }} className="absolute right-0 top-0 rounded bg-black/40 p-0.5" aria-label="Delete clip"><Trash2 size={10}/></button></div>)}
           </div>
         </div>)}
         <div className="pointer-events-none absolute bottom-0 top-0 z-20" style={{ left: 144 + playhead * pxPerSecond }}><div className="h-full w-px bg-rose-400"/><div className="-ml-1.5 h-3 w-3 rounded-b bg-rose-400"/></div>
