@@ -298,14 +298,13 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   }, []);
 
   const activeVisual = useCallback((at) => {
-    const order = { V1: 1, V2: 2, V3: 3, V4: 4, V5: 5, V6: 6 };
     return clips.filter(c => c.kind === 'visual' && ['image','video'].includes(c.type) && !isTrackHidden(c.track) && at >= c.start && at < c.start + c.duration)
-      .sort((a, b) => (order[b.track] || 0) - (order[a.track] || 0))[0] || null;
+      .sort((a, b) => (Number(b.track.slice(1)) || 0) - (Number(a.track.slice(1)) || 0))[0] || null;
   }, [clips, trackStates]);
 
   const updateVideoAt = (at) => {
     const target = clips.filter(c => c.kind === 'visual' && !isTrackHidden(c.track) && c.type === 'video' && at >= c.start && at < c.start + c.duration)
-      .sort((a, b) => ({ V1: 1, V2: 2, V3: 3, V4: 4, V5: 5, V6: 6 }[b.track] || 0) - ({ V1: 1, V2: 2, V3: 3, V4: 4, V5: 5, V6: 6 }[a.track] || 0))[0];
+      .sort((a, b) => (Number(b.track.slice(1)) || 0) - (Number(a.track.slice(1)) || 0))[0];
     if (target && videoRef.current) {
       const wanted = clamp(target.trimStart + (at - target.start), target.trimStart, target.trimStart + target.duration);
       if (!videoRef.current.seeking && Math.abs(videoRef.current.currentTime - wanted) > 0.18) {
@@ -579,7 +578,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       <div className="bg-[#2a2a2a] p-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-[#454545] pb-2"><h3 className="text-xs font-bold text-slate-300">Media panel · drag a card onto V1/V2/V3/V4</h3><span className="text-[10px] text-slate-500">Drop position = timeline time</span></div>
         {mediaClips.length ? <div className="flex gap-2 overflow-x-auto pb-2">{mediaClips.map(c => <button key={c.id} draggable onDragStart={e => { e.dataTransfer.setData('application/x-vibepulse-media', c.id); e.dataTransfer.effectAllowed = 'copy'; }} onClick={() => { placeMedia(c, pendingTrack, playhead); }} className="w-24 shrink-0 border border-[#555] bg-[#333] p-2 text-left hover:border-[#7eb8e8]"><div className="h-16 overflow-hidden bg-[#151515]">{c.type === 'image' ? <img src={c.url} alt="" className="h-full w-full object-cover"/> : <video src={c.url} muted className="h-full w-full object-cover"/>}</div><div className="mt-1 truncate text-[10px]">{c.name}</div><div className="text-[9px] text-slate-500">Insert at playhead</div></button>)}</div> : <p className="text-xs text-slate-500">Import images/videos in the existing Media panel above, then drag them here.</p>}
-        <div className="mt-2 flex flex-wrap gap-2 border-t border-[#454545] pt-2"><label className="cursor-pointer border border-[#555] bg-[#383838] px-3 py-2 text-[11px] hover:bg-[#484848]"><ImagePlus size={13} className="mr-1 inline"/>Import image/video<input type="file" accept="image/*,video/*" multiple hidden onChange={e => { Array.from(e.target.files || []).forEach(file => { const fake = { id: idOf(), file, name: file.name, type: file.type.startsWith('video/') ? 'video' : 'image', duration: 5 }; placeMedia(fake, pendingTrack, playhead); }); e.target.value = ''; }}/></label><label className="flex items-center gap-1 text-xs text-slate-400"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)}/> Snap to playhead / clip edges</label><label className="text-xs text-slate-400">Drop target<select value={pendingTrack} onChange={e => setPendingTrack(e.target.value)} className="ml-2 border border-[#555] bg-[#1f1f1f] p-1 text-[#ddd]">{TRACKS.filter(t => t.kind === 'visual').map(t => <option key={t.id} value={t.id}>{t.id}</option>)}</select></label></div>
+        <div className="mt-2 flex flex-wrap gap-2 border-t border-[#454545] pt-2"><label className="cursor-pointer border border-[#555] bg-[#383838] px-3 py-2 text-[11px] hover:bg-[#484848]"><ImagePlus size={13} className="mr-1 inline"/>Import image/video<input type="file" accept="image/*,video/*" multiple hidden onChange={e => { Array.from(e.target.files || []).forEach(file => { const fake = { id: idOf(), file, name: file.name, type: file.type.startsWith('video/') ? 'video' : 'image', duration: 5 }; placeMedia(fake, pendingTrack, playhead); }); e.target.value = ''; }}/></label><label className="flex items-center gap-1 text-xs text-slate-400"><input type="checkbox" checked={snap} onChange={e => setSnap(e.target.checked)}/> Snap to playhead / clip edges</label><label className="text-xs text-slate-400">Drop target<select value={pendingTrack} onChange={e => setPendingTrack(e.target.value)} className="ml-2 border border-[#555] bg-[#1f1f1f] p-1 text-[#ddd]">{tracks.filter(t => t.kind === 'visual').map(t => <option key={t.id} value={t.id}>{t.id}</option>)}</select></label></div>
       </div>
       <div className="bg-[#2a2a2a] p-3">
         <h3 className="mb-2 border-b border-[#454545] pb-2 text-[11px] font-semibold uppercase tracking-wide text-[#c7c7c7]">Preview monitor</h3>
