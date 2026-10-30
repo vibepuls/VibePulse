@@ -280,6 +280,36 @@ export default function ProfessionalVideoEditor() {
     setAudio({file,url:URL.createObjectURL(file),name:file.name});
     setNotice('Audio added. Use the audio track below to see it in your edit.');
   };
+  const syncPhotosToBeat = async () => {
+    if (!audio?.file) { setNotice('Import a music track first, then use Beat Sync.'); return; }
+    const photos=clips.filter(c=>c.type==='image');
+    if (photos.length<2) { setNotice('Beat Sync needs at least two photo clips. Add more photos first.'); return; }
+    setNotice('Analyzing the music rhythm…');
+    let audioContext;
+    try {
+      audioContext=new AudioContext();
+      const decoded=await audioContext.decodeAudioData(await audio.file.arrayBuffer());
+      const data=decoded.getChannelData(0);
+      const sampleRate=decoded.sampleRate;
+      const hop=Math.max(256,Math.floor(sampleRate*.05));
+      const energy=[];
+      for(let i=0;i<data.length;i+=hop){let sum=0;const end=Math.min(data.length,i+hop);for(let j=i;j<end;j+=4)sum+=data[j]*data[j];energy.push(Math.sqrt(sum/Math.max(1,Math.ceil((end-i)/4))));}
+      const average=energy.reduce((a,b)=>a+b,0)/Math.max(1,energy.length);
+      const peaks=[];
+      for(let i=2;i<energy.length-2;i++){if(energy[i]>average*1.35&&energy[i]>=energy[i-1]&&energy[i]>energy[i+1]&&(peaks.length===0||i-peaks[peaks.length-1]>=3))peaks.push(i);}
+      const gaps=peaks.slice(1).map((p,i)=>(p-peaks[i])*.05).filter(g=>g>=.25&&g<=1.2).sort((a,b)=>a-b);
+      const beat=gaps.length?gaps[Math.floor(gaps.length/2)]:.5;
+      const beatLength=Math.max(.35,Math.min(1.2,beat*2));
+      snapshot();
+      let cursor=0;
+      setClips(old=>old.map(clip=>{const next=clip.type==='image'?{...clip,duration:beatLength,trimEnd:beatLength,transition:'Flash'}:clip;const result={...next,start:cursor};cursor+=next.duration;return result;}));
+      setSelected(photos[0].id);setPlayhead(0);setPlaying(true);
+      setNotice('Beat Sync applied using detected music peaks. Photo cuts are aligned to an estimated rhythm ('+beatLength.toFixed(2)+' seconds per photo); check the preview and adjust if needed.');
+    } catch(error) {
+      setNotice('Could not analyze this audio file. Try a common MP3, WAV, or M4A file. '+(error?.message||''));
+    } finally { if(audioContext&&audioContext.state!=='closed')await audioContext.close(); }
+  };
+
   const exportVideo = async () => {
     setNotice('');
     if (!clips.length) { setNotice('Import a video or image first.'); return; }
@@ -446,7 +476,7 @@ export default function ProfessionalVideoEditor() {
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">{button('Media',<Film size={17}/>,()=>setPanel('media'),panel==='media')}{button('Audio',<Music2 size={17}/>,()=>setPanel('audio'),panel==='audio')}{button('Text',<Type size={17}/>,()=>setPanel('text'),panel==='text')}{button('Effects',<Sparkles size={17}/>,()=>setPanel('effects'),panel==='effects')}{button('Transitions',<WandSparkles size={17}/>,()=>setPanel('transitions'),panel==='transitions')}</div>
         <div className="mt-5 rounded-xl border border-dashed border-white/15 p-4">
           {panel==='media'&&<><ImagePlus className="mb-2 text-violet-300" size={22}/><div className="text-sm font-semibold">Import media</div><p className="my-2 text-xs leading-5 text-slate-500">Add videos and images to your project timeline.</p><button onClick={()=>mediaRef.current?.click()} className="w-full rounded-lg bg-violet-500 px-3 py-2 text-sm font-bold">Import files</button><input ref={mediaRef} type="file" accept="video/*,image/*" multiple hidden onChange={e=>{importFiles(e.target.files);e.target.value='';}}/></>}
-          {panel==='audio'&&<><AudioLines className="mb-2 text-violet-300" size={22}/><div className="text-sm font-semibold">Audio library</div><p className="my-2 text-xs text-slate-500">Add music or narration.</p><button onClick={()=>audioRef.current?.click()} className="w-full rounded-lg bg-violet-500 px-3 py-2 text-sm font-bold">Import audio</button><input ref={audioRef} type="file" accept="audio/*" hidden onChange={e=>setAudioFile(e.target.files?.[0])}/>{audio&&<><div className="mt-3 break-words text-xs text-emerald-300">{audio.name}</div><label className="mt-3 block text-xs text-slate-400">Music volume: {audioVolume}%</label><input type="range" min="0" max="100" value={audioVolume} onChange={e=>setAudioVolume(Number(e.target.value))} className="mt-2 w-full"/><label className="mt-3 block text-xs text-slate-400">Fade in: {audioFadeIn}s</label><input type="range" min="0" max="5" step=".1" value={audioFadeIn} onChange={e=>setAudioFadeIn(Number(e.target.value))} className="mt-2 w-full"/><label className="mt-3 block text-xs text-slate-400">Fade out: {audioFadeOut}s</label><input type="range" min="0" max="5" step=".1" value={audioFadeOut} onChange={e=>setAudioFadeOut(Number(e.target.value))} className="mt-2 w-full"/></>}</>}
+          {panel==='audio'&&<><AudioLines className="mb-2 text-violet-300" size={22}/><div className="text-sm font-semibold">Audio library</div><p className="my-2 text-xs text-slate-500">Add music or narration.</p><button onClick={()=>audioRef.current?.click()} className="w-full rounded-lg bg-violet-500 px-3 py-2 text-sm font-bold">Import audio</button><input ref={audioRef} type="file" accept="audio/*" hidden onChange={e=>setAudioFile(e.target.files?.[0])}/>{audio&&<><div className="mt-3 break-words text-xs text-emerald-300">{audio.name}</div><button onClick={syncPhotosToBeat} className="mt-3 w-full rounded-lg border border-fuchsia-400/40 bg-fuchsia-500/10 px-3 py-2 text-sm font-bold text-fuchsia-200 hover:bg-fuchsia-500/20">♫ Beat Sync Photos</button><label className="mt-3 block text-xs text-slate-400">Music volume: {audioVolume}%</label><input type="range" min="0" max="100" value={audioVolume} onChange={e=>setAudioVolume(Number(e.target.value))} className="mt-2 w-full"/><label className="mt-3 block text-xs text-slate-400">Fade in: {audioFadeIn}s</label><input type="range" min="0" max="5" step=".1" value={audioFadeIn} onChange={e=>setAudioFadeIn(Number(e.target.value))} className="mt-2 w-full"/><label className="mt-3 block text-xs text-slate-400">Fade out: {audioFadeOut}s</label><input type="range" min="0" max="5" step=".1" value={audioFadeOut} onChange={e=>setAudioFadeOut(Number(e.target.value))} className="mt-2 w-full"/></>}</>}
           {panel==='text'&&<><Type className="mb-2 text-violet-300" size={22}/><div className="text-sm font-semibold">Title overlay</div><textarea value={title} onChange={e=>setTitle(e.target.value)} placeholder="Type a title or caption…" className="mt-3 min-h-24 w-full rounded-lg border border-white/10 bg-[#171b28] p-2 text-sm outline-none focus:border-violet-400"/><label className="mt-3 block text-xs text-slate-400">Text size: {Math.round(textSize*100)}%</label><input type="range" min=".5" max="2" step=".1" value={textSize} onChange={e=>setTextSize(Number(e.target.value))} className="mt-2 w-full"/><label className="mt-3 block text-xs text-slate-400">Vertical position: {textY}% from bottom</label><input type="range" min="2" max="45" step="1" value={textY} onChange={e=>setTextY(Number(e.target.value))} className="mt-2 w-full"/><p className="mt-2 text-xs text-slate-500">Text size and position are saved with your project.</p></>}
           {panel==='effects'&&<><Sparkles className="mb-2 text-violet-300" size={22}/><div className="text-sm font-semibold">AI-style Auto Edit</div><p className="my-2 text-xs leading-5 text-slate-500">One click applies stronger cinematic motion to every photo. No transitions between photos.</p><button onClick={applyAuto} className="w-full rounded-lg bg-gradient-to-r from-violet-500 to-pink-500 px-3 py-2 text-sm font-bold">✨ AI Auto Edit</button><button onClick={applyProAnimationPack} className="mt-2 w-full rounded-lg border border-violet-400/40 px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-violet-500/10">Apply Pro Motion Pack</button></>}
           {panel==='transitions'&&<><WandSparkles className="mb-2 text-violet-300" size={22}/><div className="text-sm font-semibold">Transitions</div><p className="my-2 text-xs text-slate-500">Transitions are disabled for the documentary look; photos cut directly to the next image.</p>{active&&<select value={active.transition||'Cut'} onChange={e=>changeClip({transition:e.target.value})} className="w-full rounded-lg border border-white/10 bg-[#171b28] px-3 py-2 text-sm">{transitions.map(t=><option key={t}>{t}</option>)}</select>}<p className="mt-2 text-xs leading-5 text-slate-500">Transition choice is saved per clip.</p></>}
