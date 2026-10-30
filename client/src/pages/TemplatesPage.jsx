@@ -109,7 +109,7 @@ export default function TemplatesPage() {
       const proceed = window.confirm(`This template is designed for ${chosenTemplate.clips} photos/videos. You selected ${files.length}. Continue with these files?`);
       if (!proceed) { event.target.value = ''; return; }
     }
-    navigate('/template-studio?template=' + encodeURIComponent(chosenTemplate.id), { state: { templateId: chosenTemplate.id, templateTitle: chosenTemplate.title, templateCategory: chosenTemplate.category, templateFiles: files, templateConfig: chosenTemplate.config || {}, templateRequiredSlots: chosenTemplate.clips, templateDuration: parseFloat(chosenTemplate.duration) || 15, templateAspectRatio: chosenTemplate.aspectRatio || '9:16', templateMusicUrl: chosenTemplate.musicUrl || '' }, replace: false });
+    navigate('/template-studio?template=' + encodeURIComponent(chosenTemplate.id), { state: { templateId: chosenTemplate.id, templateTitle: chosenTemplate.title, templateCategory: chosenTemplate.category, templateFiles: files, templateConfig: chosenTemplate.config || {}, templateRequiredSlots: chosenTemplate.clips, templateMediaMode: chosenTemplate.mediaMode || 'MIXED', templateDuration: parseFloat(chosenTemplate.duration) || 15, templateAspectRatio: chosenTemplate.aspectRatio || '9:16', templateMusicUrl: chosenTemplate.musicUrl || '' }, replace: false });
     event.target.value = '';
   };
 
@@ -126,7 +126,7 @@ export default function TemplatesPage() {
     return next;
   });
 
-  const useTemplate = (template) => navigate('/template-studio?template=' + encodeURIComponent(template.id), { state: { templateId: template.id, templateTitle: template.title, templateCategory: template.category, templateConfig: template.config || {}, templateRequiredSlots: template.clips, templateDuration: parseFloat(template.duration) || 15, templateAspectRatio: template.aspectRatio || '9:16', templateMusicUrl: template.musicUrl || '' } });
+  const useTemplate = (template) => navigate('/template-studio?template=' + encodeURIComponent(template.id), { state: { templateId: template.id, templateTitle: template.title, templateCategory: template.category, templateConfig: template.config || {}, templateRequiredSlots: template.clips, templateMediaMode: template.mediaMode || 'MIXED', templateDuration: parseFloat(template.duration) || 15, templateAspectRatio: template.aspectRatio || '9:16', templateMusicUrl: template.musicUrl || '' } });
 
   return <main className="min-h-screen bg-[#080b14] text-white">\n    <input id="vibepulse-template-media-picker" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple hidden onChange={onMediaPicked} />
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080b14]/90 backdrop-blur-xl">
