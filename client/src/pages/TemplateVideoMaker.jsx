@@ -96,7 +96,7 @@ export default function TemplateVideoMaker() {
   const musicInputRef = useRef(null);
   const rafRef = useRef(0);
   const historyRef = useRef({ past: [], future: [], current: null, signature: '', applying: false });
-  const [historyVersion, setHistoryVersion] = useState(0);
+  const [, setHistoryVersion] = useState(0);
   const cancelExportRef = useRef(false);
   const mediaRef = useRef([]);
   const [templateId, setTemplateId] = useState(location.state?.templateId || new URLSearchParams(location.search).get('template') || 'cinematic-gold');
