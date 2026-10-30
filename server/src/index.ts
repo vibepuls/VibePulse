@@ -152,6 +152,7 @@ const templateInput = z.object({
   thumbnailUrl: z.string().url().max(2000).optional().or(z.literal('')),
   previewUrl: z.string().url().max(2000).optional().or(z.literal('')),
   requiredSlots: z.number().int().min(1).max(30).default(6),
+  mediaMode: z.enum(['PHOTO','VIDEO','MIXED']).default('MIXED'),
   durationSeconds: z.number().int().min(3).max(180).default(15),
   aspectRatio: z.enum(['9:16','1:1','16:9']).default('9:16'),
   config: z.record(z.any()).default({}),
