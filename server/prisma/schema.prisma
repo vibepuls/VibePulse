@@ -342,6 +342,7 @@ model VideoTemplate {
   thumbnailUrl   String?
   previewUrl     String?
   requiredSlots  Int      @default(6)
+  mediaMode      String   @default("MIXED")
   durationSeconds Int     @default(15)
   aspectRatio    String   @default("9:16")
   config         Json     @default("{}")
