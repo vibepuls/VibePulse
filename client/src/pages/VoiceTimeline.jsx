@@ -320,31 +320,33 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const stepFrame = (direction) => seekTo(playhead + direction * frameStep / 30);
 
   const splitAtPlayhead = () => {
-    if (!selectedClip || selectedClip.kind !== 'visual') return;
+    if (!selectedClip) return;
     const local = playhead - selectedClip.start;
     if (local < 0.25 || local > selectedClip.duration - 0.25) { setMessage('Move the playhead inside the selected clip to split it.'); return; }
     const leftDuration = local;
     const rightDuration = selectedClip.duration - local;
-    const left = { ...selectedClip, duration: leftDuration, trimEnd: selectedClip.type === 'video' ? selectedClip.trimStart + leftDuration : selectedClip.trimEnd };
-    const right = { ...selectedClip, id: idOf(), start: playhead, duration: rightDuration, trimStart: selectedClip.type === 'video' ? selectedClip.trimStart + leftDuration : selectedClip.trimStart };
+    const hasSourceTimeline = selectedClip.type === 'video' || selectedClip.type === 'audio';
+    const left = { ...selectedClip, duration: leftDuration, trimEnd: hasSourceTimeline ? selectedClip.trimStart + leftDuration : selectedClip.trimEnd };
+    const right = { ...selectedClip, id: idOf(), start: playhead, duration: rightDuration, trimStart: hasSourceTimeline ? selectedClip.trimStart + leftDuration : selectedClip.trimStart };
     setClips(old => old.flatMap(c => c.id === selectedClip.id ? [left, right] : [c]));
     setSelectedId(right.id);
     setMessage('Clip split at ' + timecode(playhead) + '.');
   };
 
   const trimSelected = (edge, value) => {
-    if (!selectedClip || selectedClip.kind !== 'visual') return;
+    if (!selectedClip) return;
     const next = Number(value);
     setClips(old => old.map(c => {
       if (c.id !== selectedClip.id) return c;
+      const hasSourceTimeline = c.type === 'video' || c.type === 'audio';
       if (edge === 'left') {
         const end = c.start + c.duration;
         const newStart = clamp(next, 0, end - 0.25);
         const delta = newStart - c.start;
-        return { ...c, start: newStart, duration: end - newStart, trimStart: c.type === 'video' ? c.trimStart + delta : c.trimStart };
+        return { ...c, start: newStart, duration: end - newStart, trimStart: hasSourceTimeline ? Math.max(0, c.trimStart + delta) : c.trimStart };
       }
       const duration = clamp(next - c.start, 0.25, Math.max(0.25, c.sourceDuration - c.trimStart));
-      return { ...c, duration, trimEnd: c.type === 'video' ? c.trimStart + duration : c.trimEnd };
+      return { ...c, duration, trimEnd: hasSourceTimeline ? c.trimStart + duration : c.trimEnd };
     }));
   };
 
@@ -473,7 +475,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
           {visualForPreview?.type === 'video' && <video key={visualForPreview.id} ref={videoRef} src={visualForPreview.url} muted playsInline preload="auto" className="absolute inset-0 h-full w-full object-contain" onLoadedMetadata={e => { const target = visualForPreview; try { e.currentTarget.currentTime = target.trimStart + Math.max(0, playhead - target.start); } catch {} }}/>}
           {!visualForPreview && <span className="text-xs text-slate-600">No visual clip at {timecode(playhead)}</span>}
         </div>
-        {selectedClip && selectedClip.kind === 'visual' && <div className="mt-3 space-y-2 text-xs"><div className="font-bold">{selectedClip.name} · {selectedClip.track}</div><label className="block">Clip start: {selectedClip.start.toFixed(2)}s<input aria-label="Clip start" type="range" min="0" max={Math.max(0, timelineDuration)} step="0.05" value={selectedClip.start} onChange={e => setClips(old => old.map(c => c.id === selectedClip.id ? { ...c, start: snapTime(Number(e.target.value), c.id) } : c))} className="w-full"/></label><label className="block">Clip duration: {selectedClip.duration.toFixed(2)}s<input aria-label="Clip duration" type="range" min="0.25" max={Math.max(0.25, selectedClip.sourceDuration || selectedClip.duration, timelineDuration)} step="0.05" value={selectedClip.duration} onChange={e => trimSelected('right', selectedClip.start + Number(e.target.value))} className="w-full"/></label><div className="flex gap-2"><button onClick={splitAtPlayhead} className="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1"><Scissors size={12}/> Split at playhead</button><button onClick={() => setClips(old => old.filter(c => c.id !== selectedClip.id))} className="inline-flex items-center gap-1 rounded border border-rose-400/30 px-2 py-1 text-rose-200"><Trash2 size={12}/> Delete</button></div></div>}
+        {selectedClip && <div className="mt-3 space-y-3 rounded-lg border border-white/10 bg-slate-950/70 p-3 text-xs"><div className="flex flex-wrap items-center justify-between gap-2"><div className="font-bold">{selectedClip.name} · {selectedClip.track}</div><span className="font-mono text-cyan-200">{timecode(selectedClip.start)} → {timecode(selectedClip.start + selectedClip.duration)}</span></div><label className="block">Clip position: {selectedClip.start.toFixed(2)}s<input aria-label="Clip start" type="range" min="0" max={Math.max(0, timelineDuration)} step="0.05" value={selectedClip.start} onChange={e => setClips(old => old.map(c => c.id === selectedClip.id ? { ...c, start: snapTime(Number(e.target.value), c.id) } : c))} className="w-full"/></label><label className="block">Trim start: {selectedClip.trimStart.toFixed(2)}s<input aria-label="Trim start" type="range" min="0" max={Math.max(0, (selectedClip.sourceDuration || selectedClip.duration) - 0.25)} step="0.05" value={selectedClip.trimStart} onChange={e => { const trimStart = Number(e.target.value); const maxDuration = Math.max(0.25, (selectedClip.sourceDuration || selectedClip.duration) - trimStart); setClips(old => old.map(c => c.id === selectedClip.id ? { ...c, trimStart, duration: Math.min(c.duration, maxDuration), trimEnd: trimStart + Math.min(c.duration, maxDuration) } : c)); }} className="w-full"/></label><label className="block">Clip duration: {selectedClip.duration.toFixed(2)}s<input aria-label="Clip duration" type="range" min="0.25" max={Math.max(0.25, (selectedClip.sourceDuration || selectedClip.duration) - selectedClip.trimStart)} step="0.05" value={selectedClip.duration} onChange={e => trimSelected('right', selectedClip.start + Number(e.target.value))} className="w-full"/></label><div className="flex flex-wrap gap-2"><button onClick={() => { setPlayhead(selectedClip.start); seekTo(selectedClip.start); }} className="rounded border border-white/10 px-2 py-1">Go to clip start</button><button onClick={splitAtPlayhead} className="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1"><Scissors size={12}/> Split at playhead</button><button onClick={() => { setClips(old => old.filter(x => x.id !== selectedClip.id)); setSelectedId(''); }} className="inline-flex items-center gap-1 rounded border border-rose-400/30 px-2 py-1 text-rose-200"><Trash2 size={12}/> Delete clip</button></div></div>}
       </div>
     </div>
     <p className="mt-3 text-xs text-slate-500">{notice} · Drag media while voiceover is playing or pause at a sentence, insert at playhead, then resume. Waveform shows real sample peaks; silence regions use the configured RMS threshold and minimum duration.</p>
