@@ -8,7 +8,7 @@ on:
       - 'server/**'
       - '.github/workflows/vibepulse-templates-build.yml'
   push:
-    branches: [feature/vibepulse-templates-system]
+    branches: [main, feature/vibepulse-templates-system]
     paths:
       - 'client/**'
       - 'server/**'
