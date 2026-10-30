@@ -93,8 +93,8 @@ async function cachedWaveform(file, thresholdDb, minSilence) {
     if (currentRun && quietCount >= Number(minSilence)) silenceRuns.push({ start: quietStart, end: currentRun.end, duration: currentRun.end - quietStart });
     result = { key, duration: decoded.duration, sampleRate: decoded.sampleRate, peaks, silences: silenceRuns };
   } finally { await context.close().catch(() => {}); }
-  const db = await openDb();
-  try { await req(db.transaction('waveforms', 'readwrite').objectStore('waveforms').put(result)); } finally { db.close(); }
+  const dbSave = await openDb();
+  try { await req(dbSave.transaction('waveforms', 'readwrite').objectStore('waveforms').put(result)); } finally { dbSave.close(); }
   return result;
 }
 
