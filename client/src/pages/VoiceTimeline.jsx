@@ -103,6 +103,7 @@ async function cachedWaveform(file, thresholdDb, minSilence) {
 export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
+  const videoClipRefs = useRef({});
   const audioTrackRefs = useRef({});
   const rafRef = useRef(0);
   const rulerRef = useRef(null);
@@ -310,14 +311,15 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   }, [selectedId, playhead, voiceUrl, clips, projectName, activeProjectId, thresholdDb, minSilence, waveform, playing, activeTool, markers]);
 
   useEffect(() => {
-    const target = activeVisual(playhead);
-    if (target?.type === 'video' && videoRef.current) {
-      const clipTime = clamp(target.trimStart + (playhead - target.start), target.trimStart, target.trimStart + target.duration);
-      if (Number.isFinite(clipTime) && Math.abs(videoRef.current.currentTime - clipTime) > 0.2 && !videoRef.current.seeking) {
-        try { videoRef.current.currentTime = clipTime; } catch {}
-      }
-      if (playing) videoRef.current.play().catch(() => {}); else videoRef.current.pause();
-    }
+    const activeVideos = clips.filter(c => c.kind === 'visual' && c.type === 'video' && !isTrackHidden(c.track) && playhead >= c.start && playhead < c.start + c.duration);
+    activeVideos.forEach(target => {
+      const element = videoClipRefs.current[target.id];
+      if (!element) return;
+      const clipTime = clamp(Number(target.trimStart || 0) + (playhead - target.start), Number(target.trimStart || 0), Number(target.trimStart || 0) + target.duration);
+      if (Number.isFinite(clipTime) && Math.abs(element.currentTime - clipTime) > 0.2 && !element.seeking) { try { element.currentTime = clipTime; } catch {} }
+      if (playing) element.play().catch(() => {}); else element.pause();
+    });
+    Object.entries(videoClipRefs.current).forEach(([id, element]) => { if (element && !activeVideos.some(c => c.id === id)) element.pause(); });
     clips.filter(c => c.kind === 'audio' && c.track !== 'A1').forEach(c => {
       const el = audioTrackRefs.current[c.id];
       if (!el) return;
@@ -344,14 +346,12 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   }, [clips, trackStates]);
 
   const updateVideoAt = (at) => {
-    const target = clips.filter(c => c.kind === 'visual' && !isTrackHidden(c.track) && c.type === 'video' && at >= c.start && at < c.start + c.duration)
-      .sort((a, b) => (Number(b.track.slice(1)) || 0) - (Number(a.track.slice(1)) || 0))[0];
-    if (target && videoRef.current) {
-      const wanted = clamp(target.trimStart + (at - target.start), target.trimStart, target.trimStart + target.duration);
-      if (!videoRef.current.seeking && Math.abs(videoRef.current.currentTime - wanted) > 0.18) {
-        try { videoRef.current.currentTime = wanted; } catch {}
-      }
-    }
+    clips.filter(c => c.kind === 'visual' && !isTrackHidden(c.track) && c.type === 'video' && at >= c.start && at < c.start + c.duration).forEach(target => {
+      const element = videoClipRefs.current[target.id];
+      if (!element || element.seeking) return;
+      const wanted = clamp(Number(target.trimStart || 0) + (at - target.start), Number(target.trimStart || 0), Number(target.trimStart || 0) + target.duration);
+      if (Math.abs(element.currentTime - wanted) > 0.18) { try { element.currentTime = wanted; } catch {} }
+    });
   };
 
   const setMessage = (message) => { setNotice(message); onNotice(message); };
@@ -559,7 +559,9 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
     </svg>;
   };
 
-  const visualForPreview = activeVisual(playhead);
+  const visualLayersForPreview = clips.filter(c => c.kind === 'visual' && ['image','video'].includes(c.type) && !isTrackHidden(c.track) && playhead >= c.start && playhead < c.start + c.duration).sort((a,b)=>(Number(a.track.slice(1))||0)-(Number(b.track.slice(1))||0));
+  const visualForPreview = visualLayersForPreview[visualLayersForPreview.length - 1] || null;
+  const activeVideoForPreview = [...visualLayersForPreview].reverse().find(c => c.type === 'video') || null;
   const activeTitle = clips.filter(c => c.type === 'title' && !isTrackHidden(c.track) && playhead >= c.start && playhead < c.start + c.duration).sort((a,b)=>(Number(b.track.slice(1))||0)-(Number(a.track.slice(1))||0)).at(0);
   const activeMap = clips.filter(c => c.type === 'map' && !isTrackHidden(c.track) && playhead >= c.start && playhead < c.start + c.duration).sort((a,b)=>(Number(b.track.slice(1))||0)-(Number(a.track.slice(1))||0)).at(0);
   const trackColor = (track) => track === 'V1' ? 'border-violet-400/60 bg-violet-500/25' : track === 'V2' ? 'border-sky-400/60 bg-sky-500/20' : track === 'V3' ? 'border-amber-400/60 bg-amber-500/20' : track === 'V4' ? 'border-pink-400/60 bg-pink-500/20' : 'border-emerald-400/60 bg-emerald-500/20';
@@ -624,9 +626,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       <div className="bg-[#2a2a2a] p-3">
         <h3 className="mb-2 border-b border-[#454545] pb-2 text-[11px] font-semibold uppercase tracking-wide text-[#c7c7c7]">Preview monitor</h3>
         <div className="relative grid aspect-video place-items-center overflow-hidden border border-[#454545] bg-[#151515]">
-          {visualForPreview?.type === 'image' && <img src={visualForPreview.url} alt="" className="absolute inset-0 h-full w-full object-contain"/>}
-          {visualForPreview?.type === 'video' && <video key={visualForPreview.id} ref={videoRef} src={visualForPreview.url} muted playsInline preload="auto" className="absolute inset-0 h-full w-full object-contain" onLoadedMetadata={e => { const target = visualForPreview; try { e.currentTarget.currentTime = target.trimStart + Math.max(0, playhead - target.start); } catch {} }}/>}
-          {!visualForPreview && <span className="text-xs text-slate-600">No visual clip at {timecode(playhead)}</span>}{activeTitle && <div className="pointer-events-none absolute inset-x-[6%] bottom-[12%] bg-black/65 px-4 py-3 text-center text-lg font-black text-white drop-shadow-lg" style={{opacity:activeTitle.animation==="fade"?Math.min(1,Math.max(0,(playhead-activeTitle.start)/0.8)):1,transform:activeTitle.animation==="slide"?"translateY("+Math.max(0,1-(playhead-activeTitle.start)/0.8)*24+"px)":activeTitle.animation==="pop"?"scale("+Math.min(1,Math.max(.2,(playhead-activeTitle.start)/0.8))+")":"none"}}>{activeTitle.text}</div>}{activeMap && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-slate-950/60"><svg viewBox="0 0 640 360" className="h-full w-full" role="img" aria-label={"Documentary map graphic: "+activeMap.text}><defs><linearGradient id="map-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#102c3a"/><stop offset="100%" stopColor="#1b4850"/></linearGradient></defs><rect width="640" height="360" fill="url(#map-bg)"/><path d="M0 80 L110 60 L170 100 L230 75 L280 130 L350 110 L410 145 L480 120 L560 165 L640 140 M0 240 L90 215 L160 250 L230 220 L300 275 L390 240 L470 280 L550 245 L640 270 M120 0 L150 70 L130 150 L180 220 L160 360 M350 0 L330 80 L370 160 L340 240 L360 360 M520 0 L500 75 L530 160 L510 230 L540 360" stroke="#4f7b7e" strokeWidth="2" fill="none"/><path d="M110 245 Q180 150 285 190 T490 110" stroke="#fbbf24" strokeWidth="5" fill="none" strokeDasharray="10 8" strokeDashoffset={Math.max(0,1-(playhead-activeMap.start)/Math.max(.25,activeMap.duration))*160}/><circle cx="110" cy="245" r="8" fill="#f87171"/><circle cx="490" cy="110" r="8" fill="#f87171"/><text x="24" y="36" fill="white" fontSize="18" fontWeight="700">{activeMap.text}</text><text x="24" y="62" fill="#b7d7de" fontSize="11">DOCUMENTARY ROUTE</text></svg></div>}
+          {visualLayersForPreview.map((layer, index) => layer.type === 'image' ? <img key={layer.id} src={layer.url} alt="" className="absolute inset-0 h-full w-full object-contain" style={{zIndex:index+1}}/> : <video key={layer.id} ref={element=>{if(element){videoClipRefs.current[layer.id]=element;if(activeVideoForPreview?.id===layer.id)videoRef.current=element;}else{delete videoClipRefs.current[layer.id];if(videoRef.current?.dataset?.clipId===layer.id)videoRef.current=null;}}} data-clip-id={layer.id} src={layer.url} muted playsInline preload="auto" className="absolute inset-0 h-full w-full object-contain" style={{zIndex:index+1}} onLoadedMetadata={e => { try { e.currentTarget.currentTime = Number(layer.trimStart || 0) + Math.max(0, playhead - layer.start); } catch {} }}/>)}
+          {!visualLayersForPreview.length && <span className="text-xs text-slate-600">No visual clip at {timecode(playhead)}</span>}{activeTitle && <div className="pointer-events-none absolute inset-x-[6%] bottom-[12%] bg-black/65 px-4 py-3 text-center text-lg font-black text-white drop-shadow-lg" style={{opacity:activeTitle.animation==="fade"?Math.min(1,Math.max(0,(playhead-activeTitle.start)/0.8)):1,transform:activeTitle.animation==="slide"?"translateY("+Math.max(0,1-(playhead-activeTitle.start)/0.8)*24+"px)":activeTitle.animation==="pop"?"scale("+Math.min(1,Math.max(.2,(playhead-activeTitle.start)/0.8))+")":"none"}}>{activeTitle.text}</div>}{activeMap && <div className="pointer-events-none absolute inset-0 grid place-items-center bg-slate-950/60"><svg viewBox="0 0 640 360" className="h-full w-full" role="img" aria-label={"Documentary map graphic: "+activeMap.text}><defs><linearGradient id="map-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#102c3a"/><stop offset="100%" stopColor="#1b4850"/></linearGradient></defs><rect width="640" height="360" fill="url(#map-bg)"/><path d="M0 80 L110 60 L170 100 L230 75 L280 130 L350 110 L410 145 L480 120 L560 165 L640 140 M0 240 L90 215 L160 250 L230 220 L300 275 L390 240 L470 280 L550 245 L640 270 M120 0 L150 70 L130 150 L180 220 L160 360 M350 0 L330 80 L370 160 L340 240 L360 360 M520 0 L500 75 L530 160 L510 230 L540 360" stroke="#4f7b7e" strokeWidth="2" fill="none"/><path d="M110 245 Q180 150 285 190 T490 110" stroke="#fbbf24" strokeWidth="5" fill="none" strokeDasharray="10 8" strokeDashoffset={Math.max(0,1-(playhead-activeMap.start)/Math.max(.25,activeMap.duration))*160}/><circle cx="110" cy="245" r="8" fill="#f87171"/><circle cx="490" cy="110" r="8" fill="#f87171"/><text x="24" y="36" fill="white" fontSize="18" fontWeight="700">{activeMap.text}</text><text x="24" y="62" fill="#b7d7de" fontSize="11">DOCUMENTARY ROUTE</text></svg></div>}
         </div>
         {selectedClip && <div className="mt-3 space-y-3 border border-[#454545] bg-[#222] p-3 text-xs"><div className="flex flex-wrap items-center justify-between gap-2"><div className="font-bold">{selectedClip.name} · {selectedClip.track}</div><span className="font-mono text-cyan-200">{timecode(selectedClip.start)} → {timecode(selectedClip.start + selectedClip.duration)}</span></div>{(selectedClip.type === "title" || selectedClip.type === "map") && <div className="grid gap-2 sm:grid-cols-2"><label className="block text-slate-300">{selectedClip.type === "title" ? "Title text" : "Map label"}<input value={selectedClip.text || ""} onChange={e=>setClips(old=>old.map(c=>c.id===selectedClip.id?{...c,text:e.target.value,name:selectedClip.type==="title"?e.target.value:"Map · "+e.target.value}:c))} className="mt-1 w-full border border-[#555] bg-[#171717] px-2 py-1.5 text-white"/></label><label className="block text-slate-300">Animation<select value={selectedClip.animation || (selectedClip.type==="map"?"route":"fade")} onChange={e=>setClips(old=>old.map(c=>c.id===selectedClip.id?{...c,animation:e.target.value}:c))} className="mt-1 w-full border border-[#555] bg-[#171717] px-2 py-1.5 text-white">{(selectedClip.type==="map"?[["Animated route","route"],["Pulse marker","pulse"],["Fade in","fade"]]:[["Fade in","fade"],["Slide up","slide"],["Pop","pop"],["Static","none"]]).map(([label,value])=><option key={value} value={value}>{label}</option>)}</select></label></div>}<label className="block">Clip position: {selectedClip.start.toFixed(2)}s<input aria-label="Clip start" type="range" min="0" max={Math.max(0, timelineDuration)} step="0.05" value={selectedClip.start} onChange={e => setClips(old => old.map(c => c.id === selectedClip.id ? { ...c, start: snapTime(Number(e.target.value), c.id) } : c))} className="w-full"/></label><label className="block">Trim start: {selectedClip.trimStart.toFixed(2)}s<input aria-label="Trim start" type="range" min="0" max={Math.max(0, (selectedClip.sourceDuration || selectedClip.duration) - 0.25)} step="0.05" value={selectedClip.trimStart} onChange={e => { const trimStart = Number(e.target.value); const maxDuration = Math.max(0.25, (selectedClip.sourceDuration || selectedClip.duration) - trimStart); setClips(old => old.map(c => c.id === selectedClip.id ? { ...c, trimStart, duration: Math.min(c.duration, maxDuration), trimEnd: trimStart + Math.min(c.duration, maxDuration) } : c)); }} className="w-full"/></label><label className="block">Clip duration: {selectedClip.duration.toFixed(2)}s<input aria-label="Clip duration" type="range" min="0.25" max={Math.max(0.25, (selectedClip.sourceDuration || selectedClip.duration) - selectedClip.trimStart)} step="0.05" value={selectedClip.duration} onChange={e => trimSelected('right', selectedClip.start + Number(e.target.value))} className="w-full"/></label><div className="flex flex-wrap gap-2"><button onClick={() => { setPlayhead(selectedClip.start); seekTo(selectedClip.start); }} className="rounded border border-white/10 px-2 py-1">Go to clip start</button><button onClick={splitAtPlayhead} className="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-1"><Scissors size={12}/> Split at playhead</button><button onClick={() => { setClips(old => old.filter(x => x.id !== selectedClip.id)); setSelectedId(''); }} className="inline-flex items-center gap-1 rounded border border-rose-400/30 px-2 py-1 text-rose-200"><Trash2 size={12}/> Delete clip</button></div></div>}
       </div>
