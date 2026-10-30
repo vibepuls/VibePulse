@@ -49,7 +49,7 @@ async function detectBeatTimes(file) {
       energies.push({ time: start / decoded.sampleRate, energy: Math.sqrt(sum / Math.max(1, end - start)) });
     }
     const average = energies.reduce((sum, item) => sum + item.energy, 0) / Math.max(1, energies.length);
-    const peak = Math.max(0.0001, ...energies.map(item => item.energy));
+    const peak = Math.max(0.0001, energies.reduce((max,item)=>Math.max(max,item.energy),0));
     const waveform = energies.filter((_,i)=>i%Math.max(1,Math.floor(energies.length/160))===0).slice(0,160).map(item=>Math.max(.06,Math.min(1,item.energy/peak)));
     const beats = [0];
     let last = -1;
@@ -261,7 +261,7 @@ export default function TemplateVideoMaker() {
     let source=mediaRef.current.find(x=>x.id===clip.id);
     if(!source){if(clip.type==='image'){const img=new Image();img.src=clip.url;source={id:clip.id,el:img};mediaRef.current.push(source);}else{const video=document.createElement('video');video.src=clip.url;video.muted=true;video.playsInline=true;video.loop=true;video.preload='auto';source={id:clip.id,el:video};mediaRef.current.push(source);video.play().catch(()=>{});}}
     const el=source.el,activeMotion=clip.motion||motionName,activeTransition=clip.transition||transitionName,activeFilter=buildColorFilter(clip.filter||filterValue,colorControls),activeEffect=clip.effect||visualEffect;
-    if(el instanceof HTMLVideoElement){const startAt=Math.max(0,Number(clip.trimStart||0)),endAt=Number(clip.trimEnd||clip.sourceDuration||el.duration||clip.duration);if(el.currentTime<startAt-.15||el.currentTime>=endAt-.08){try{el.currentTime=startAt;}catch{}}}
+    if(el instanceof HTMLVideoElement){const startAt=Math.max(0,Number(clip.trimStart||0)),endAt=Number(clip.trimEnd||clip.sourceDuration||el.duration||clip.duration);if(!el.seeking&&(el.currentTime<startAt-.15||el.currentTime>=endAt-.08)){try{el.currentTime=startAt;}catch{}}}
     const strength=Math.max(0,Math.min(1,Number(clip.effectIntensity??effectIntensity/100)));
     if(el instanceof HTMLVideoElement){const rate=['slow','slowZoomIn','slowZoomOut'].includes(activeMotion)?.65:activeMotion==='fastZoom'?1.25:1;if(el.playbackRate!==rate)el.playbackRate=rate;}
     if(el instanceof HTMLImageElement&&!el.complete)return;if(el instanceof HTMLVideoElement&&el.readyState<2){el.play().catch(()=>{});return;}
