@@ -120,6 +120,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const [selectedId, setSelectedId] = useState('');
   const [savedProjects, setSavedProjects] = useState([]);
   const [projectName, setProjectName] = useState('Voiceover edit');
+  const [activeProjectId, setActiveProjectId] = useState('');
   const [notice, setNotice] = useState('Import narration to build a synchronized multitrack edit.');
   const [snap, setSnap] = useState(true);
   const [pendingTrack, setPendingTrack] = useState('V1');
@@ -350,10 +351,11 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const saveProject = async () => {
     try {
       const db = await openDb();
-      const record = { id: idOf(), name: projectName, voiceFile, clips: clips.map(({ url, ...c }) => c), thresholdDb, minSilence, waveform, updatedAt: new Date().toISOString(), playhead };
+      const record = { id: activeProjectId || idOf(), name: projectName, voiceFile, clips: clips.map(({ url, ...c }) => c), thresholdDb, minSilence, waveform, updatedAt: new Date().toISOString(), playhead };
       const tx = db.transaction('projects', 'readwrite');
       await req(tx.objectStore('projects').put(record));
       db.close();
+      setActiveProjectId(record.id);
       const nextDb = await openDb();
       const all = await req(nextDb.transaction('projects', 'readonly').objectStore('projects').getAll());
       nextDb.close();
@@ -382,6 +384,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       setClips(restored);
       setSelectedId(restored[0]?.id || '');
       setProjectName(project.name || 'Voiceover edit');
+      setActiveProjectId(project.id);
       setPlayhead(project.playhead || 0);
       setPlaying(false);
       setMessage('Project reopened with its saved waveform, silence regions, tracks and timings.');
