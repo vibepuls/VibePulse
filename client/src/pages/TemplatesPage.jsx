@@ -34,6 +34,16 @@ export default function TemplatesPage() {
   });
   const [savedOnly, setSavedOnly] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [chosenTemplate, setChosenTemplate] = useState(null);
+  const mediaPickerRef = useState(null);
+  const fileInputRef = { current: null };
+  const chooseTemplate = (template) => { setChosenTemplate(template); document.getElementById('vibepulse-template-media-picker')?.click(); };
+  const onMediaPicked = (event) => {
+    const files = Array.from(event.target.files || []).filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
+    if (!files.length || !chosenTemplate) return;
+    navigate('/cinematic?template=' + encodeURIComponent(chosenTemplate.id), { state: { templateId: chosenTemplate.id, templateTitle: chosenTemplate.title, templateCategory: chosenTemplate.category, templateFiles: files }, replace: false });
+    event.target.value = '';
+  };
 
   const filtered = useMemo(() => templates
     .filter(t => category === 'For You' || (category === 'Trending' ? t.trend >= 90 : t.category === category))
@@ -49,7 +59,7 @@ export default function TemplatesPage() {
 
   const useTemplate = (template) => navigate('/cinematic?template=' + encodeURIComponent(template.id));
 
-  return <main className="min-h-screen bg-[#080b14] text-white">
+  return <main className="min-h-screen bg-[#080b14] text-white">\n    <input id="vibepulse-template-media-picker" type="file" accept="image/*,video/*" multiple hidden onChange={onMediaPicked} />
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080b14]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <button onClick={() => navigate('/')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"><ArrowLeft size={18}/> Back to VibePulse</button>
@@ -86,7 +96,7 @@ export default function TemplatesPage() {
       <div className="mt-5 flex items-center justify-between text-sm text-slate-400"><span>{filtered.length} templates</span><span className="inline-flex items-center gap-1"><TrendingUp size={15}/> Sorted for discovery</span></div>
       {filtered.length ? <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
         {filtered.map((t,i)=><article key={t.id} className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] transition hover:-translate-y-1 hover:border-violet-300/40 hover:bg-white/[0.07]">
-          <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setPreview(t)}}} onClick={()=>setPreview(t)} className="relative block aspect-[3/4] w-full cursor-pointer overflow-hidden bg-slate-900 text-left">
+          <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setPreview(t)}}} onClick={()=>setPreview(t)} className="relative block aspect-[9/16] w-full cursor-pointer overflow-hidden bg-slate-900 text-left">
             <img src={imageUrl(t.image)} alt={t.title} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105"/>
             <div className={`absolute inset-0 bg-gradient-to-t ${t.color} opacity-50 mix-blend-multiply`}/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-black/10"/>
@@ -94,16 +104,16 @@ export default function TemplatesPage() {
             <button onClick={e=>{e.stopPropagation();toggleSaved(t.id)}} aria-label={saved.includes(t.id)?'Remove favorite':'Save favorite'} className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/50 backdrop-blur hover:bg-black/80">{saved.includes(t.id)?<Check size={16} className="text-violet-200"/>:<Bookmark size={15}/>}</button>
             <span className="absolute bottom-3 left-3 right-3"><span className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-violet-200"><Play size={11} fill="currentColor"/> Preview</span><span className="block text-base font-black leading-tight sm:text-lg">{t.title}</span></span>
           </div>
-          <div className="p-3"><div className="flex items-center justify-between gap-2 text-xs text-slate-400"><span className="truncate">{t.category}</span><span className="inline-flex shrink-0 items-center gap-1"><Clock3 size={12}/>{t.duration}</span></div><p className="mt-2 line-clamp-2 min-h-8 text-xs leading-4 text-slate-400">{t.description}</p><button onClick={()=>useTemplate(t)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-3 py-2.5 text-xs font-black transition hover:bg-violet-400"><WandSparkles size={14}/> Use Template</button></div>
+          <div className="p-3"><div className="flex items-center justify-between gap-2 text-xs text-slate-400"><span className="truncate">{t.category}</span><span className="inline-flex shrink-0 items-center gap-1"><Clock3 size={12}/>{t.duration}</span></div><p className="mt-2 line-clamp-2 min-h-8 text-xs leading-4 text-slate-400">{t.description}</p><button onClick={()=>chooseTemplate(t)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-3 py-2.5 text-xs font-black transition hover:bg-violet-400"><WandSparkles size={14}/> Use Template</button></div>
         </article>)}
       </div> : <div className="mt-6 rounded-2xl border border-dashed border-white/15 p-12 text-center text-slate-400">No templates match this search. Try another keyword or category.</div>}
-      <p className="mt-8 text-center text-xs leading-5 text-slate-500">Template gallery preview • More template packs can be added to this library. Some editor effects may need to be configured in Studio before a template can be fully applied.</p>
+      <p className="mt-8 text-center text-xs leading-5 text-slate-500">Choose a template, select your own photos or videos, and VibePulse will automatically apply its look, motion and vertical 9:16 format.</p>
     </section>
 
     {preview&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={()=>setPreview(null)}>
       <div role="dialog" aria-modal="true" aria-label={preview.title} className="grid w-full max-w-3xl overflow-hidden rounded-3xl border border-white/15 bg-[#101321] md:grid-cols-2" onClick={e=>e.stopPropagation()}>
         <div className="relative min-h-72 md:min-h-[430px]"><img src={imageUrl(preview.image)} alt={preview.title} className="absolute inset-0 h-full w-full object-cover"/><div className={`absolute inset-0 bg-gradient-to-t ${preview.color} opacity-50 mix-blend-multiply`}/><div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"/><span className="absolute bottom-5 left-5 text-2xl font-black">{preview.title}</span></div>
-        <div className="flex flex-col p-6 sm:p-8"><div className="text-xs font-black uppercase tracking-widest text-violet-300">{preview.category}</div><h3 className="mt-3 text-2xl font-black">{preview.title}</h3><p className="mt-3 text-sm leading-6 text-slate-400">{preview.description}. A starter style to help you build a video in VibePulse Studio.</p><div className="mt-5 grid grid-cols-2 gap-3"><div className="rounded-xl bg-white/5 p-3"><div className="text-xs text-slate-500">Duration</div><div className="mt-1 font-bold">{preview.duration}</div></div><div className="rounded-xl bg-white/5 p-3"><div className="text-xs text-slate-500">Photo slots</div><div className="mt-1 font-bold">{preview.clips}</div></div></div><div className="mt-auto flex flex-col gap-2 pt-8"><button onClick={()=>useTemplate(preview)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 font-bold hover:bg-violet-400"><WandSparkles size={17}/> Use this template</button><button onClick={()=>toggleSaved(preview.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 font-semibold hover:bg-white/5"><Bookmark size={16}/>{saved.includes(preview.id)?'Remove from favorites':'Save to favorites'}</button><button onClick={()=>setPreview(null)} className="rounded-xl px-4 py-2 text-sm text-slate-400 hover:text-white">Close preview</button></div></div>
+        <div className="flex flex-col p-6 sm:p-8"><div className="text-xs font-black uppercase tracking-widest text-violet-300">{preview.category}</div><h3 className="mt-3 text-2xl font-black">{preview.title}</h3><p className="mt-3 text-sm leading-6 text-slate-400">{preview.description}. A starter style to help you build a video in VibePulse Studio.</p><div className="mt-5 grid grid-cols-2 gap-3"><div className="rounded-xl bg-white/5 p-3"><div className="text-xs text-slate-500">Duration</div><div className="mt-1 font-bold">{preview.duration}</div></div><div className="rounded-xl bg-white/5 p-3"><div className="text-xs text-slate-500">Photo slots</div><div className="mt-1 font-bold">{preview.clips}</div></div></div><div className="mt-auto flex flex-col gap-2 pt-8"><button onClick={()=>{setPreview(null);chooseTemplate(preview)}} className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 py-3 font-bold hover:bg-violet-400"><WandSparkles size={17}/> Use this template</button><button onClick={()=>toggleSaved(preview.id)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 font-semibold hover:bg-white/5"><Bookmark size={16}/>{saved.includes(preview.id)?'Remove from favorites':'Save to favorites'}</button><button onClick={()=>setPreview(null)} className="rounded-xl px-4 py-2 text-sm text-slate-400 hover:text-white">Close preview</button></div></div>
       </div>
     </div>}
   </main>;
