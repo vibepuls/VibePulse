@@ -36,7 +36,7 @@ export default function ManageTemplates() {
     const isPreview = kind === 'previewUrl';
     const valid = isPreview ? ['video/mp4','video/quicktime','video/webm'].includes(file.type) : ['image/jpeg','image/png','image/webp'].includes(file.type);
     if (!valid) { setError(isPreview ? 'Preview must be MP4, MOV, or WEBM.' : 'Thumbnail must be JPG, PNG, or WEBP.'); return; }
-    if (file.size > (isPreview ? 100 : 5) * 1024 * 1024) { setError(isPreview ? 'Preview video must be under 100 MB.' : 'Thumbnail must be under 5 MB.'); return; }
+    if (file.size > (isPreview ? 100 : 5) * 1024 * 1024) { setError(isPreview ? 'Preview video must be under 50 MB.' : 'Thumbnail must be under 5 MB.'); return; }
     setUploading(kind); setError(''); setNotice('');
     try {
       const body = new FormData(); body.append('file', file);
@@ -101,7 +101,7 @@ export default function ManageTemplates() {
       <label className="text-sm text-slate-300">Duration (seconds)<input type="number" min="3" max="180" value={form.durationSeconds} onChange={e=>change('durationSeconds',e.target.value)} className={inputClass}/></label>
       <label className="text-sm text-slate-300">Aspect ratio<select value={form.aspectRatio} onChange={e=>change('aspectRatio',e.target.value)} className={inputClass}><option>9:16</option><option>1:1</option><option>16:9</option></select></label>
       <label className="text-sm text-slate-300">Thumbnail image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>uploadAsset('thumbnailUrl',e.target.files?.[0])} className={inputClass}/><span className="mt-1 block text-xs text-slate-500">{uploading==='thumbnailUrl'?'Uploading…':form.thumbnailUrl?'Uploaded':'JPG, PNG, WEBP · max 5 MB'}</span></label>
-      <label className="text-sm text-slate-300">Preview video<input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e=>uploadAsset('previewUrl',e.target.files?.[0])} className={inputClass}/><span className="mt-1 block text-xs text-slate-500">{uploading==='previewUrl'?'Uploading…':form.previewUrl?'Uploaded':'MP4, MOV, WEBM · max 100 MB'}</span></label>
+      <label className="text-sm text-slate-300">Preview video<input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={e=>uploadAsset('previewUrl',e.target.files?.[0])} className={inputClass}/><span className="mt-1 block text-xs text-slate-500">{uploading==='previewUrl'?'Uploading…':form.previewUrl?'Uploaded':'MP4, MOV, WEBM · max 50 MB'}</span></label>
       <label className="text-sm text-slate-300">Music URL (optional)<input type="url" value={form.musicUrl} onChange={e=>change('musicUrl',e.target.value)} className={inputClass}/></label>
       <label className="text-sm text-slate-300">Music license / rights notes<input value={form.musicLicense} onChange={e=>change('musicLicense',e.target.value)} maxLength={500} className={inputClass}/></label>
       <label className="text-sm text-slate-300 lg:col-span-2">Editing configuration (JSON)<textarea value={form.configText} onChange={e=>change('configText',e.target.value)} rows={5} className={inputClass}/><span className="mt-1 block text-xs text-slate-500">Supported fields include motion, filter, transition, and clipDuration. Keep JSON valid.</span></label>
