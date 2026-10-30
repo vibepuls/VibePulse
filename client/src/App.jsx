@@ -8,6 +8,7 @@ import AdminDashboard from './admin/AdminDashboard';
 import SeoManager from './SeoManager';
 import PublicProfile from './pages/PublicProfile';
 import ProfessionalVideoEditor from './pages/ProfessionalVideoEditor';
+import TemplatesPage from './pages/TemplatesPage';
 
 export default function App() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <Register />} />
       <Route path="/admin" element={isAuthenticated && canAccessAdmin ? <AdminDashboard /> : <Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
       <Route path="/cinematic" element={isAuthenticated ? <ProfessionalVideoEditor /> : <Navigate to="/login" replace />} />
+      <Route path="/templates" element={<TemplatesPage />} />
       <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <PublicProfile />} />
       <Route path="/*" element={isAuthenticated ? <SocialGamingApp /> : <GuestBrowse />} />
     </Routes>
