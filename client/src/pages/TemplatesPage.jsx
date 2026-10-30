@@ -100,7 +100,7 @@ export default function TemplatesPage() {
       const proceed = window.confirm(`This template is designed for ${chosenTemplate.clips} photos/videos. You selected ${files.length}. Continue with these files?`);
       if (!proceed) { event.target.value = ''; return; }
     }
-    navigate('/cinematic?template=' + encodeURIComponent(chosenTemplate.id), { state: { templateId: chosenTemplate.id, templateTitle: chosenTemplate.title, templateCategory: chosenTemplate.category, templateFiles: files }, replace: false });
+    navigate('/template-studio?template=' + encodeURIComponent(chosenTemplate.id), { state: { templateId: chosenTemplate.id, templateTitle: chosenTemplate.title, templateCategory: chosenTemplate.category, templateFiles: files }, replace: false });
     event.target.value = '';
   };
 
@@ -116,14 +116,14 @@ export default function TemplatesPage() {
     return next;
   });
 
-  const useTemplate = (template) => navigate('/cinematic?template=' + encodeURIComponent(template.id));
+  const useTemplate = (template) => navigate('/template-studio?template=' + encodeURIComponent(template.id), { state: { templateId: template.id, templateTitle: template.title, templateCategory: template.category } });
 
   return <main className="min-h-screen bg-[#080b14] text-white">\n    <input id="vibepulse-template-media-picker" type="file" accept="image/*,video/*" multiple hidden onChange={onMediaPicked} />
     <header className="sticky top-0 z-30 border-b border-white/10 bg-[#080b14]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <button onClick={() => navigate('/')} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10"><ArrowLeft size={18}/> Back to VibePulse</button>
         <div className="flex items-center gap-2 font-black"><span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500"><Film size={20}/></span><span>VibePulse <span className="text-violet-300">Templates</span></span></div>
-        <button onClick={() => navigate('/cinematic')} className="hidden rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-violet-100 sm:inline-flex sm:items-center sm:gap-2"><WandSparkles size={17}/> Open Studio</button>
+        <button onClick={() => navigate('/template-studio')} className="hidden rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-violet-100 sm:inline-flex sm:items-center sm:gap-2"><WandSparkles size={17}/> Open Studio</button>
       </div>
     </header>
 
