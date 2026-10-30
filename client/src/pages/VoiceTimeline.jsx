@@ -483,8 +483,8 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
       setVoiceDuration(project.waveform?.duration || 0);
       setThresholdDb(project.thresholdDb ?? -42);
       setMinSilence(project.minSilence ?? 0.65);
-      const restored = (project.clips || []).map(c => ({ ...c, url: URL.createObjectURL(c.file) }));
-      restored.forEach(c => mediaUrlRef.current.push(c.url));
+      const restored = (project.clips || []).map(c => ({ ...c, url: c.file ? URL.createObjectURL(c.file) : '' }));
+      restored.forEach(c => { if (c.url) mediaUrlRef.current.push(c.url); });
       setClips(restored);
       setTracks(project.tracks || TRACKS);
       setTrackStates(project.trackStates || {});
