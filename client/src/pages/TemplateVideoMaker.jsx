@@ -170,7 +170,7 @@ export default function TemplateVideoMaker() {
     const supported=all.filter(f => ['image/jpeg','image/png','image/webp'].includes(f.type) || ['video/mp4','video/quicktime','video/webm'].includes(f.type));
     if (supported.length !== all.length) setNotice('Only JPG, PNG, WEBP, MP4, MOV and WEBM files are supported. Unsupported files were skipped.');
     const files=supported.filter(f => f.size <= (f.type.startsWith('video/') ? 100 : 15) * 1024 * 1024);
-    if (files.length !== supported.length) setNotice('Files over the size limit were skipped (images 15 MB, videos 100 MB).');
+    if (files.length !== supported.length) setNotice('Files over the size limit were skipped (images 15 MB, videos 50 MB).');
     if(!files.length) { if(!initial) setNotice('Choose supported media: JPG, PNG, WEBP, MP4, MOV or WEBM.'); return; }
     if (requiredSlots && clips.length + files.length > requiredSlots) { setNotice('This template requires exactly ' + requiredSlots + ' media files. You can add up to ' + Math.max(0, requiredSlots - clips.length) + ' more.'); return; }
     const added=files.map(file=>({id:makeId(),file,name:file.name,type:file.type.startsWith('video/')?'video':'image',url:URL.createObjectURL(file),duration:file.type.startsWith('video/')?Math.min(8,clipDuration*2):clipDuration}));
@@ -183,7 +183,7 @@ export default function TemplateVideoMaker() {
     if (!file || !replaceTarget) return;
     const valid = ['image/jpeg','image/png','image/webp'].includes(file.type) || ['video/mp4','video/quicktime','video/webm'].includes(file.type);
     if (!valid) { setNotice('Only JPG, PNG, WEBP, MP4, MOV and WEBM files are supported.'); setReplaceTarget(''); return; }
-    if (file.size > (file.type.startsWith('video/') ? 100 : 15) * 1024 * 1024) { setNotice('Images must be under 15 MB and videos under 100 MB.'); setReplaceTarget(''); return; }
+    if (file.size > (file.type.startsWith('video/') ? 100 : 15) * 1024 * 1024) { setNotice('Images must be under 15 MB and videos under 50 MB.'); setReplaceTarget(''); return; }
     const url = URL.createObjectURL(file);
     setClips(old => old.map(clip => { if (clip.id !== replaceTarget) return clip; if (clip.url) URL.revokeObjectURL(clip.url); return {...clip,file,name:file.name,type:file.type.startsWith('video/')?'video':'image',url,duration:file.type.startsWith('video/')?Math.min(8,clipDuration*2):clipDuration}; }));
     setSelected(replaceTarget); setReplaceTarget(''); setExportUrl(''); setNotice('Media replaced. Preview the video again before exporting.');
