@@ -327,7 +327,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   useEffect(() => {
     const movePan = event => { if (!panRef.current || !rulerRef.current) return; rulerRef.current.scrollLeft = panRef.current.scrollLeft - (event.clientX - panRef.current.pointerX); };
     const moveSlip = event => { const slip=slipRef.current; if(!slip)return; const delta=(event.clientX-slip.pointerX)/pxPerSecond; const trimStart=clamp(slip.trimStart+delta,0,Math.max(0,slip.sourceDuration-slip.duration)); setClips(old=>old.map(c=>c.id===slip.id?{...c,trimStart,trimEnd:trimStart+slip.duration,duration:slip.duration}:c)); };
-    const endPan = () => { panRef.current = null; };
+    const endPan = () => { panRef.current = null; slipRef.current = null; };
     window.addEventListener('pointermove', movePan);
     window.addEventListener('pointermove', moveSlip);
     window.addEventListener('pointerup', endPan);
