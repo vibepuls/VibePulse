@@ -105,6 +105,77 @@ app.get('/api/seo/public-profiles', async (_req, res) => {
   })));
 });
 
+
+const templateInput = z.object({
+  title: z.string().trim().min(2).max(100),
+  description: z.string().max(1000).default(''),
+  category: z.string().trim().min(2).max(50),
+  thumbnailUrl: z.string().url().max(2000).optional().or(z.literal('')),
+  previewUrl: z.string().url().max(2000).optional().or(z.literal('')),
+  requiredSlots: z.number().int().min(1).max(30).default(6),
+  durationSeconds: z.number().int().min(3).max(180).default(15),
+  aspectRatio: z.enum(['9:16','1:1','16:9']).default('9:16'),
+  config: z.record(z.any()).default({}),
+  musicUrl: z.string().url().max(2000).optional().or(z.literal('')),
+  musicLicense: z.string().max(500).default(''),
+  trending: z.boolean().default(false),
+  popular: z.boolean().default(false),
+  published: z.boolean().default(false)
+});
+const cleanTemplate = (item:any) => ({
+  ...item,
+  thumbnailUrl: item.thumbnailUrl || '',
+  previewUrl: item.previewUrl || '',
+  musicUrl: item.musicUrl || ''
+});
+app.get('/api/templates', async (req:any,res) => {
+  const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+  const where:any = { published: true };
+  if (category && !['For You','Trending','Popular','New Templates'].includes(category)) where.category = category;
+  if (category === 'Trending') where.trending = true;
+  if (category === 'Popular') where.popular = true;
+  const items = await prisma.videoTemplate.findMany({ where, orderBy: [{trending:'desc'},{popular:'desc'},{createdAt:'desc'}], take: 100 });
+  res.set('Cache-Control','public, max-age=60');
+  res.json(items.map(cleanTemplate));
+});
+app.get('/api/admin/templates', auth, admin, async (_req:any,res) => {
+  res.json((await prisma.videoTemplate.findMany({orderBy:{updatedAt:'desc'},take:200})).map(cleanTemplate));
+});
+app.post('/api/admin/templates', auth, admin, async (req:any,res) => {
+  const parsed = templateInput.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({error:'Invalid template details', details:parsed.error.flatten()});
+  try {
+    const item = await prisma.videoTemplate.create({data:{
+      ...parsed.data,
+      thumbnailUrl: parsed.data.thumbnailUrl || null,
+      previewUrl: parsed.data.previewUrl || null,
+      musicUrl: parsed.data.musicUrl || null
+    }});
+    await prisma.adminAction.create({data:{actorId:req.user.id,action:'TEMPLATE_CREATE',targetType:'VIDEO_TEMPLATE',targetId:item.id,details:item.title}});
+    res.status(201).json(cleanTemplate(item));
+  } catch (error:any) { res.status(400).json({error:'Could not create template'}); }
+});
+app.patch('/api/admin/templates/:id', auth, admin, async (req:any,res) => {
+  const parsed = templateInput.partial().safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({error:'Invalid template details', details:parsed.error.flatten()});
+  const exists = await prisma.videoTemplate.findUnique({where:{id:req.params.id}});
+  if (!exists) return res.status(404).json({error:'Template not found'});
+  try {
+    const data:any = {...parsed.data};
+    for (const key of ['thumbnailUrl','previewUrl','musicUrl']) if (key in data) data[key] = data[key] || null;
+    const item = await prisma.videoTemplate.update({where:{id:exists.id},data});
+    await prisma.adminAction.create({data:{actorId:req.user.id,action:'TEMPLATE_UPDATE',targetType:'VIDEO_TEMPLATE',targetId:item.id,details:item.title}});
+    res.json(cleanTemplate(item));
+  } catch (error:any) { res.status(400).json({error:'Could not update template'}); }
+});
+app.delete('/api/admin/templates/:id', auth, admin, async (req:any,res) => {
+  const item = await prisma.videoTemplate.findUnique({where:{id:req.params.id}});
+  if (!item) return res.status(404).json({error:'Template not found'});
+  await prisma.videoTemplate.delete({where:{id:item.id}});
+  await prisma.adminAction.create({data:{actorId:req.user.id,action:'TEMPLATE_DELETE',targetType:'VIDEO_TEMPLATE',targetId:item.id,details:item.title}});
+  res.json({success:true,id:item.id});
+});
+
 app.get('/api/health',(_req,res)=>res.json({ok:true,service:'VibePulse API'}));
 app.post('/api/auth/register',async(req,res)=>{try{const data=z.object({username:z.string().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/),displayName:z.string().min(1).max(60),email:z.string().email().optional().or(z.literal('')),password:z.string().min(8).max(100)}).parse(req.body); const username=data.username.toLowerCase(); const hash=await bcrypt.hash(data.password,12); const user=await prisma.user.create({data:{username,displayName:data.displayName,email:data.email||null,passwordHash:hash}}); const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'}); res.status(201).json({token,user:safeUser(user)});}catch(e:any){res.status(e?.code==='P2002'?409:400).json({error:e?.code==='P2002'?'Username or email already exists':e.message||'Registration failed'});}});
 app.post('/api/auth/login',async(req,res)=>{const data=z.object({username:z.string(),password:z.string()}).safeParse(req.body);if(!data.success)return res.status(400).json({error:'Username and password required'});const user=await prisma.user.findUnique({where:{username:data.data.username.toLowerCase()}});if(!user||!(await bcrypt.compare(data.data.password,user.passwordHash)))return res.status(401).json({error:'Incorrect username or password'});if(user.status!=='ACTIVE')return res.status(403).json({error:'Account is not active'});const token=jwt.sign({id:user.id,username:user.username,role:user.role},AUTH_SECRET,{expiresIn:'7d'});res.json({token,user:safeUser(user)});});
