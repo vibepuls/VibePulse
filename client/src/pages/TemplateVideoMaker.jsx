@@ -37,6 +37,8 @@ export default function TemplateVideoMaker() {
   const { isAuthenticated } = useAuth();
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
+  const replaceInputRef = useRef(null);
+  const [replaceTarget, setReplaceTarget] = useState('');
   const musicInputRef = useRef(null);
   const rafRef = useRef(0);
   const mediaRef = useRef([]);
@@ -46,6 +48,7 @@ export default function TemplateVideoMaker() {
   const [clips, setClips] = useState([]);
   const [music, setMusic] = useState(null);
   const [musicUrl, setMusicUrl] = useState('');
+  const [musicVolume, setMusicVolume] = useState(0.9);
   const [title, setTitle] = useState('');
   const [clipDuration, setClipDuration] = useState(preset.duration);
   const [motion, setMotion] = useState(preset.motion);
@@ -73,6 +76,13 @@ export default function TemplateVideoMaker() {
     // Apply a preset only on initial route entry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!musicUrl) return;
+    const audio = new Audio(musicUrl); audio.loop = true; audio.volume = musicVolume;
+    if (playing) audio.play().catch(() => {});
+    return () => { audio.pause(); audio.currentTime = 0; };
+  }, [playing, musicUrl, musicVolume]);
 
   useEffect(() => {
     if (!playing || !clips.length) return;
@@ -116,6 +126,15 @@ export default function TemplateVideoMaker() {
     setSelected(old=>old||added[0].id);
     setNotice(`${added.length} media file(s) added. Reorder or remove clips, then preview and export.`);
     setExportUrl(''); setExportMime('');
+  }
+  function replaceClip(file) {
+    if (!file || !replaceTarget) return;
+    const valid = ['image/jpeg','image/png','image/webp'].includes(file.type) || ['video/mp4','video/quicktime','video/webm'].includes(file.type);
+    if (!valid) { setNotice('Only JPG, PNG, WEBP, MP4, MOV and WEBM files are supported.'); setReplaceTarget(''); return; }
+    if (file.size > (file.type.startsWith('video/') ? 100 : 15) * 1024 * 1024) { setNotice('Images must be under 15 MB and videos under 100 MB.'); setReplaceTarget(''); return; }
+    const url = URL.createObjectURL(file);
+    setClips(old => old.map(clip => { if (clip.id !== replaceTarget) return clip; if (clip.url) URL.revokeObjectURL(clip.url); return {...clip,file,name:file.name,type:file.type.startsWith('video/')?'video':'image',url,duration:file.type.startsWith('video/')?Math.min(8,clipDuration*2):clipDuration}; }));
+    setSelected(replaceTarget); setReplaceTarget(''); setExportUrl(''); setNotice('Media replaced. Preview the video again before exporting.');
   }
   function removeClip(id) {
     setClips(old=>{const target=old.find(c=>c.id===id);if(target?.url)URL.revokeObjectURL(target.url);return old.filter(c=>c.id!==id);});
@@ -163,6 +182,7 @@ export default function TemplateVideoMaker() {
   }
   async function exportVideo() {
     if(!clips.length){setNotice('Add at least one photo or video before exporting.');return;}
+    if(requiredSlots && clips.length !== requiredSlots){setNotice('This template requires exactly '+requiredSlots+' media files. You have selected '+clips.length+'. Add or remove media before exporting.');return;}
     if(!canvasRef.current?.captureStream||!window.MediaRecorder){setNotice('Video export is not supported in this browser. Try the latest Chrome or Edge.');return;}
     setExporting(true);setNotice('Rendering your template video… keep this tab open until export finishes.');
     try {
@@ -171,7 +191,7 @@ export default function TemplateVideoMaker() {
       const stream=canvas.captureStream(30);
       let audioContext,sourceNode,mediaSource;
       if(musicUrl){
-        const audioEl=new Audio(musicUrl);audioEl.loop=true;audioEl.volume=.9;await audioEl.play();
+        const audioEl=new Audio(musicUrl);audioEl.loop=true;audioEl.volume=musicVolume;await audioEl.play();
         audioContext=new AudioContext();mediaSource=audioContext.createMediaElementSource(audioEl);sourceNode=audioContext.createMediaStreamDestination();mediaSource.connect(sourceNode);mediaSource.connect(audioContext.destination);
         sourceNode.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
       }
@@ -238,10 +258,10 @@ export default function TemplateVideoMaker() {
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[#080b14]/95 px-4 py-3 backdrop-blur"><button onClick={()=>navigate('/templates')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-300 hover:bg-white/10"><ArrowLeft size={17}/> Templates</button><div className="flex items-center gap-2 font-black"><Film size={20} className="text-violet-300"/> Template Video Maker</div><span className="text-xs text-slate-400">Separate from News Editor</span></header>
     <div className="mx-auto grid max-w-7xl gap-5 p-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:p-6">
       <section className="min-w-0">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-black">Create with Templates</h1><p className="mt-1 text-sm text-slate-400">Choose a style, add media, preview and export.</p></div><button onClick={()=>fileInputRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 font-bold hover:bg-violet-400"><ImagePlus size={17}/> Add photos/videos</button><input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple hidden onChange={e=>{addFiles(e.target.files);e.target.value='';}}/></div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-black">Create with Templates</h1><p className="mt-1 text-sm text-slate-400">Choose a style, add media, preview and export.</p></div><button onClick={()=>fileInputRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 font-bold hover:bg-violet-400"><ImagePlus size={17}/> Add photos/videos</button><input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple hidden onChange={e=>{addFiles(e.target.files);e.target.value='';}}/><input ref={replaceInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" hidden onChange={e=>{replaceClip(e.target.files?.[0]);e.target.value='';}}/></div>
         <div className="flex justify-center rounded-3xl border border-white/10 bg-black/40 p-4"><canvas ref={canvasRef} width={540} height={960} className="max-h-[68vh] w-auto max-w-full rounded-xl bg-slate-900" /></div>
-        <div className="mt-3 flex flex-wrap items-center gap-2"><button onClick={()=>setPlaying(v=>!v)} disabled={!clips.length} className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 font-bold text-black disabled:opacity-40">{playing?<Pause size={16}/>:<Play size={16}/>} {playing?'Pause preview':'Preview video'}</button><button onClick={()=>musicInputRef.current?.click()} className="flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 font-semibold hover:bg-white/5"><Music2 size={16}/> {music?'Change music':'Add music'}</button><input ref={musicInputRef} type="file" accept="audio/*" hidden onChange={e=>{chooseMusic(e.target.files?.[0]);e.target.value='';}}/><span className="flex items-center gap-1 text-xs text-slate-400"><Volume2 size={14}/>{music?music.name:'No music added'}</span></div>
-        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.035] p-4"><div className="mb-3 flex items-center justify-between"><h2 className="font-black">Your timeline <span className="text-xs font-normal text-slate-400">({clips.length} clips · {formatTime(totalDuration)})</span></h2><button onClick={()=>fileInputRef.current?.click()} className="flex items-center gap-1 text-sm text-violet-300"><Plus size={15}/> Add</button></div>{clips.length===0?<div className="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-slate-400">Choose photos or videos to build your template.</div>:<div className="flex gap-3 overflow-x-auto pb-2">{clips.map((c,i)=><div key={c.id} className={`w-32 shrink-0 rounded-xl border p-2 ${selectedClip?.id===c.id?'border-violet-400 bg-violet-400/10':'border-white/10 bg-black/20'}`}><button onClick={()=>setSelected(c.id)} className="w-full text-left"><div className="mb-2 aspect-[9/16] overflow-hidden rounded-lg bg-slate-800">{c.type==='image'?<img src={c.url} alt="" className="h-full w-full object-cover"/>:<video src={c.url} muted className="h-full w-full object-cover"/>}</div><div className="truncate text-xs font-semibold">{i+1}. {c.name}</div><div className="mt-1 text-[11px] text-slate-400">{c.type} · {c.duration.toFixed(1)}s</div></button><div className="mt-2 flex justify-between"><button onClick={()=>moveClip(i,-1)} disabled={!i} className="text-xs text-slate-300 disabled:opacity-30">←</button><button onClick={()=>moveClip(i,1)} disabled={i===clips.length-1} className="text-xs text-slate-300 disabled:opacity-30">→</button><button onClick={()=>removeClip(c.id)} className="text-rose-300"><Trash2 size={14}/></button></div></div>)}</div>}</div>
+        <div className="mt-3 flex flex-wrap items-center gap-2"><button onClick={()=>setPlaying(v=>!v)} disabled={!clips.length} className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 font-bold text-black disabled:opacity-40">{playing?<Pause size={16}/>:<Play size={16}/>} {playing?'Pause preview':'Preview video'}</button><button onClick={()=>musicInputRef.current?.click()} className="flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 font-semibold hover:bg-white/5"><Music2 size={16}/> {music?'Change music':'Add music'}</button><input ref={musicInputRef} type="file" accept="audio/*" hidden onChange={e=>{chooseMusic(e.target.files?.[0]);e.target.value='';}}/><span className="flex items-center gap-1 text-xs text-slate-400"><Volume2 size={14}/>{music?music.name:'No music added'}</span>{music&&<label className="flex items-center gap-2 text-xs text-slate-400">Music volume <input aria-label="Music volume" type="range" min="0" max="1" step="0.05" value={musicVolume} onChange={e=>setMusicVolume(Number(e.target.value))}/></label>}</div>
+        <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.035] p-4"><div className="mb-3 flex items-center justify-between"><h2 className="font-black">Your timeline <span className="text-xs font-normal text-slate-400">({clips.length} clips · {formatTime(totalDuration)})</span></h2><button onClick={()=>fileInputRef.current?.click()} className="flex items-center gap-1 text-sm text-violet-300"><Plus size={15}/> Add</button></div>{clips.length===0?<div className="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-slate-400">Choose photos or videos to build your template.</div>:<div className="flex gap-3 overflow-x-auto pb-2">{clips.map((c,i)=><div key={c.id} className={`w-32 shrink-0 rounded-xl border p-2 ${selectedClip?.id===c.id?'border-violet-400 bg-violet-400/10':'border-white/10 bg-black/20'}`}><button onClick={()=>setSelected(c.id)} className="w-full text-left"><div className="mb-2 aspect-[9/16] overflow-hidden rounded-lg bg-slate-800">{c.type==='image'?<img src={c.url} alt="" className="h-full w-full object-cover"/>:<video src={c.url} muted className="h-full w-full object-cover"/>}</div><div className="truncate text-xs font-semibold">{i+1}. {c.name}</div><div className="mt-1 text-[11px] text-slate-400">{c.type} · {c.duration.toFixed(1)}s</div></button><div className="mt-2 flex justify-between"><button onClick={()=>moveClip(i,-1)} disabled={!i} className="text-xs text-slate-300 disabled:opacity-30">←</button><button onClick={()=>moveClip(i,1)} disabled={i===clips.length-1} className="text-xs text-slate-300 disabled:opacity-30">→</button><button onClick={()=>{setReplaceTarget(c.id);replaceInputRef.current?.click();}} className="text-xs text-violet-300">Replace</button><button onClick={()=>removeClip(c.id)} className="text-rose-300"><Trash2 size={14}/></button></div></div>)}</div>}</div>
       </section>
       <aside className="space-y-4">
         <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-3 flex items-center gap-2 font-black"><Sparkles size={17} className="text-violet-300"/> Template style</h2>{requiredSlots>0&&<p className="mb-3 rounded-lg bg-violet-400/10 p-2 text-xs text-violet-200">Required media: {requiredSlots} · Selected: {clips.length}</p>}<label className="mb-3 block text-xs text-slate-400">Preset</label><select value={templateId} onChange={e=>selectPreset(e.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm">{templateOptions.map(([id,p])=><option key={id} value={id}>{p.label}</option>)}</select><p className="mt-2 text-xs leading-5 text-slate-400">Every preset has its own starting look, motion, clip timing and transition.</p></div>
