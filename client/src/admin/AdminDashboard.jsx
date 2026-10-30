@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, FileText, Flag, Activity, Ban, CheckCircle, LayoutDashboard, Search, RefreshCw, ShieldCheck } from 'lucide-react';
 import api from '../services/api';
+import ManageTemplates from './ManageTemplates';
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'reports', label: 'Reports', icon: Flag },
+  { id: 'templates', label: 'Manage Templates', icon: FileText },
 ];
 
 export default function AdminDashboard() {
@@ -161,6 +163,7 @@ export default function AdminDashboard() {
           {reports.map((report) => <article key={report.id} className="rounded-2xl border border-white/10 bg-slate-900 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">Reported: @{report.reported_username || 'user'}</p><p className="mt-1 text-xs text-slate-400">Reason: {report.reason || 'Not specified'}</p></div><span className="rounded-full bg-amber-400/10 px-3 py-1 text-xs text-amber-300">{report.status || 'pending'}</span></div>{report.description && <p className="mt-3 text-sm text-slate-300">{report.description}</p>}{report.status === 'pending' && <div className="mt-4 flex flex-wrap gap-2"><button disabled={busyId === report.id} onClick={() => resolveReport(report, 'resolved')} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium hover:bg-blue-500 disabled:opacity-50">{busyId === report.id ? 'Please wait…' : 'Resolve report'}</button><button disabled={busyId === report.id} onClick={() => resolveReport(report, 'dismissed')} className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-50">Dismiss report</button></div>}</article>)}
           {!loading && reports.length === 0 && <div className="rounded-2xl border border-white/10 bg-slate-900 p-8 text-center text-sm text-slate-400">No pending reports.</div>}
         </section>}
+        {activeTab === 'templates' && <ManageTemplates />}
       </main>
     </div>
   );
