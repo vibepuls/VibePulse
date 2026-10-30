@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Download, Film, ImagePlus, Music2, Pause, Play, Plus, Scissors, Sparkles, Trash2, Volume2 } from 'lucide-react';
 
 const PRESETS = {
@@ -32,13 +34,15 @@ const formatTime = (s) => { const n=Math.max(0,Number(s)||0); return Math.floor(
 export default function TemplateVideoMaker() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
   const musicInputRef = useRef(null);
   const rafRef = useRef(0);
   const mediaRef = useRef([]);
   const [templateId, setTemplateId] = useState(location.state?.templateId || new URLSearchParams(location.search).get('template') || 'cinematic-gold');
-  const preset = PRESETS[templateId] || DEFAULT_PRESET;
+  const customConfig = location.state?.templateConfig || {};
+  const preset = { ...(PRESETS[templateId] || DEFAULT_PRESET), ...customConfig, duration: Number(customConfig.clipDuration || customConfig.duration || (PRESETS[templateId] || DEFAULT_PRESET).duration) };
   const [clips, setClips] = useState([]);
   const [music, setMusic] = useState(null);
   const [musicUrl, setMusicUrl] = useState('');
@@ -53,13 +57,18 @@ export default function TemplateVideoMaker() {
   const [notice, setNotice] = useState('Choose photos or videos to start building your template video.');
   const [exportUrl, setExportUrl] = useState('');
   const [selected, setSelected] = useState('');
-  const [aspect, setAspect] = useState('9:16');
+  const [aspect, setAspect] = useState(location.state?.templateAspectRatio || '9:16');
+  const [requiredSlots, setRequiredSlots] = useState(Number(location.state?.templateRequiredSlots || 0));
+  const [publishing, setPublishing] = useState(false);
   const totalDuration = Math.max(0.1, clips.reduce((n,c)=>n+c.duration,0));
   const selectedClip = clips.find(c=>c.id===selected) || clips[0];
 
   useEffect(() => {
     const incoming = location.state?.templateFiles;
     if (incoming?.length) addFiles(incoming, true);
+    if (location.state?.templateMusicUrl) setNotice('This template includes a music reference. Add an authorized local music file to include audio in the exported video.');
+    const id = location.state?.templateId || new URLSearchParams(location.search).get('template');
+    if (id) api.get('/templates').then(({data}) => { const item = (Array.isArray(data) ? data : []).find(t => t.id === id); if (!item) return; const cfg = item.config || {}; const base = PRESETS[id] || DEFAULT_PRESET; setFilter(cfg.filter || base.filter); setMotion(cfg.motion || base.motion); setTransition(cfg.transition || base.transition); setClipDuration(Number(cfg.clipDuration || cfg.duration || base.duration)); setRequiredSlots(Number(item.requiredSlots || 0)); setAspect(item.aspectRatio || '9:16'); }).catch(()=>{});
     // Apply a preset only on initial route entry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -94,8 +103,13 @@ export default function TemplateVideoMaker() {
   }, []);
 
   function addFiles(fileList, initial=false) {
-    const files=Array.from(fileList||[]).filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
-    if(!files.length) { if(!initial) setNotice('Please choose image or video files.'); return; }
+    const all=Array.from(fileList||[]);
+    const supported=all.filter(f => ['image/jpeg','image/png','image/webp'].includes(f.type) || ['video/mp4','video/quicktime','video/webm'].includes(f.type));
+    if (supported.length !== all.length) setNotice('Only JPG, PNG, WEBP, MP4, MOV and WEBM files are supported. Unsupported files were skipped.');
+    const files=supported.filter(f => f.size <= (f.type.startsWith('video/') ? 100 : 15) * 1024 * 1024);
+    if (files.length !== supported.length) setNotice('Files over the size limit were skipped (images 15 MB, videos 100 MB).');
+    if(!files.length) { if(!initial) setNotice('Choose supported media: JPG, PNG, WEBP, MP4, MOV or WEBM.'); return; }
+    if (requiredSlots && clips.length + files.length > requiredSlots) { setNotice('This template requires exactly ' + requiredSlots + ' media files. You can add up to ' + Math.max(0, requiredSlots - clips.length) + ' more.'); return; }
     const added=files.map(file=>({id:makeId(),file,name:file.name,type:file.type.startsWith('video/')?'video':'image',url:URL.createObjectURL(file),duration:file.type.startsWith('video/')?Math.min(8,clipDuration*2):clipDuration}));
     setClips(old=>[...old,...added]);
     setSelected(old=>old||added[0].id);
@@ -152,7 +166,7 @@ export default function TemplateVideoMaker() {
     setExporting(true);setNotice('Rendering your template video… keep this tab open until export finishes.');
     try {
       const canvas=canvasRef.current,ctx=canvas.getContext('2d');
-      canvas.width=aspect==='9:16'?540:960;canvas.height=aspect==='9:16'?960:540;
+      canvas.width=aspect==='9:16'?540:aspect==='1:1'?720:960;canvas.height=aspect==='9:16'?960:aspect==='1:1'?720:540;
       const stream=canvas.captureStream(30);
       let audioContext,sourceNode,mediaSource;
       if(musicUrl){
@@ -175,29 +189,63 @@ export default function TemplateVideoMaker() {
         };requestAnimationFrame(frame);
       });
       recorder.stop();await done;
-      const blob=new Blob(chunks,{type:'video/webm'});if(exportUrl)URL.revokeObjectURL(exportUrl);
-      setExportUrl(URL.createObjectURL(blob));setNotice('Export finished. Download your WebM video below.');
+      const webmBlob=new Blob(chunks,{type:'video/webm'});
+      setNotice('Converting the rendered video to MP4. This can use substantial memory on phones; keep this tab open.');
+      let finalBlob=webmBlob;
+      try {
+        const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+        const { toBlobURL } = await import('@ffmpeg/util');
+        const ffmpeg = new FFmpeg();
+        const coreBase = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
+        await ffmpeg.load({coreURL:await toBlobURL(coreBase+'/ffmpeg-core.js','text/javascript'),wasmURL:await toBlobURL(coreBase+'/ffmpeg-core.wasm','application/wasm')});
+        await ffmpeg.writeFile('vibepulse-input.webm',new Uint8Array(await webmBlob.arrayBuffer()));
+        await ffmpeg.exec(['-i','vibepulse-input.webm','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','128k','vibepulse-output.mp4']);
+        const data=await ffmpeg.readFile('vibepulse-output.mp4');
+        finalBlob=new Blob([data.buffer],{type:'video/mp4'});
+        await ffmpeg.deleteFile('vibepulse-input.webm'); await ffmpeg.deleteFile('vibepulse-output.mp4'); await ffmpeg.terminate();
+      } catch (conversionError) {
+        console.warn('MP4 conversion unavailable; preserving WebM export.',conversionError);
+        setNotice('MP4 conversion was not available in this browser/network. A WebM file is ready instead.');
+      }
+      if(exportUrl)URL.revokeObjectURL(exportUrl);
+      setExportUrl(URL.createObjectURL(finalBlob));
+      if(finalBlob.type==='video/mp4') setNotice('MP4 export finished. Download or publish your video below.');
       if(audioContext)await audioContext.close();
       stream.getTracks().forEach(t=>t.stop());
     } catch(e) { setNotice('Export failed: '+(e?.message||'Unknown browser error')); }
     finally {setExporting(false);}
   }
 
-  const selectPreset = id => {setTemplateId(id);const p=PRESETS[id]||DEFAULT_PRESET;setFilter(p.filter);setMotion(p.motion);setClipDuration(p.duration);setTransition(p.transition);setNotice(p.label+' preset applied. Add media or continue editing.');setExportUrl('');};
+  const selectPreset = id => {setTemplateId(id);const p=PRESETS[id]||DEFAULT_PRESET;setFilter(p.filter);setMotion(p.motion);setClipDuration(p.duration);setTransition(p.transition);setRequiredSlots(0);setNotice(p.label+' preset applied. Add media or continue editing.');setExportUrl('');};
+  async function publishVideo() {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    if (!exportUrl) { setNotice('Export your video before publishing.'); return; }
+    setPublishing(true); setNotice('Uploading video to VibePulse…');
+    try {
+      const blob = await (await fetch(exportUrl)).blob();
+      const file = new File([blob], (title || 'vibepulse-template-video') + (blob.type === 'video/mp4' ? '.mp4' : '.webm'), {type:blob.type || 'video/webm'});
+      const body = new FormData(); body.append('file', file);
+      const {data:uploaded} = await api.post('/media/video-upload', body, {headers:{'Content-Type':'multipart/form-data'},timeout:180000});
+      await api.post('/posts', {imageUrl:uploaded.url,mediaType:'VIDEO',caption:title.trim() || 'Made with VibePulse Templates',privacy:'PUBLIC'});
+      setNotice('Video published to your VibePulse feed.');
+      setTimeout(() => navigate('/?section=home'), 1200);
+    } catch (e) { setNotice(e.response?.data?.error || 'Publishing failed. Check your login and video storage settings.'); }
+    finally { setPublishing(false); }
+  }
   const templateOptions=Object.entries(PRESETS);
   return <main className="min-h-screen bg-[#080b14] text-white">
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[#080b14]/95 px-4 py-3 backdrop-blur"><button onClick={()=>navigate('/templates')} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-300 hover:bg-white/10"><ArrowLeft size={17}/> Templates</button><div className="flex items-center gap-2 font-black"><Film size={20} className="text-violet-300"/> Template Video Maker</div><span className="text-xs text-slate-400">Separate from News Editor</span></header>
     <div className="mx-auto grid max-w-7xl gap-5 p-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:p-6">
       <section className="min-w-0">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-black">Create with Templates</h1><p className="mt-1 text-sm text-slate-400">Choose a style, add media, preview and export.</p></div><button onClick={()=>fileInputRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 font-bold hover:bg-violet-400"><ImagePlus size={17}/> Add photos/videos</button><input ref={fileInputRef} type="file" accept="image/*,video/*" multiple hidden onChange={e=>{addFiles(e.target.files);e.target.value='';}}/></div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl font-black">Create with Templates</h1><p className="mt-1 text-sm text-slate-400">Choose a style, add media, preview and export.</p></div><button onClick={()=>fileInputRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 font-bold hover:bg-violet-400"><ImagePlus size={17}/> Add photos/videos</button><input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple hidden onChange={e=>{addFiles(e.target.files);e.target.value='';}}/></div>
         <div className="flex justify-center rounded-3xl border border-white/10 bg-black/40 p-4"><canvas ref={canvasRef} width={540} height={960} className="max-h-[68vh] w-auto max-w-full rounded-xl bg-slate-900" /></div>
         <div className="mt-3 flex flex-wrap items-center gap-2"><button onClick={()=>setPlaying(v=>!v)} disabled={!clips.length} className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 font-bold text-black disabled:opacity-40">{playing?<Pause size={16}/>:<Play size={16}/>} {playing?'Pause preview':'Preview video'}</button><button onClick={()=>musicInputRef.current?.click()} className="flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 font-semibold hover:bg-white/5"><Music2 size={16}/> {music?'Change music':'Add music'}</button><input ref={musicInputRef} type="file" accept="audio/*" hidden onChange={e=>{chooseMusic(e.target.files?.[0]);e.target.value='';}}/><span className="flex items-center gap-1 text-xs text-slate-400"><Volume2 size={14}/>{music?music.name:'No music added'}</span></div>
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.035] p-4"><div className="mb-3 flex items-center justify-between"><h2 className="font-black">Your timeline <span className="text-xs font-normal text-slate-400">({clips.length} clips · {formatTime(totalDuration)})</span></h2><button onClick={()=>fileInputRef.current?.click()} className="flex items-center gap-1 text-sm text-violet-300"><Plus size={15}/> Add</button></div>{clips.length===0?<div className="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-slate-400">Choose photos or videos to build your template.</div>:<div className="flex gap-3 overflow-x-auto pb-2">{clips.map((c,i)=><div key={c.id} className={`w-32 shrink-0 rounded-xl border p-2 ${selectedClip?.id===c.id?'border-violet-400 bg-violet-400/10':'border-white/10 bg-black/20'}`}><button onClick={()=>setSelected(c.id)} className="w-full text-left"><div className="mb-2 aspect-[9/16] overflow-hidden rounded-lg bg-slate-800">{c.type==='image'?<img src={c.url} alt="" className="h-full w-full object-cover"/>:<video src={c.url} muted className="h-full w-full object-cover"/>}</div><div className="truncate text-xs font-semibold">{i+1}. {c.name}</div><div className="mt-1 text-[11px] text-slate-400">{c.type} · {c.duration.toFixed(1)}s</div></button><div className="mt-2 flex justify-between"><button onClick={()=>moveClip(i,-1)} disabled={!i} className="text-xs text-slate-300 disabled:opacity-30">←</button><button onClick={()=>moveClip(i,1)} disabled={i===clips.length-1} className="text-xs text-slate-300 disabled:opacity-30">→</button><button onClick={()=>removeClip(c.id)} className="text-rose-300"><Trash2 size={14}/></button></div></div>)}</div>}</div>
       </section>
       <aside className="space-y-4">
-        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-3 flex items-center gap-2 font-black"><Sparkles size={17} className="text-violet-300"/> Template style</h2><label className="mb-3 block text-xs text-slate-400">Preset</label><select value={templateId} onChange={e=>selectPreset(e.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm">{templateOptions.map(([id,p])=><option key={id} value={id}>{p.label}</option>)}</select><p className="mt-2 text-xs leading-5 text-slate-400">Every preset has its own starting look, motion, clip timing and transition.</p></div>
-        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-4 font-black">Edit video</h2><label className="mb-2 block text-xs text-slate-400">Canvas ratio</label><select value={aspect} onChange={e=>setAspect(e.target.value)} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="9:16">9:16 TikTok / Reels / Shorts</option><option value="16:9">16:9 Landscape</option><option value="1:1">1:1 Square</option></select><label className="mb-2 block text-xs text-slate-400">Motion</label><select value={motion} onChange={e=>{setMotion(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="zoom">Slow zoom</option><option value="pan">Pan / parallax style</option><option value="shake">Shake / energetic</option><option value="none">None</option></select><label className="mb-2 block text-xs text-slate-400">Color filter</label><select value={filter} onChange={e=>{setFilter(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="none">Original</option><option value="contrast(1.12) saturate(.9)">Cinematic</option><option value="sepia(.2) saturate(1.1)">Warm vintage</option><option value="grayscale(1) contrast(1.1)">Black & white</option><option value="saturate(1.35) contrast(1.1)">Vivid</option><option value="brightness(1.08) saturate(.9)">Dreamy</option><option value="contrast(1.25) saturate(1.3)">Hype</option></select><label className="mb-2 block text-xs text-slate-400">Seconds per photo</label><input type="range" min=".5" max="5" step=".1" value={clipDuration} onChange={e=>{setClipDuration(Number(e.target.value));setClips(old=>old.map(c=>c.type==='image'?{...c,duration:Number(e.target.value)}:c));setExportUrl('');}} className="w-full"/><div className="mb-4 text-sm">{clipDuration.toFixed(1)} seconds</div><label className="mb-2 block text-xs text-slate-400">Transition</label><select value={transition} onChange={e=>{setTransition(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="cut">Cut</option><option value="fade">Fade</option><option value="flash">Flash</option><option value="slide">Slide (preview style)</option></select><label className="flex items-center gap-2 rounded-xl bg-black/20 p-3 text-sm"><input type="checkbox" checked={beatSync} onChange={e=>{setBeatSync(e.target.checked);setExportUrl('');}}/> Beat-paced cuts (faster template timing)</label><label className="mt-4 block text-xs text-slate-400">Video title (optional)</label><input value={title} onChange={e=>{setTitle(e.target.value);setExportUrl('');}} placeholder="Add a title..." className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"/></div>
-        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-2 font-black">Export</h2><p className="mb-3 text-xs leading-5 text-slate-400">Exports a WebM video in your browser. For best results use Chrome or Edge and keep this tab open while rendering.</p><button onClick={exportVideo} disabled={exporting||!clips.length} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-3 font-black disabled:opacity-50"><Download size={17}/>{exporting?'Rendering…':'Export video'}</button>{exportUrl&&<a href={exportUrl} download={(title||'vibepulse-template-video').replace(/[^a-z0-9-_]/gi,'-')+'.webm'} className="mt-3 block rounded-xl bg-emerald-500 px-4 py-3 text-center font-bold text-white">Download finished video</a>}</div>
+        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-3 flex items-center gap-2 font-black"><Sparkles size={17} className="text-violet-300"/> Template style</h2>{requiredSlots>0&&<p className="mb-3 rounded-lg bg-violet-400/10 p-2 text-xs text-violet-200">Required media: {requiredSlots} · Selected: {clips.length}</p>}<label className="mb-3 block text-xs text-slate-400">Preset</label><select value={templateId} onChange={e=>selectPreset(e.target.value)} className="w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm">{templateOptions.map(([id,p])=><option key={id} value={id}>{p.label}</option>)}</select><p className="mt-2 text-xs leading-5 text-slate-400">Every preset has its own starting look, motion, clip timing and transition.</p></div>
+        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-4 font-black">Edit video</h2><label className="mb-2 block text-xs text-slate-400">Canvas ratio</label><select value={aspect} onChange={e=>setAspect(e.target.value)} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="9:16">9:16 TikTok / Reels / Shorts</option><option value="16:9">16:9 Landscape</option><option value="1:1">1:1 Square</option></select><label className="mb-2 block text-xs text-slate-400">Motion</label><select value={motion} onChange={e=>{setMotion(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="zoom">Slow zoom</option><option value="pan">Pan / parallax style</option><option value="shake">Shake / energetic</option><option value="none">None</option></select><label className="mb-2 block text-xs text-slate-400">Color filter</label><select value={filter} onChange={e=>{setFilter(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="none">Original</option><option value="contrast(1.12) saturate(.9)">Cinematic</option><option value="sepia(.2) saturate(1.1)">Warm vintage</option><option value="grayscale(1) contrast(1.1)">Black & white</option><option value="saturate(1.35) contrast(1.1)">Vivid</option><option value="brightness(1.08) saturate(.9)">Dreamy</option><option value="contrast(1.25) saturate(1.3)">Hype</option></select><label className="mb-2 block text-xs text-slate-400">Seconds per photo</label><input type="range" min=".5" max="5" step=".1" value={clipDuration} onChange={e=>{setClipDuration(Number(e.target.value));setClips(old=>old.map(c=>c.type==='image'?{...c,duration:Number(e.target.value)}:c));setExportUrl('');}} className="w-full"/><div className="mb-4 text-sm">{clipDuration.toFixed(1)} seconds</div><label className="mb-2 block text-xs text-slate-400">Transition</label><select value={transition} onChange={e=>{setTransition(e.target.value);setExportUrl('');}} className="mb-4 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"><option value="cut">Cut</option><option value="fade">Fade</option><option value="flash">Flash</option><option value="slide">Slide (preview style)</option></select><label className="flex items-center gap-2 rounded-xl bg-black/20 p-3 text-sm"><input type="checkbox" checked={beatSync} onChange={e=>{setBeatSync(e.target.checked);setExportUrl('');}}/> Beat-paced cuts (faster timing; not audio beat analysis)</label><label className="mt-4 block text-xs text-slate-400">Video title (optional)</label><input value={title} onChange={e=>{setTitle(e.target.value);setExportUrl('');}} placeholder="Add a title..." className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 p-3 text-sm"/></div>
+        <div className="rounded-2xl border border-white/10 bg-white/[.035] p-4"><h2 className="mb-2 font-black">Export</h2><p className="mb-3 text-xs leading-5 text-slate-400">Renders in your browser, then attempts MP4 conversion with FFmpeg WebAssembly. Large projects can be slow or run out of memory on phones.</p><button onClick={exportVideo} disabled={exporting||!clips.length} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-3 font-black disabled:opacity-50"><Download size={17}/>{exporting?'Rendering…':'Export video'}</button>{exportUrl&&<a href={exportUrl} download={(title||'vibepulse-template-video').replace(/[^a-z0-9-_]/gi,'-')+(exportUrl ? '.mp4' : '.webm')} className="mt-3 block rounded-xl bg-emerald-500 px-4 py-3 text-center font-bold text-white">Download finished video</a>}{exportUrl&&<button onClick={publishVideo} disabled={publishing} className="mt-2 block w-full rounded-xl bg-emerald-500 px-4 py-3 text-center font-bold text-white disabled:opacity-50">{publishing?'Publishing…':'Post to VibePulse'}</button>}</div>
         <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-xs leading-5 text-slate-300">{notice}</div>
       </aside>
     </div>
