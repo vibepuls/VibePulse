@@ -104,6 +104,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
   const rafRef = useRef(0);
   const rulerRef = useRef(null);
   const dragRef = useRef(null);
+  const edgeDragRef = useRef(null);
   const audioUrlRef = useRef('');
   const mediaUrlRef = useRef([]);
   const [voiceFile, setVoiceFile] = useState(null);
@@ -167,6 +168,61 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
     }
     return () => cancelAnimationFrame(rafRef.current);
   }, [playing, voiceUrl]);
+
+  useEffect(() => {
+    const moveEdge = (event) => {
+      const drag = edgeDragRef.current;
+      if (!drag) return;
+      const delta = (event.clientX - drag.pointerX) / pxPerSecond;
+      setClips(old => old.map(c => {
+        if (c.id !== drag.id) return c;
+        const sourceBased = c.type === 'video' || c.type === 'audio';
+        if (drag.edge === 'left') {
+          const nextStart = clamp(drag.start + delta, 0, drag.start + drag.duration - 0.25);
+          const shift = nextStart - drag.start;
+          return { ...c, start: nextStart, duration: drag.duration - shift, trimStart: sourceBased ? Math.max(0, drag.trimStart + shift) : drag.trimStart };
+        }
+        const maxDuration = Math.max(0.25, (drag.sourceDuration || drag.duration) - drag.trimStart);
+        const duration = clamp(drag.duration + delta, 0.25, maxDuration);
+        return { ...c, duration, trimEnd: sourceBased ? drag.trimStart + duration : c.trimEnd };
+      }));
+    };
+    const endEdge = () => { edgeDragRef.current = null; };
+    window.addEventListener('pointermove', moveEdge);
+    window.addEventListener('pointerup', endEdge);
+    window.addEventListener('pointercancel', endEdge);
+    return () => {
+      window.removeEventListener('pointermove', moveEdge);
+      window.removeEventListener('pointerup', endEdge);
+      window.removeEventListener('pointercancel', endEdge);
+    };
+  }, [pxPerSecond]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT','TEXTAREA','SELECT'].includes(target.tagName))) return;
+      if (event.code === 'Space') {
+        event.preventDefault();
+        setPlaying(value => !value);
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        saveProject();
+      } else if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId) {
+        event.preventDefault();
+        setClips(old => old.filter(c => c.id !== selectedId));
+        setSelectedId('');
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        seekTo(Math.max(0, playhead - (event.shiftKey ? 1 : 1 / 30)));
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        seekTo(playhead + (event.shiftKey ? 1 : 1 / 30));
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedId, playhead, voiceUrl, clips, projectName, activeProjectId, thresholdDb, minSilence, waveform, playing]);
 
   useEffect(() => {
     const target = activeVisual(playhead);
@@ -456,7 +512,7 @@ export default function VoiceTimeline({ mediaClips = [], onNotice = () => {} }) 
           <div className="relative ml-36 min-h-[62px]" style={{ width: Math.max(0, pixelsWide - 144) }}>
             {track.id === 'A2' && <label className="absolute left-2 top-2 z-10 cursor-pointer rounded bg-emerald-900/80 px-2 py-1 text-[10px] text-emerald-100"><Music2 size={10} className="mr-1 inline"/>Add music<input type="file" accept="audio/*" hidden onChange={e => { importTrackAudio(e.target.files?.[0], 'A2'); e.target.value = ''; }}/></label>}
             {track.id === 'A3' && <label className="absolute left-2 top-2 z-10 cursor-pointer rounded bg-emerald-900/80 px-2 py-1 text-[10px] text-emerald-100">Add SFX<input type="file" accept="audio/*" hidden onChange={e => { importTrackAudio(e.target.files?.[0], 'A3'); e.target.value = ''; }}/></label>}
-            {clips.filter(c => c.track === track.id).map(c => <div key={c.id} data-clip="true" draggable onDragStart={e => { dragRef.current = c.id; e.dataTransfer.setData('application/x-vibepulse-timeline-clip', c.id); }} onClick={e => { e.stopPropagation(); setSelectedId(c.id); seekTo(c.start); }} className={'absolute top-1 h-14 overflow-hidden rounded-sm border px-2 py-1 text-[10px] shadow-sm ' + (track.id.startsWith('V') ? 'border-[#4f8fca] bg-[#315f8a] text-[#e4f1ff]' : 'border-[#239b70] bg-[#167b59] text-[#e3fff4]') + (selectedId === c.id ? ' ring-2 ring-white' : '')} style={{ left: c.start * pxPerSecond, width: Math.max(34, c.duration * pxPerSecond) }} title={c.name + ' · ' + c.duration.toFixed(2) + 's'}>{c.type === 'image' && <img src={c.url} alt="" draggable="false" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"/>}<span className="relative block truncate font-bold">{c.name}</span><span className="relative">{timecode(c.start)} · {c.duration.toFixed(1)}s</span>{c.kind === 'audio' && c.waveform?.peaks && <svg className="mt-1 block h-4 w-full" viewBox={'0 0 ' + Math.max(1,c.waveform.peaks.length) + ' 16'} preserveAspectRatio="none">{c.waveform.peaks.map((p,i)=><rect key={i} x={i} y={(16-Math.max(1,p.peak*14))/2} width="1" height={Math.max(1,p.peak*14)} fill={p.rms < Math.pow(10,thresholdDb/20) ? '#64748b' : '#6ee7b7'} />)}</svg>}{c.kind === 'audio' && <audio ref={el => { if (el) audioTrackRefs.current[c.id] = el; else delete audioTrackRefs.current[c.id]; }} src={c.url} preload="auto" className="hidden" /> }<button onClick={e => { e.stopPropagation(); setClips(old => old.filter(x => x.id !== c.id)); if (selectedId === c.id) setSelectedId(''); }} className="absolute right-0 top-0 rounded bg-black/40 p-0.5" aria-label="Delete clip"><Trash2 size={10}/></button></div>)}
+            {clips.filter(c => c.track === track.id).map(c => <div key={c.id} data-clip="true" draggable onDragStart={e => { dragRef.current = c.id; e.dataTransfer.setData('application/x-vibepulse-timeline-clip', c.id); }} onClick={e => { e.stopPropagation(); setSelectedId(c.id); seekTo(c.start); }} className={'absolute top-1 h-14 overflow-hidden rounded-sm border px-2 py-1 text-[10px] shadow-sm ' + (track.id.startsWith('V') ? 'border-[#4f8fca] bg-[#315f8a] text-[#e4f1ff]' : 'border-[#239b70] bg-[#167b59] text-[#e3fff4]') + (selectedId === c.id ? ' ring-2 ring-white' : '')} style={{ left: c.start * pxPerSecond, width: Math.max(34, c.duration * pxPerSecond) }} title={c.name + ' · ' + c.duration.toFixed(2) + 's'}><span role="button" tabIndex={0} title="Trim clip start" onClick={e => e.stopPropagation()} onPointerDown={e => { e.preventDefault(); e.stopPropagation(); edgeDragRef.current = { id: c.id, edge: 'left', pointerX: e.clientX, start: c.start, duration: c.duration, trimStart: c.trimStart || 0, sourceDuration: c.sourceDuration || c.duration }; setSelectedId(c.id); }} className="absolute inset-y-0 left-0 z-20 w-2 cursor-ew-resize bg-white/25 hover:bg-white/70" /><span role="button" tabIndex={0} title="Trim clip end" onClick={e => e.stopPropagation()} onPointerDown={e => { e.preventDefault(); e.stopPropagation(); edgeDragRef.current = { id: c.id, edge: 'right', pointerX: e.clientX, start: c.start, duration: c.duration, trimStart: c.trimStart || 0, sourceDuration: c.sourceDuration || c.duration }; setSelectedId(c.id); }} className="absolute inset-y-0 right-0 z-20 w-2 cursor-ew-resize bg-white/25 hover:bg-white/70" />{c.type === 'image' && <img src={c.url} alt="" draggable="false" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"/>}<span className="relative block truncate font-bold">{c.name}</span><span className="relative">{timecode(c.start)} · {c.duration.toFixed(1)}s</span>{c.kind === 'audio' && c.waveform?.peaks && <svg className="mt-1 block h-4 w-full" viewBox={'0 0 ' + Math.max(1,c.waveform.peaks.length) + ' 16'} preserveAspectRatio="none">{c.waveform.peaks.map((p,i)=><rect key={i} x={i} y={(16-Math.max(1,p.peak*14))/2} width="1" height={Math.max(1,p.peak*14)} fill={p.rms < Math.pow(10,thresholdDb/20) ? '#64748b' : '#6ee7b7'} />)}</svg>}{c.kind === 'audio' && <audio ref={el => { if (el) audioTrackRefs.current[c.id] = el; else delete audioTrackRefs.current[c.id]; }} src={c.url} preload="auto" className="hidden" /> }<button onClick={e => { e.stopPropagation(); setClips(old => old.filter(x => x.id !== c.id)); if (selectedId === c.id) setSelectedId(''); }} className="absolute right-0 top-0 rounded bg-black/40 p-0.5" aria-label="Delete clip"><Trash2 size={10}/></button></div>)}
           </div>
         </div>)}
         <div className="pointer-events-none absolute bottom-0 top-0 z-30" style={{ left: 144 + playhead * pxPerSecond }}><div className="h-full w-[2px] bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.8)]"/><div className="-ml-[5px] h-3 w-3 rounded-b bg-sky-400"/><div className="absolute left-1 top-0 rounded bg-sky-400 px-1 py-0.5 font-mono text-[9px] font-bold text-slate-950">{timecode(playhead)}</div></div>
