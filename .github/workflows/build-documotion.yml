@@ -1,4 +1,4 @@
-name: Build original DocuMotion Pro into VibePulse
+name: Build and verify original DocuMotion Pro editor in VibePulse
 
 on:
   workflow_dispatch:
