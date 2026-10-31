@@ -1,0 +1,6 @@
+{
+  "name": "DocuMotion Pro – Professional Full-Image Documentary Animation Studio",
+  "description": "Professional After Effects-style full-image documentary photo animation and motion graphics studio with 3D camera pan, tilt, zoom, optical motion blur, volumetric lighting, and broadcast master MP4 export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
