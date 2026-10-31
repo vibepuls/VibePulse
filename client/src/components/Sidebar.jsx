@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Search, Compass, MessageCircle, Bell, Bookmark, User, Settings, Shield, Swords } from 'lucide-react';
+import { Home, Search, Compass, MessageCircle, Bell, Bookmark, User, Settings, Shield, Swords, Film } from 'lucide-react';
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -9,6 +9,7 @@ export default function Sidebar() {
     { to: '/', icon: Home, label: 'Home' },
     { to: '/explore', icon: Compass, label: 'Explore' },
     { to: '/point-wars', icon: Swords, label: 'Point Wars' },
+    { to: '/autocut-studio', icon: Film, label: 'DocuMotion Pro' },
     { to: '/messages', icon: MessageCircle, label: 'Messages' },
     { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
