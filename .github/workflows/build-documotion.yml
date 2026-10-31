@@ -36,6 +36,9 @@ jobs:
         working-directory: documotion-source
         run: npm install --legacy-peer-deps
 
+      - name: Remove obsolete Tailwind PostCSS config
+        run: rm -f documotion-source/postcss.config.js
+
       - name: Build original DocuMotion Pro
         working-directory: documotion-source
         run: npm run build -- --base=/autocut-studio-app/
