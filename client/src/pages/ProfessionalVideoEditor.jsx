@@ -491,7 +491,7 @@ export default function ProfessionalVideoEditor() {
         const probe=document.createElement('video');probe.preload='metadata';probe.onloadedmetadata=()=>{const d=probe.duration;URL.revokeObjectURL(probeUrl);resolve(Number.isFinite(d)&&d>0?d:total);};probe.onerror=()=>{URL.revokeObjectURL(probeUrl);resolve(total);};probe.src=probeUrl;
       });
       const stretch=Math.max(0.1,Math.min(10,total/sourceDuration));
-      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-vf',`setpts=${stretch}*PTS,fps=24`,'-t',String(total),'-r','24','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-ar','48000','-b:a','160k',outputName]);
+      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-vf',`setpts=${stretch}*PTS,fps=24`,'-t',String(total),'-r','24','-c:v','libx264','-profile:v','main','-level:v','4.0','-preset','ultrafast','-pix_fmt','yuv420p','-tag:v','avc1','-video_track_timescale','24000','-movflags','+faststart','-c:a','aac','-ar','48000','-b:a','160k','-f','mp4',outputName]);
       const mp4Data=await ffmpeg.readFile(outputName);
       const mp4Blob=new Blob([mp4Data],{type:'video/mp4'});
       if(exportUrl)URL.revokeObjectURL(exportUrl);
