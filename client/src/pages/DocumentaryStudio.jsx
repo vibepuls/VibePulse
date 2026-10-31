@@ -1,161 +1,20 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import JSZip from 'jszip';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Images, Trash2, ChevronLeft, ChevronRight, Play, Pause, Camera, Layers, Sparkles, Download, Mic, Film, Archive, Settings2, Clock3, Plus, Eye, Type, Volume2, RotateCcw, CheckCircle2, Loader2, X, GripVertical } from 'lucide-react';
-
-const STYLES = [
-  { id:'historical', name:'Historical Archive', tag:'Sepia · Dust · Slow reveals', color:'#c59b62', grade:'sepia(0.58) contrast(1.12)' },
-  { id:'war', name:'War Documentary', tag:'Gritty · Smoke · Impact zooms', color:'#ef4444', grade:'grayscale(.45) contrast(1.3)' },
-  { id:'investigative', name:'Investigative', tag:'Cold tones · Evidence focus', color:'#38bdf8', grade:'saturate(.7) hue-rotate(8deg) contrast(1.14)' },
-  { id:'political', name:'Political', tag:'Broadcast · Balanced · Formal', color:'#818cf8', grade:'saturate(.82) contrast(1.08)' },
-  { id:'nature', name:'Nature & Wildlife', tag:'Organic · Sun rays · Rich color', color:'#34d399', grade:'saturate(1.25) contrast(1.05)' },
-  { id:'news', name:'Breaking News', tag:'Punchy · Fast cuts · Broadcast', color:'#fbbf24', grade:'saturate(1.15) contrast(1.2)' },
-  { id:'emotional', name:'Emotional & Biopic', tag:'Warm · Soft · Intimate', color:'#f9a8d4', grade:'sepia(.18) saturate(1.12)' },
-];
-const MOVES = ['Cinematic Slow Zoom','Dolly In · Rack Focus','Dolly Out Reveal','Truck Left Parallax','Truck Right Parallax','Pedestal Crane Up','Orbital Subject Arc','Dramatic Push Impact','Wide Vista Pan'];
-const SAMPLE_URLS = [
-  ['Archive building','https://images.unsplash.com/photo-1564399579883-451a5d44ec08?auto=format&fit=crop&w=1200&q=80'],
-  ['Historic street','https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80'],
-  ['War ruins','https://images.unsplash.com/photo-1504198322253-cfa87a0ff25f?auto=format&fit=crop&w=1200&q=80'],
-  ['Forest mist','https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80'],
-  ['Night city','https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1200&q=80'],
-];
+import { useEffect } from 'react';
 
 export default function DocumentaryStudio() {
-  const navigate = useNavigate();
-  const inputRef = useRef(null);
-  const audioRef = useRef(null);
-  const [photos,setPhotos] = useState([]);
-  const [activeId,setActiveId] = useState('');
-  const [styleId,setStyleId] = useState('historical');
-  const [timeline,setTimeline] = useState(true);
-  const [playing,setPlaying] = useState(false);
-  const [time,setTime] = useState(0);
-  const [showExport,setShowExport] = useState(false);
-  const [showNarration,setShowNarration] = useState(false);
-  const [rendering,setRendering] = useState(false);
-  const [renderProgress,setRenderProgress] = useState(0);
-  const [viewMode,setViewMode] = useState('Composite');
-  const [projectName,setProjectName] = useState('Untitled Documentary Project');
-  const [narrationName,setNarrationName] = useState('');
-  const [fps,setFps] = useState(24);
-  const [resolution,setResolution] = useState('1920x1080');
-  const [quality,setQuality] = useState('High Quality');
-  const [toast,setToast] = useState('');
-  const [dragIndex,setDragIndex] = useState(null);
-  const active = photos.find(p=>p.id===activeId) || photos[0];
-  const style = STYLES.find(s=>s.id===styleId) || STYLES[0];
-  const totalDuration = useMemo(()=>photos.reduce((n,p)=>n+p.duration,0),[photos]);
-  const totalSize = useMemo(()=>photos.reduce((n,p)=>n+(p.size||0),0),[photos]);
-  const fmt = n => { const m=Math.floor(n/60),s=Math.floor(n%60); return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; };
-  useEffect(()=>{ if(!playing) return; const t=setInterval(()=>setTime(v=>v+0.04>=Math.max(totalDuration,.1)?0:v+0.04),40); return ()=>clearInterval(t); },[playing,totalDuration]);
-  useEffect(()=>{ if(toast){const t=setTimeout(()=>setToast(''),3200);return ()=>clearTimeout(t);} },[toast]);
-  useEffect(()=>()=>photos.forEach(p=>{if(p.objectUrl) URL.revokeObjectURL(p.objectUrl)}),[]);
-  const addFiles = files => {
-    const incoming=Array.from(files||[]).filter(f=>f.type.startsWith('image/')).map((file,i)=>({id:`${Date.now()}-${Math.random().toString(36).slice(2)}-${i}`,name:file.name,url:URL.createObjectURL(file),objectUrl:true,file,size:file.size,width:1920,height:1080,duration:5,move:MOVES[0],animated:false,grain:20,vignette:25,lightLeak:false,smoke:false,chromatic:8,caption:'',transition:'Cross Dissolve'}));
-    setPhotos(prev=>{const next=[...prev,...incoming];if(!activeId&&incoming[0])setActiveId(incoming[0].id);return next;});
-    if(incoming.length)setToast(`${incoming.length} photo(s) added to timeline`);
-  };
-  const update = (id,patch)=>setPhotos(prev=>prev.map(p=>p.id===id?{...p,...patch}:p));
-  const remove = id=>{const p=photos.find(x=>x.id===id);if(p?.objectUrl)URL.revokeObjectURL(p.url);const next=photos.filter(x=>x.id!==id);setPhotos(next);if(activeId===id)setActiveId(next[0]?.id||'');};
-  const applyAll = async()=>{setRendering(true);setToast('Applying documentary style and camera animation…');await new Promise(r=>setTimeout(r,250));setPhotos(prev=>prev.map((p,i)=>({...p,animated:true,move:MOVES[(i+STYLES.findIndex(s=>s.id===styleId))%MOVES.length],grade:style.grade,transition:styleId==='war'?'Fade to Black':styleId==='news'?'Whip Pan':'Cross Dissolve'})));setRendering(false);setToast('Style, camera motion and visual effects applied to all photos.');};
-  const downloadProject = async()=>{try{const zip=new JSZip();zip.file('project.json',JSON.stringify({projectName,style:styleId,resolution,fps,quality,photos:photos.map(({file,objectUrl,...p})=>p)},null,2));const media=zip.folder('media');for(let i=0;i<photos.length;i++){const p=photos[i];try{const blob=p.file? p.file : await (await fetch(p.url)).blob();media.file(`${String(i+1).padStart(3,'0')}-${p.name.replace(/[^a-z0-9._-]/gi,'_')}`,blob);}catch(e){}}const blob=await zip.generateAsync({type:'blob'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${projectName.replace(/[^a-z0-9-_]/gi,'_')||'documentary'}-project.zip`;a.click();URL.revokeObjectURL(a.href);setToast('Project ZIP exported.');}catch(e){setToast('Could not create project ZIP. Please try again.');}};
-  const downloadEditPlan = ()=>{const data={projectName,style:styleId,resolution,fps,quality,duration:totalDuration,photos:photos.map(({file,objectUrl,url,...p})=>({...p,sourceFile:p.name}))};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='documentary-edit-plan.json';a.click();URL.revokeObjectURL(a.href);setToast('Edit plan downloaded. Note: this is the project/edit data, not a rendered MP4.');};
-  const startRender = async()=>{setRendering(true);setRenderProgress(0);for(let i=1;i<=100;i+=4){setRenderProgress(i);await new Promise(r=>setTimeout(r,70));}setRendering(false);setShowExport(false);downloadEditPlan();setToast('Edit plan exported. MP4 rendering is not available in this browser-only integration yet.');};
-  const addSamples=()=>{const incoming=SAMPLE_URLS.map(([name,url],i)=>({id:`sample-${Date.now()}-${i}`,name:name+'.jpg',url,size:0,width:1920,height:1080,duration:5,move:MOVES[i%MOVES.length],animated:false,grain:20,vignette:25,lightLeak:false,smoke:false,chromatic:8,caption:name,transition:'Cross Dissolve'}));setPhotos(prev=>{const next=[...prev,...incoming];if(!activeId)setActiveId(incoming[0].id);return next;});setToast('Sample images added. You can replace them with your own photos.');};
-  const reorder=(from,to)=>{if(from===to||from==null||to==null)return;setPhotos(prev=>{const a=[...prev];const [item]=a.splice(from,1);a.splice(to,0,item);return a;});setDragIndex(null);};
-  const css=`
-  .docstudio{--bg:#070b12;--panel:#0d1420;--line:#1d2a3a;--muted:#7f91a7;--text:#e7eef8;background:var(--bg);color:var(--text);font:13px/1.4 Inter,ui-sans-serif,system-ui,sans-serif;min-height:100vh}
-  .docstudio *{box-sizing:border-box}.docstudio button,.docstudio input,.docstudio select{font:inherit}.docstudio button{cursor:pointer}.ds-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid #29384a;background:#131e2c;color:#dce8f6;padding:8px 11px;border-radius:7px;font-weight:600;white-space:nowrap}.ds-btn:hover{background:#1c2a3c;border-color:#415771}.ds-primary{background:#2563eb;border-color:#3b82f6;color:white}.ds-primary:hover{background:#1d4ed8}.ds-muted{color:var(--muted)}.ds-header{height:58px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#090f18;position:sticky;top:0;z-index:20}.ds-brand{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;letter-spacing:.2px}.ds-logo{display:grid;place-items:center;width:31px;height:31px;border-radius:9px;background:linear-gradient(135deg,#2563eb,#8b5cf6);color:white}.ds-divider{height:26px;width:1px;background:var(--line);margin:0 3px}.ds-project{background:transparent;color:#e2e8f0;border:0;min-width:100px;max-width:230px;font-weight:700;outline:none}.ds-spacer{flex:1}.ds-stat{color:#9fb0c5;font-size:11px;white-space:nowrap}.ds-styles{display:flex;align-items:stretch;gap:7px;overflow:auto;padding:10px 14px;border-bottom:1px solid var(--line);background:#0a1019}.ds-style{min-width:154px;text-align:left;padding:8px 10px;border:1px solid #1e2a39;background:#0d1520;color:#e3eaf4;border-radius:8px}.ds-style strong{display:block;font-size:11px}.ds-style span{display:block;font-size:10px;color:#7f91a7;margin-top:4px}.ds-style.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#111d2b}.ds-import{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);overflow:auto}.ds-thumb{position:relative;width:102px;min-width:102px;height:58px;border:1px solid #263446;border-radius:6px;overflow:hidden;background:#111827;cursor:pointer}.ds-thumb img{width:100%;height:100%;object-fit:cover}.ds-thumb.active{outline:2px solid #3b82f6;outline-offset:1px}.ds-thumb button{position:absolute;top:2px;right:2px;border:0;border-radius:4px;background:#090d14cc;color:white;padding:3px;display:grid;place-items:center}.ds-workspace{display:grid;grid-template-columns:minmax(0,1fr) 288px;min-height:430px}.ds-center{min-width:0;border-right:1px solid var(--line)}.ds-viewtools{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--line);background:#0b121d}.ds-viewtools select,.ds-field,.ds-number{background:#0a111b;color:#dce7f4;border:1px solid #28374a;border-radius:6px;padding:7px 8px;min-width:0;width:100%;outline:none}.ds-viewport{height:clamp(260px,38vw,490px);min-height:260px;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at center,#172435 0%,#0a1019 70%);position:relative;overflow:hidden}.ds-canvas{position:relative;max-width:100%;max-height:100%;aspect-ratio:16/9;width:min(100%,900px);background:#111827;border:1px solid #29394c;box-shadow:0 14px 50px #0008;overflow:hidden}.ds-canvas img{width:100%;height:100%;object-fit:contain;transition:transform .5s;transform-origin:center;display:block}.ds-canvas.empty{display:grid;place-items:center;text-align:center;color:#73859a;background:repeating-linear-gradient(45deg,#101a28,#101a28 10px,#0d1622 10px,#0d1622 20px)}.ds-vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 70px #0009}.ds-grain{position:absolute;inset:0;pointer-events:none;opacity:.08;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}.ds-lowerthird{position:absolute;bottom:9%;left:5%;max-width:82%;border-left:4px solid #f5b942;padding:7px 12px;background:linear-gradient(90deg,#080d16ed,#080d1680,transparent);text-shadow:0 2px 4px #000}.ds-lowerthird strong{display:block;font-size:clamp(13px,2vw,24px);letter-spacing:.02em}.ds-lowerthird span{font-size:clamp(9px,1vw,12px);color:#cbd5e1}.ds-transport{display:flex;align-items:center;gap:8px;padding:9px 13px;border-top:1px solid var(--line);background:#0b121d}.ds-progress{height:4px;flex:1;border-radius:5px;background:#233044;overflow:hidden;cursor:pointer}.ds-progress>div{height:100%;background:#3b82f6}.ds-inspector{background:#0a111b;min-width:0}.ds-panelhead{display:flex;align-items:center;gap:8px;padding:12px 13px;border-bottom:1px solid var(--line);font-weight:800}.ds-panelbody{padding:13px;display:grid;gap:14px}.ds-section{border-bottom:1px solid #1b2736;padding-bottom:13px;display:grid;gap:9px}.ds-section:last-child{border:0}.ds-section h4{margin:0;color:#b8c7d9;font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:7px}.ds-label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#9aabc0;font-size:11px;margin-bottom:5px}.ds-range{width:100%;accent-color:#3b82f6}.ds-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#b4c2d4;font-size:12px}.ds-toggle input{accent-color:#3b82f6}.ds-timeline{border-top:1px solid #273446;background:#080e17}.ds-timeline-head{height:43px;display:flex;align-items:center;gap:10px;padding:0 13px;border-bottom:1px solid #1b2736}.ds-ruler{display:flex;justify-content:space-between;color:#6f8299;font:10px ui-monospace,monospace;padding:8px 12px 5px 150px}.ds-track{display:grid;grid-template-columns:145px minmax(250px,1fr);min-height:40px;border-top:1px solid #142031}.ds-trackname{display:flex;align-items:center;gap:7px;padding:7px 10px;color:#9eafc4;font-size:11px;border-right:1px solid #263448}.ds-trackarea{position:relative;display:flex;gap:3px;padding:4px 5px;overflow:auto;background-image:linear-gradient(90deg,transparent 49px,#1c293a 50px,transparent 51px)}.ds-clip{min-width:80px;flex:1;max-width:260px;border:1px solid #3265a5;border-radius:4px;background:linear-gradient(135deg,#16365c,#10243d);padding:5px 7px;display:flex;align-items:center;gap:6px;overflow:hidden;color:#cde5ff;font-size:10px}.ds-clip img{width:32px;height:24px;object-fit:cover;border-radius:2px}.ds-clip.active{border-color:#60a5fa;background:linear-gradient(135deg,#1e4e83,#14365c)}.ds-key{width:5px;height:5px;background:#67e8f9;transform:rotate(45deg);display:inline-block;flex-shrink:0}.ds-modalback{position:fixed;inset:0;z-index:60;background:#02050bd9;display:grid;place-items:center;padding:18px}.ds-modal{width:min(570px,100%);background:#101a28;border:1px solid #2a3a4e;border-radius:13px;box-shadow:0 25px 80px #000b;overflow:hidden}.ds-modalhead{padding:15px 17px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #28374a;font-weight:800}.ds-modalbody{padding:18px;display:grid;gap:15px}.ds-fieldrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ds-toast{position:fixed;right:18px;bottom:18px;z-index:80;background:#132b24;border:1px solid #28644c;color:#bbf7d0;padding:12px 16px;border-radius:9px;box-shadow:0 10px 40px #0008;max-width:calc(100vw - 36px)}.ds-mobile{display:none}
-  @media(max-width:900px){.ds-workspace{grid-template-columns:minmax(0,1fr)}.ds-inspector{border-top:1px solid var(--line)}.ds-panelbody{grid-template-columns:repeat(2,minmax(0,1fr))}.ds-header{padding:0 9px}.ds-stat.hide-small{display:none}.ds-style{min-width:140px}.ds-viewport{height:360px}}
-  @media(max-width:560px){.ds-header{height:auto;min-height:56px;flex-wrap:wrap;padding:8px}.ds-brand span:last-child{display:none}.ds-project{max-width:130px}.ds-btn{padding:7px 8px;font-size:11px}.ds-import{padding:8px}.ds-thumb{width:80px;min-width:80px;height:48px}.ds-viewport{height:260px;padding:10px}.ds-panelbody{grid-template-columns:1fr}.ds-fieldrow{grid-template-columns:1fr}.ds-track{grid-template-columns:110px minmax(220px,1fr)}.ds-trackname{font-size:10px}.ds-ruler{padding-left:115px}.ds-stat{display:none}.ds-hide-mobile{display:none}}
-  `;
-  return <div className="docstudio">
-    <style>{css}</style>
-    <header className="ds-header">
-      <button className="ds-btn" title="Back to VibePulse" onClick={()=>navigate(-1)}><ArrowLeft size={15}/><span className="ds-hide-mobile">Back</span></button>
-      <div className="ds-divider"/>
-      <div className="ds-brand"><div className="ds-logo"><Film size={17}/></div><span>DocuMotion</span><span className="ds-muted ds-hide-mobile">PRO / DOCUMENTARY STUDIO</span></div>
-      <div className="ds-divider"/>
-      <input aria-label="Project name" className="ds-project" value={projectName} onChange={e=>setProjectName(e.target.value)} />
-      <span className="ds-stat hide-small">{photos.length} photos · {(totalSize/1048576).toFixed(1)} MB</span>
-      <div className="ds-spacer"/>
-      <button className="ds-btn ds-hide-mobile" onClick={()=>setShowNarration(true)}><Mic size={14}/> Narration Sync</button>
-      <button className="ds-btn ds-hide-mobile" onClick={downloadProject}><Archive size={14}/> Project ZIP</button>
-      <button className="ds-btn ds-primary" onClick={()=>setShowExport(true)}><Download size={14}/> Export</button>
-    </header>
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = 'DocuMotion Pro — VibePulse';
+    return () => { document.title = previousTitle; };
+  }, []);
 
-    <section className="ds-styles">
-      {STYLES.map(s=><button key={s.id} className={`ds-style ${styleId===s.id?'active':''}`} style={{'--accent':s.color}} onClick={()=>{setStyleId(s.id);setPhotos(prev=>prev.map(p=>({...p,grade:s.grade,animated:p.animated})));}}><strong><span style={{display:'inline-block',width:7,height:7,borderRadius:9,background:s.color,marginRight:6}}/>{s.name}</strong><span>{s.tag}</span></button>)}
-    </section>
-
-    <section className="ds-import">
-      <div style={{minWidth:118}}><div style={{fontWeight:800,display:'flex',alignItems:'center',gap:6}}><Images size={15}/> Photo Bin</div><div className="ds-muted" style={{fontSize:10,marginTop:3}}>Batch import & reorder</div></div>
-      <button className="ds-btn ds-primary" onClick={()=>inputRef.current?.click()}><Upload size={14}/> Import Photos</button>
-      <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={e=>{addFiles(e.target.files);e.target.value='';}}/>
-      <button className="ds-btn" onClick={addSamples}><Plus size={14}/> Samples</button>
-      <div className="ds-divider"/>
-      {photos.map((p,i)=><div key={p.id} draggable onDragStart={()=>setDragIndex(i)} onDragOver={e=>e.preventDefault()} onDrop={()=>reorder(dragIndex,i)} className={`ds-thumb ${activeId===p.id?'active':''}`} title={p.name} onClick={()=>setActiveId(p.id)}><img src={p.url} alt={p.name}/><button title="Remove photo" onClick={e=>{e.stopPropagation();remove(p.id);}}><X size={12}/></button></div>)}
-      {!photos.length&&<span className="ds-muted" style={{fontSize:11}}>Import multiple photos to build your documentary sequence.</span>}
-      <div className="ds-spacer"/>
-      {photos.length>0&&<button className="ds-btn" onClick={()=>{photos.forEach(p=>p.objectUrl&&URL.revokeObjectURL(p.url));setPhotos([]);setActiveId('');}}><Trash2 size={13}/> Clear</button>}
-    </section>
-
-    <main className="ds-workspace">
-      <section className="ds-center">
-        <div className="ds-viewtools">
-          <span style={{fontWeight:800,display:'flex',alignItems:'center',gap:6}}><Eye size={14}/> Composition Viewer</span>
-          <select style={{width:155}} value={viewMode} onChange={e=>setViewMode(e.target.value)}>{['Composite','Master Full Image','Cinematic Lighting','Motion Graphics','Camera Trajectory','Raw Comparison','Depth Map','Subject Mask','Layers Exploded'].map(v=><option key={v}>{v}</option>)}</select>
-          <div className="ds-spacer"/>
-          <span className="ds-stat">{resolution} · {fps} FPS</span>
-          <button className="ds-btn" title="Rewind" onClick={()=>setTime(0)}><RotateCcw size={13}/></button>
-          <button className="ds-btn" onClick={applyAll} disabled={rendering}><Sparkles size={14}/>{rendering?'Applying…':'Animate All'}</button>
-        </div>
-        <div className="ds-viewport">
-          <div className={`ds-canvas ${active?'':'empty'}`} style={{aspectRatio:resolution==='1080x1920'?'9/16':'16/9',width:resolution==='1080x1920'?'auto':'min(100%,900px)',height:resolution==='1080x1920'?'100%':'auto',filter:active?(active.grade||style.grade):'none'}}>
-            {active?<><img src={active.url} alt={active.name} style={{transform:active.animated? `scale(${1.04+Math.min(time/Math.max(active.duration,.1),1)*.16})`:'scale(1)'}}/><div className="ds-vignette" style={{boxShadow:`inset 0 0 ${active.vignette*2}px #000b`}}/><div className="ds-grain" style={{opacity:active.grain/250}}/>{active.lightLeak&&<div style={{position:'absolute',inset:0,background:'linear-gradient(120deg,#ff8c0033,transparent 50%)',pointerEvents:'none'}}/>}{active.caption&&<div className="ds-lowerthird"><strong>{active.caption}</strong><span>{style.name.toUpperCase()} · DOCUMENTARY SEQUENCE</span></div>}{active.animated&&<div style={{position:'absolute',top:9,right:9,background:'#0a1420d9',border:'1px solid #3b82f6',borderRadius:5,padding:'4px 7px',fontSize:9,color:'#93c5fd'}}>CAMERA MOTION ACTIVE</div>}</>:<div><Film size={38} style={{margin:'0 auto 12px',opacity:.55}}/><div style={{fontWeight:700}}>Your composition appears here</div><div style={{fontSize:11,marginTop:6}}>Import photos or add sample media to begin</div><button className="ds-btn ds-primary" style={{marginTop:14}} onClick={()=>inputRef.current?.click()}><Upload size={14}/> Import images</button></div>}
-          </div>
-        </div>
-        <div className="ds-transport">
-          <button className="ds-btn" onClick={()=>setTime(0)}><RotateCcw size={14}/></button>
-          <button className="ds-btn ds-primary" onClick={()=>setPlaying(!playing)}>{playing?<Pause size={14}/>:<Play size={14}/>} {playing?'Pause':'Play'}</button>
-          <span style={{fontFamily:'monospace',fontSize:11}}>{fmt(time)} / {fmt(totalDuration)}</span>
-          <div className="ds-progress" onClick={e=>{const r=e.currentTarget.getBoundingClientRect();setTime(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*totalDuration);}}><div style={{width:`${totalDuration?time/totalDuration*100:0}%`}}/></div>
-          <span className="ds-stat">{active?.animated?'Animated':'Still frame'}</span>
-          <button className="ds-btn" onClick={()=>setTimeline(!timeline)}><Layers size={14}/>{timeline?'Hide Timeline':'Show Timeline'}</button>
-        </div>
-        {timeline&&<section className="ds-timeline">
-          <div className="ds-timeline-head"><Layers size={15}/><strong>After Effects Style Timeline</strong><span className="ds-stat">{photos.length} clips · {totalDuration.toFixed(1)}s</span><div className="ds-spacer"/><button className="ds-btn" onClick={()=>setTimeline(false)}><ChevronLeft size={13}/> Collapse</button></div>
-          <div className="ds-ruler"><span>00:00</span><span>00:05</span><span>00:10</span><span>00:15</span><span>00:20</span><span>{fmt(totalDuration)}</span></div>
-          {[
-            ['3D Virtual Camera','camera','#38bdf8'],
-            ['Foreground / Depth Planes','depth','#fb7185'],
-            ['Photo / Footage Layer','photo','#60a5fa'],
-            ['Visual Effects & Color Grade','vfx','#c084fc'],
-            ['Titles / Lower Thirds','text','#fbbf24'],
-            ['Narration / Audio','audio','#34d399'],
-          ].map(([label,key,color])=><div className="ds-track" key={key}><div className="ds-trackname"><span style={{width:7,height:7,borderRadius:2,background:color}}/><span>{label}</span></div><div className="ds-trackarea">{key==='audio'&&!narrationName?<span className="ds-muted" style={{fontSize:10,padding:5}}>No narration imported — click Narration Sync</span>:photos.map((p,i)=><button key={p.id} className={`ds-clip ${activeId===p.id?'active':''}`} onClick={()=>setActiveId(p.id)} title={p.name} style={{borderColor:activeId===p.id?color:undefined,background:key==='vfx'?'linear-gradient(135deg,#35224d,#201634)':key==='text'?'linear-gradient(135deg,#4a3a16,#2c2413)':key==='audio'?'linear-gradient(135deg,#124235,#0e2b26)':undefined}}>{key==='photo'&&<img src={p.url} alt=""/>}{key==='camera'&&<Camera size={12}/>}{key==='depth'&&<Layers size={12}/>}{key==='vfx'&&<Sparkles size={12}/>}{key==='text'&&<Type size={12}/>}{key==='audio'&&<Volume2 size={12}/>}<span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{key==='camera'?p.move:key==='depth'?'Parallax · Z-depth':key==='photo'?p.name:key==='vfx'?'Film Grain / Grade':key==='text'?(p.caption||'Lower Third'):narrationName||'Narration'}</span>{p.animated&&<span className="ds-key"/>}</button>)}</div></div>)}
-          <div style={{padding:'8px 13px',display:'flex',gap:7,alignItems:'center',color:'#6f8299',fontSize:10}}><GripVertical size={12}/> Click clips to inspect · Drag photos in the photo bin to reorder · Camera keyframes indicated by cyan diamonds</div>
-        </section>}
-      </section>
-
-      <aside className="ds-inspector">
-        <div className="ds-panelhead"><Settings2 size={15}/> Photo Inspector <div className="ds-spacer"/><span className="ds-stat">{active?photos.findIndex(p=>p.id===active.id)+1:0}/{photos.length}</span></div>
-        {active?<div className="ds-panelbody">
-          <div className="ds-section"><h4><Images size={13}/> Selected Photo</h4><div style={{display:'flex',gap:9,alignItems:'center'}}><img src={active.url} alt="" style={{width:76,height:53,objectFit:'cover',borderRadius:5,border:'1px solid #2b3c50'}}/><div style={{minWidth:0}}><div style={{fontWeight:700,overflowWrap:'anywhere'}}>{active.name}</div><div className="ds-muted" style={{fontSize:10,marginTop:4}}>{active.width} × {active.height} · {(active.size/1048576||0).toFixed(2)} MB</div></div></div></div>
-          <div className="ds-section"><h4><Camera size={13}/> Virtual Camera</h4><div><div className="ds-label">Camera Movement</div><select className="ds-field" value={active.move} onChange={e=>update(active.id,{move:e.target.value,animated:true})}>{MOVES.map(m=><option key={m}>{m}</option>)}</select></div><div><div className="ds-label">Clip Duration <b>{active.duration.toFixed(1)}s</b></div><input className="ds-range" type="range" min="1" max="20" step=".1" value={active.duration} onChange={e=>update(active.id,{duration:+e.target.value})}/></div><button className="ds-btn" onClick={()=>update(active.id,{animated:!active.animated})}>{active.animated?<Pause size={13}/>:<Sparkles size={13}/>} {active.animated?'Disable Motion Preview':'Generate Camera Motion'}</button></div>
-          <div className="ds-section"><h4><Sparkles size={13}/> Visual Effects</h4><div><div className="ds-label">Film Grain <b>{active.grain}%</b></div><input className="ds-range" type="range" min="0" max="100" value={active.grain} onChange={e=>update(active.id,{grain:+e.target.value})}/></div><div><div className="ds-label">Vignette <b>{active.vignette}%</b></div><input className="ds-range" type="range" min="0" max="100" value={active.vignette} onChange={e=>update(active.id,{vignette:+e.target.value})}/></div><div><div className="ds-label">Chromatic Aberration <b>{active.chromatic}%</b></div><input className="ds-range" type="range" min="0" max="100" value={active.chromatic} onChange={e=>update(active.id,{chromatic:+e.target.value})}/></div><label className="ds-toggle">Light Leak <input type="checkbox" checked={active.lightLeak} onChange={e=>update(active.id,{lightLeak:e.target.checked})}/></label><label className="ds-toggle">Smoke / Haze <input type="checkbox" checked={active.smoke} onChange={e=>update(active.id,{smoke:e.target.checked})}/></label></div>
-          <div className="ds-section"><h4><Type size={13}/> Motion Graphics</h4><div><div className="ds-label">Lower Third Title</div><input className="ds-field" value={active.caption} placeholder="Enter title or chapter name" onChange={e=>update(active.id,{caption:e.target.value})}/></div><div><div className="ds-label">Transition In</div><select className="ds-field" value={active.transition} onChange={e=>update(active.id,{transition:e.target.value})}>{['Cross Dissolve','Film Dissolve','Fade to Black','Zoom In','Whip Pan','Light Leak','None'].map(v=><option key={v}>{v}</option>)}</select></div></div>
-          <div className="ds-section"><h4><Clock3 size={13}/> Clip Actions</h4><button className="ds-btn" onClick={()=>{const copy={...active,id:`${Date.now()}-copy`,name:active.name.replace(/(\.[^.]+)?$/,'-copy$1'),objectUrl:false,file:undefined};setPhotos(prev=>{const i=prev.findIndex(p=>p.id===active.id);const a=[...prev];a.splice(i+1,0,copy);return a;});setActiveId(copy.id);}}><Plus size={13}/> Duplicate Clip</button><button className="ds-btn" onClick={()=>remove(active.id)}><Trash2 size={13}/> Remove Photo</button></div>
-        </div>:<div style={{padding:20,textAlign:'center',color:'#71849a'}}><Images size={30} style={{margin:'0 auto 12px'}}/><p>Select a photo to edit its camera, effects and titles.</p><button className="ds-btn ds-primary" onClick={()=>inputRef.current?.click()}><Upload size={14}/> Import Photos</button></div>}
-      </aside>
+  return (
+    <main style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', background: '#080b12', zIndex: 100 }}>
+      <iframe
+        title="DocuMotion Pro Documentary Animation Studio"
+        src="/autocut-studio-app/index.html"
+        style={{ display: 'block', width: '100%', height: '100%', border: 0, background: '#080b12' }}
+        allow="fullscreen; clipboard-read; clipboard-write"
+      />
     </main>
-
-    <footer style={{display:'flex',alignItems:'center',gap:10,padding:'8px 13px',borderTop:'1px solid #1c293a',background:'#090f18',fontSize:10,color:'#71849a'}}><CheckCircle2 size={13} color="#34d399"/> Local editing session <span>·</span><span>{photos.length} photos</span><span>·</span><span>{totalDuration.toFixed(1)}s timeline</span><div className="ds-spacer"/><span>DocuMotion Pro · VibePulse Studio</span></footer>
-
-    {showExport&&<div className="ds-modalback" onClick={()=>!rendering&&setShowExport(false)}><div className="ds-modal" onClick={e=>e.stopPropagation()}><div className="ds-modalhead"><span style={{display:'flex',alignItems:'center',gap:8}}><Download size={17}/> Export Documentary</span><button className="ds-btn" onClick={()=>setShowExport(false)} disabled={rendering}><X size={14}/></button></div><div className="ds-modalbody"><div style={{background:'#0b1420',border:'1px solid #28374a',borderRadius:8,padding:12}}><div style={{fontWeight:800}}>{projectName}</div><div className="ds-muted" style={{marginTop:5}}>{photos.length} photos · {totalDuration.toFixed(1)} seconds · {style.name}</div></div><div className="ds-fieldrow"><div><div className="ds-label">Resolution</div><select className="ds-field" value={resolution} onChange={e=>setResolution(e.target.value)}>{['1920x1080','1280x720','1080x1920','3840x2160'].map(v=><option key={v}>{v}</option>)}</select></div><div><div className="ds-label">Frame Rate</div><select className="ds-field" value={fps} onChange={e=>setFps(+e.target.value)}>{[24,25,30,50,60].map(v=><option key={v} value={v}>{v} FPS</option>)}</select></div><div><div className="ds-label">Quality Profile</div><select className="ds-field" value={quality} onChange={e=>setQuality(e.target.value)}>{['Draft','Standard','High Quality','Maximum Quality'].map(v=><option key={v}>{v}</option>)}</select></div><div><div className="ds-label">Export Mode</div><select className="ds-field"><option>Full Project</option><option>30-second test</option></select></div></div><div style={{padding:11,borderRadius:7,background:'#42200655',border:'1px solid #854d0e',color:'#fde68a',fontSize:11}}>This integration can export your editable project ZIP and edit-plan JSON. Rendering a final MP4 requires the video-rendering engine to be wired and tested separately; this export button will not falsely claim to produce an MP4.</div>{rendering&&<div><div className="ds-label">Preparing export <b>{renderProgress}%</b></div><div className="ds-progress"><div style={{width:`${renderProgress}%`}}/></div></div>}<div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button className="ds-btn" onClick={downloadProject} disabled={!photos.length}><Archive size={14}/> Download Project ZIP</button><button className="ds-btn ds-primary" onClick={downloadEditPlan}><Download size={14}/> Export Edit Plan</button></div></div></div></div>}
-
-    {showNarration&&<div className="ds-modalback" onClick={()=>setShowNarration(false)}><div className="ds-modal" onClick={e=>e.stopPropagation()}><div className="ds-modalhead"><span style={{display:'flex',alignItems:'center',gap:8}}><Mic size={17}/> Narration Sync</span><button className="ds-btn" onClick={()=>setShowNarration(false)}><X size={14}/></button></div><div className="ds-modalbody"><p className="ds-muted" style={{margin:0}}>Import a narration or audio file to attach it to the documentary timeline.</p><input ref={audioRef} type="file" accept="audio/*" className="ds-field" onChange={e=>{const f=e.target.files?.[0];if(f){setNarrationName(f.name);setToast(`Narration selected: ${f.name}. Audio timing is not yet automatically transcribed.`);}}}/>{narrationName&&<div style={{padding:10,background:'#0b1420',borderRadius:7,display:'flex',gap:8,alignItems:'center'}}><Volume2 size={16}/>{narrationName}<button className="ds-btn" onClick={()=>setNarrationName('')}><Trash2 size={13}/></button></div>}<div style={{fontSize:11,color:'#93a4b8'}}>Audio file is tracked in this editing session. Automatic speech transcription and beat matching require an audio analysis service.</div><button className="ds-btn ds-primary" onClick={()=>{setShowNarration(false);setToast(narrationName?'Narration attached to the session timeline.':'Choose an audio file to continue.');}}><CheckCircle2 size={14}/> Done</button></div></div></div>}
-    {toast&&<div className="ds-toast">{toast}</div>}
-  </div>;
+  );
 }
