@@ -435,7 +435,7 @@ export default function ProfessionalVideoEditor() {
           frameNumber++;
           if(t>=total){resolve();return;}
           // Schedule against absolute elapsed time to avoid accumulating frame delays.
-          const nextDue=start+(frameNumber+1)*(1000/renderFps);
+          const nextDue=start+frameNumber*(1000/renderFps);
           window.setTimeout(draw,Math.max(0,nextDue-performance.now()));
         };
         requestCanvasFrame();
