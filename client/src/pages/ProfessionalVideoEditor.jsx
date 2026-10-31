@@ -369,7 +369,7 @@ export default function ProfessionalVideoEditor() {
       const recorder=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8000000}); const chunks=[];
       recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
       const stopped=new Promise(resolve=>recorder.onstop=resolve); recorder.start(250);
-      const total=loaded.reduce((sum,item)=>{const c=item.c;const mediaDuration=c.type==='video'&&Number.isFinite(item.media.duration)&&item.media.duration>0?item.media.duration:0;const hasExplicitTrim=c.type==='video'&&(Number(c.trimStart||0)>0||(Number.isFinite(c.trimEnd)&&c.trimEnd<mediaDuration-0.05));const effectiveDuration=mediaDuration&&!hasExplicitTrim?Math.max(Number(c.duration)||0,mediaDuration):Number(c.duration)||0;return sum+effectiveDuration;},0); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} const start=performance.now(); let frameNumber=0;
+      const total=Math.max(0.1,clips.reduce((sum,c)=>sum+(Number(c.duration)||0),0)); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} const start=performance.now(); let frameNumber=0;
       await new Promise(resolve=>{
         const draw=()=>{
           const now=performance.now();
@@ -487,7 +487,13 @@ export default function ProfessionalVideoEditor() {
         const probe=document.createElement('video');probe.preload='metadata';probe.onloadedmetadata=()=>{const d=probe.duration;URL.revokeObjectURL(probeUrl);resolve(Number.isFinite(d)&&d>0?d:total);};probe.onerror=()=>{URL.revokeObjectURL(probeUrl);resolve(total);};probe.src=probeUrl;
       });
       const stretch=Math.max(0.1,Math.min(10,total/sourceDuration));
-      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-vf',`setpts=${stretch}*PTS,fps=24,tpad=stop_mode=clone:stop_duration=${total},trim=duration=${total},setpts=PTS-STARTPTS`,'-t',String(total),'-r','24','-c:v','libx264','-profile:v','main','-level:v','4.0','-preset','ultrafast','-pix_fmt','yuv420p','-tag:v','avc1','-video_track_timescale','24000','-movflags','+faststart','-c:a','aac','-ar','48000','-b:a','160k','-f','mp4',outputName]);
+      const videoFilter=`setpts=${stretch}*PTS,fps=24,tpad=stop_mode=clone:stop_duration=${total},trim=start=0:duration=${total},setpts=PTS-STARTPTS`;
+      const hasAudio=recordedBlob.type.includes('audio')||audio?.url;
+      const ffmpegArgs=['-i',inputName,'-map','0:v:0','-map','0:a?','-vf',videoFilter,'-r','24','-c:v','libx264','-profile:v','main','-level:v','4.0','-preset','ultrafast','-pix_fmt','yuv420p','-tag:v','avc1','-video_track_timescale','24000','-movflags','+faststart'];
+      if(hasAudio)ffmpegArgs.push('-af',`apad,atrim=duration=${total},asetpts=PTS-STARTPTS`,'-c:a','aac','-ar','48000','-b:a','160k');
+      else ffmpegArgs.push('-an');
+      ffmpegArgs.push('-t',String(total),'-f','mp4',outputName);
+      await ffmpeg.exec(ffmpegArgs);
       const mp4Data=await ffmpeg.readFile(outputName);
       const mp4Blob=new Blob([mp4Data],{type:'video/mp4'});
       if(exportUrl)URL.revokeObjectURL(exportUrl);
