@@ -1,0 +1,57 @@
+name: Build original DocuMotion Pro into VibePulse
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-documotion.yml"
+      - "client/src/pages/DocuMotionStudio.jsx"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout VibePulse
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Checkout original DocuMotion Pro source branch
+        uses: actions/checkout@v4
+        with:
+          ref: vibepuls-patch-1
+          path: documotion-source
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install and build original DocuMotion Pro
+        working-directory: documotion-source
+        run: |
+          npm install
+          npm run build -- --base=/autocut-studio-app/
+
+      - name: Place built studio inside VibePulse public assets
+        run: |
+          rm -rf client/public/autocut-studio-app
+          mkdir -p client/public/autocut-studio-app
+          cp -R documotion-source/dist/. client/public/autocut-studio-app/
+
+      - name: Commit generated studio assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add client/public/autocut-studio-app
+          if git diff --cached --quiet; then
+            echo "No generated studio asset changes to commit."
+          else
+            git commit -m "Build original DocuMotion Pro assets for VibePulse"
+            git push origin HEAD:main
+          fi
