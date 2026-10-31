@@ -486,12 +486,13 @@ export default function ProfessionalVideoEditor() {
       const sourceDuration=await new Promise(resolve=>{
         const probe=document.createElement('video');probe.preload='metadata';probe.onloadedmetadata=()=>{const d=probe.duration;URL.revokeObjectURL(probeUrl);resolve(Number.isFinite(d)&&d>0?d:total);};probe.onerror=()=>{URL.revokeObjectURL(probeUrl);resolve(total);};probe.src=probeUrl;
       });
-      // Do not time-stretch based on WebM metadata: browser MediaRecorder duration
-      // can be wrong even when the editor timeline is correct. Normalize every frame to
-      // a fixed 24 fps clock, clone the last frame to fill any missing tail, then trim
-      // to the exact timeline duration. This makes output length independent of WebM
-      // container timestamps and dropped capture frames.
-      const videoFilter=`fps=24,tpad=stop_mode=clone:stop_duration=${total},trim=start=0:duration=${total},setpts=N/(24*TB)`;
+      // MediaRecorder can timestamp the captured frames too quickly, making a
+      // five-second timeline play in roughly three seconds. Stretch the encoded
+      // timestamps to the requested timeline duration before padding/trimming.
+      // Clamp the ratio to avoid pathological metadata values.
+      const measuredDuration = Number.isFinite(sourceDuration) && sourceDuration > 0 ? sourceDuration : total;
+      const stretch = Math.max(0.25, Math.min(4, total / measuredDuration));
+      const videoFilter=`setpts=${stretch.toFixed(6)}*PTS,fps=24,tpad=stop_mode=clone:stop_duration=${total},trim=start=0:duration=${total},setpts=PTS-STARTPTS`;
       const hasAudio=!!audio?.url;
       const ffmpegArgs=['-i',inputName,'-map','0:v:0','-map','0:a?','-vf',videoFilter,'-r','24','-c:v','libx264','-profile:v','main','-level:v','4.0','-preset','ultrafast','-pix_fmt','yuv420p','-tag:v','avc1','-video_track_timescale','24000','-movflags','+faststart'];
       if(hasAudio)ffmpegArgs.push('-af',`apad,atrim=duration=${total},asetpts=PTS-STARTPTS`,'-c:a','aac','-ar','48000','-b:a','160k','-shortest');
