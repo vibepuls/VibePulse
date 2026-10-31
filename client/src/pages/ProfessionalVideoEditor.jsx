@@ -353,7 +353,11 @@ export default function ProfessionalVideoEditor() {
       })));
       // 24 fps is more reliable on phones during simultaneous drawing and MP4 encoding.
       const renderFps=24;
-      const stream=canvas.captureStream(renderFps);
+      // Manual frame capture keeps the MediaRecorder timestamps tied to the editor's
+      // wall-clock timeline instead of browser-dependent captureStream frame pacing.
+      const stream=canvas.captureStream(0);
+      const canvasTrack=stream.getVideoTracks()[0];
+      const requestCanvasFrame=typeof canvasTrack.requestFrame==='function'?()=>canvasTrack.requestFrame():()=>{};
       let audioCtx=null, audioEl=null, audioGain=null;
       if(audio?.url){
         audioCtx=new AudioContext(); audioEl=new Audio(audio.url); audioEl.loop=true;
@@ -367,9 +371,10 @@ export default function ProfessionalVideoEditor() {
       const recorder=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8000000}); const chunks=[];
       recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
       const stopped=new Promise(resolve=>recorder.onstop=resolve); recorder.start(250);
-      const total=clips.reduce((s,c)=>s+c.duration,0); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} let start=performance.now();
+      const total=clips.reduce((s,c)=>s+c.duration,0); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} const start=performance.now(); let frameNumber=0;
       await new Promise(resolve=>{
-        const draw=now=>{
+        const draw=()=>{
+          const now=performance.now();
           const t=Math.min(total,(now-start)/1000); let offset=0; let item=loaded[loaded.length-1];
           for(const candidate of loaded){if(t<offset+candidate.c.duration){item=candidate;break;}offset+=candidate.c.duration;}
           ctx.fillStyle='#050711';ctx.fillRect(0,0,w,h);
@@ -426,8 +431,15 @@ export default function ProfessionalVideoEditor() {
           if(title){ctx.save();ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=12;ctx.shadowOffsetY=3;ctx.fillStyle='white';ctx.textAlign='center';ctx.font='bold '+Math.round(w*.045*textSize)+'px Arial';ctx.fillText(title,w/2,h*(1-textY/100),w*.85);ctx.restore();}
           const activeCaption=captions.find(c=>t>=c.start&&t<c.start+c.duration);
           if(activeCaption?.text){ctx.save();const fontSize=Math.round(w*.045);ctx.font='bold '+fontSize+'px Arial';ctx.textAlign='center';ctx.textBaseline='middle';const words=activeCaption.text.split(/\\s+/);const lines=[];let line='';for(const word of words){const test=line?line+' '+word:word;if(ctx.measureText(test).width>w*.86&&line){lines.push(line);line=word;}else line=test;}if(line)lines.push(line);const lineHeight=fontSize*1.2;const boxHeight=lines.length*lineHeight+fontSize*.8;const cy=h*.82;ctx.fillStyle='rgba(0,0,0,.58)';ctx.fillRect(w*.06,cy-boxHeight/2,w*.88,boxHeight);ctx.fillStyle='#fff';ctx.shadowColor='rgba(0,0,0,.9)';ctx.shadowBlur=3;lines.forEach((line,i)=>ctx.fillText(line,w/2,cy-(lines.length-1)*lineHeight/2+i*lineHeight,w*.84));ctx.restore();}
-          if(t>=total)resolve();else requestAnimationFrame(draw);
-        };requestAnimationFrame(draw);
+          requestCanvasFrame();
+          frameNumber++;
+          if(t>=total){resolve();return;}
+          // Schedule against absolute elapsed time to avoid accumulating frame delays.
+          const nextDue=start+(frameNumber+1)*(1000/renderFps);
+          window.setTimeout(draw,Math.max(0,nextDue-performance.now()));
+        };
+        requestCanvasFrame();
+        draw();
       });
       recorder.stop(); await stopped; stream.getTracks().forEach(t=>t.stop());
       if(audioEl)audioEl.pause(); if(audioCtx)await audioCtx.close();
@@ -472,7 +484,14 @@ export default function ProfessionalVideoEditor() {
       const inputName='vibepulse-input.webm', outputName='vibepulse-studio.mp4';
       setNotice('ভিডিও MP4-এ কনভার্ট হচ্ছে…');
       await ffmpeg.writeFile(inputName,new Uint8Array(await recordedBlob.arrayBuffer()));
-      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-vf','fps=24','-r','24','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-ar','48000','-b:a','160k',outputName]);
+      // Normalize the encoded duration to the editor timeline. Some browsers write
+      // short WebM timestamps even when recording ran for the full requested duration.
+      const probeUrl=URL.createObjectURL(recordedBlob);
+      const sourceDuration=await new Promise(resolve=>{
+        const probe=document.createElement('video');probe.preload='metadata';probe.onloadedmetadata=()=>{const d=probe.duration;URL.revokeObjectURL(probeUrl);resolve(Number.isFinite(d)&&d>0?d:total);};probe.onerror=()=>{URL.revokeObjectURL(probeUrl);resolve(total);};probe.src=probeUrl;
+      });
+      const stretch=Math.max(0.1,Math.min(10,total/sourceDuration));
+      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-vf',`setpts=${stretch}*PTS,fps=24`,'-t',String(total),'-r','24','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-ar','48000','-b:a','160k',outputName]);
       const mp4Data=await ffmpeg.readFile(outputName);
       const mp4Blob=new Blob([mp4Data],{type:'video/mp4'});
       if(exportUrl)URL.revokeObjectURL(exportUrl);
