@@ -206,7 +206,7 @@ export default function App() {
   const totalSizeBytes = photos.reduce((acc, p) => acc + p.sizeBytes, 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="h-screen min-h-0 overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Top Professional Navigation Bar */}
       <DocNavbar
         settings={projectSettings}
