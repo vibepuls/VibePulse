@@ -32,11 +32,16 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install and build original DocuMotion Pro
+      - name: Install original DocuMotion Pro dependencies
         working-directory: documotion-source
-        run: |
-          npm install
-          npm run build -- --base=/autocut-studio-app/
+        run: npm install --legacy-peer-deps
+
+      - name: Build original DocuMotion Pro
+        working-directory: documotion-source
+        run: npm run build -- --base=/autocut-studio-app/
+
+      - name: Verify build output
+        run: test -f documotion-source/dist/index.html
 
       - name: Place built studio inside VibePulse public assets
         run: |
@@ -50,7 +55,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add client/public/autocut-studio-app
           if git diff --cached --quiet; then
-            echo "No generated studio asset changes to commit."
+            echo "No generated studio asset changes."
           else
             git commit -m "Build original DocuMotion Pro assets for VibePulse"
             git push origin HEAD:main
