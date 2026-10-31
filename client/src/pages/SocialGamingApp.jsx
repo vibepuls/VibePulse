@@ -50,7 +50,7 @@ async function prepareImageUpload(file) {
   } finally { bitmap.close?.(); }
 }
 const menu = [
-  ['cinematic', '✦ Edit Video', Film], ['templates', 'Templates', Film], ['home', 'Home', Activity], ['search', 'Find Players', Search], ['ranking', 'Ranking', Trophy], ['wallet', 'Wallet', Wallet],
+  ['cinematic', '✦ Edit Video', Film], ['documentary', 'DocuMotion Pro', Film], ['templates', 'Templates', Film], ['home', 'Home', Activity], ['search', 'Find Players', Search], ['ranking', 'Ranking', Trophy], ['wallet', 'Wallet', Wallet],
   ['missions', 'Missions', Zap], ['battles', 'Photo Battles', Swords], ['games', 'Mini Games', Gamepad2],
   ['teams', 'Teams', Users], ['referrals', 'Referral', Gift], ['messages', 'Messages', MessageCircle],
   ['notifications', 'Notifications', Bell], ['profile', 'My Profile', Shield]
@@ -777,6 +777,7 @@ function SocialGamingApp() {
   const navTo = (key) => {
     setMenuOpen(false);
     if (key === 'cinematic') { navigate('/cinematic'); return; }
+    if (key === 'documentary') { navigate('/documentary-studio'); return; }
     if (key === 'templates') { navigate('/templates'); return; }
     setSection(key);
     if (key === 'home') {
