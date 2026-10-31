@@ -369,7 +369,7 @@ export default function ProfessionalVideoEditor() {
       const recorder=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8000000}); const chunks=[];
       recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
       const stopped=new Promise(resolve=>recorder.onstop=resolve); recorder.start(250);
-      const total=clips.reduce((s,c)=>s+c.duration,0); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} const start=performance.now(); let frameNumber=0;
+      const total=loaded.reduce((sum,item)=>{const c=item.c;const mediaDuration=c.type==='video'&&Number.isFinite(item.media.duration)&&item.media.duration>0?item.media.duration:0;const hasExplicitTrim=c.type==='video'&&(Number(c.trimStart||0)>0||(Number.isFinite(c.trimEnd)&&c.trimEnd<mediaDuration-0.05));const effectiveDuration=mediaDuration&&!hasExplicitTrim?Math.max(Number(c.duration)||0,mediaDuration):Number(c.duration)||0;return sum+effectiveDuration;},0); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} const start=performance.now(); let frameNumber=0;
       await new Promise(resolve=>{
         const draw=()=>{
           const now=performance.now();
