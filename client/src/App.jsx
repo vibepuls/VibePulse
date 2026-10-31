@@ -10,6 +10,7 @@ import PublicProfile from './pages/PublicProfile';
 import ProfessionalVideoEditor from './pages/ProfessionalVideoEditor';
 import TemplatesPage from './pages/TemplatesPage';
 import TemplateVideoMaker from './pages/TemplateVideoMaker';
+import DocuMotionStudio from './pages/DocuMotionStudio';
 
 export default function App() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -30,7 +31,7 @@ export default function App() {
       <Route path="/cinematic" element={isAuthenticated ? <ProfessionalVideoEditor /> : <Navigate to="/login" replace />} />
       <Route path="/templates" element={<TemplatesPage />} />
       <Route path="/template-studio" element={<TemplateVideoMaker />} />
-      <Route path="/autocut-studio" element={<TemplateVideoMaker />} />
+      <Route path="/autocut-studio" element={<DocuMotionStudio />} />
       <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <PublicProfile />} />
       <Route path="/*" element={isAuthenticated ? <SocialGamingApp /> : <GuestBrowse />} />
     </Routes>
