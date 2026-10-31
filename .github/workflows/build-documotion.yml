@@ -36,6 +36,12 @@ jobs:
         working-directory: documotion-source
         run: npm install --legacy-peer-deps
 
+      - name: Prepare sample image assets for hosted subpath
+        run: |
+          mkdir -p documotion-source/public/assets/images
+          cp -R documotion-source/src/assets/images/. documotion-source/public/assets/images/
+          sed -i 's#/src/assets/images/#/autocut-studio-app/assets/images/#g' documotion-source/src/data/sampleDocumentaryProjects.ts
+
       - name: Remove obsolete Tailwind PostCSS config
         run: rm -f documotion-source/postcss.config.js
 
@@ -43,8 +49,11 @@ jobs:
         working-directory: documotion-source
         run: npm run build -- --base=/autocut-studio-app/
 
-      - name: Verify build output
-        run: test -f documotion-source/dist/index.html
+      - name: Verify build output and sample images
+        run: |
+          test -f documotion-source/dist/index.html
+          test -f documotion-source/dist/assets/images/doc_historical_archive_1793378428245.jpg
+          grep -q '/autocut-studio-app/assets/images/doc_historical_archive_1793378428245.jpg' documotion-source/dist/assets/*.js
 
       - name: Place built studio inside VibePulse public assets
         run: |
@@ -60,6 +69,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No generated studio asset changes."
           else
-            git commit -m "Build original DocuMotion Pro assets for VibePulse"
+            git commit -m "Fix DocuMotion Pro sample image paths"
             git push origin HEAD:main
           fi
