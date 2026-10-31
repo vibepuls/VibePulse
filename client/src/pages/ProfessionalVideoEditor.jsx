@@ -360,10 +360,11 @@ export default function ProfessionalVideoEditor() {
         const src=audioCtx.createMediaElementSource(audioEl); const gain=audioCtx.createGain(); audioGain=gain; const dest=audioCtx.createMediaStreamDestination();
         const targetVolume=Math.max(0,Math.min(1,audioVolume/100)); gain.gain.setValueAtTime(audioFadeIn>0?0:targetVolume,audioCtx.currentTime); if(audioFadeIn>0)gain.gain.linearRampToValueAtTime(targetVolume,audioCtx.currentTime+audioFadeIn); src.connect(gain); gain.connect(dest); dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t)); await audioCtx.resume(); await audioEl.play().catch(()=>{});
       }
-      // Prefer a native H.264 MP4 recording when the browser supports it.
-      // This avoids downloading a large FFmpeg WebAssembly encoder on supported devices.
-      const mime=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
-      const recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined); const chunks=[];
+      // Always record a browser-native WebM intermediate, then encode a real H.264/AAC MP4.
+      // Some browsers report MP4 support but emit files whose container/codec Premiere Pro rejects.
+      const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+      if(!mime) throw new Error('This browser cannot record a supported WebM intermediate. Please use the latest Chrome or Edge.');
+      const recorder=new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond:8000000}); const chunks=[];
       recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
       const stopped=new Promise(resolve=>recorder.onstop=resolve); recorder.start(250);
       const total=clips.reduce((s,c)=>s+c.duration,0); if(audioCtx&&audioGain&&audioFadeOut>0&&audioFadeOut<total){audioGain.gain.setValueAtTime(Math.max(0,Math.min(1,audioVolume/100)),audioCtx.currentTime+Math.max(0,total-audioFadeOut));audioGain.gain.linearRampToValueAtTime(0,audioCtx.currentTime+total);} let start=performance.now();
@@ -433,12 +434,6 @@ export default function ProfessionalVideoEditor() {
       const recordedType=recorder.mimeType||mime||'video/webm';
       const recordedBlob=new Blob(chunks,{type:recordedType});
       if(audioEl)audioEl.pause(); if(audioCtx&&audioCtx.state!=='closed')await audioCtx.close();
-      if(recordedType.toLowerCase().includes('mp4')){
-        if(exportUrl)URL.revokeObjectURL(exportUrl);
-        setExportUrl(URL.createObjectURL(recordedBlob));
-        setNotice('MP4 render complete. Your video is ready to download. This browser recorded MP4 directly; imported music is included.');
-        return;
-      }
       setNotice('এই ব্রাউজারে সরাসরি MP4 রেকর্ডিং নেই। এখন MP4 কনভার্ট করার চেষ্টা করছি…');
       // Convert the browser-recorded WebM to a widely compatible H.264/AAC MP4.
       const { FFmpeg } = await import('@ffmpeg/ffmpeg');
@@ -477,11 +472,11 @@ export default function ProfessionalVideoEditor() {
       const inputName='vibepulse-input.webm', outputName='vibepulse-studio.mp4';
       setNotice('ভিডিও MP4-এ কনভার্ট হচ্ছে…');
       await ffmpeg.writeFile(inputName,new Uint8Array(await recordedBlob.arrayBuffer()));
-      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','160k',outputName]);
+      await ffmpeg.exec(['-i',inputName,'-map','0:v:0','-map','0:a?','-vf','fps=24','-r','24','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-ar','48000','-b:a','160k',outputName]);
       const mp4Data=await ffmpeg.readFile(outputName);
       const mp4Blob=new Blob([mp4Data],{type:'video/mp4'});
       if(exportUrl)URL.revokeObjectURL(exportUrl);
-      setExportUrl(URL.createObjectURL(mp4Blob)); setNotice('MP4 render complete. Your video is ready to download. Original video clip audio is not mixed yet; imported music is included.');
+      setExportUrl(URL.createObjectURL(mp4Blob)); setNotice('MP4 render complete (H.264 video + AAC audio). Your video is ready for Premiere Pro; imported music is included.');
       ffmpeg.terminate();
     } catch(e){console.error('VibePulse MP4 export failed:',e);setNotice('রেন্ডার ব্যর্থ: '+(e?.message||String(e)||'Unknown error')+'. Chrome-এ আবার চেষ্টা করুন; সমস্যা থাকলে এই error message-টি পাঠান।');}
     finally{setExporting(false);}
