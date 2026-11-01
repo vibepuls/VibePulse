@@ -6,6 +6,11 @@
 #include "DhakaWeatherController.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/SkyLight.h"
+#include "Engine/SkyAtmosphere.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/SkyLightComponent.h"
 
 ADhakaGameMode::ADhakaGameMode()
 {
@@ -18,6 +23,9 @@ void ADhakaGameMode::BeginPlay()
     Super::BeginPlay();
     UWorld* World=GetWorld(); if(!World)return;
     if(CityGeneratorClass) World->SpawnActor<ADhakaCityGenerator>(CityGeneratorClass,FVector::ZeroVector,FRotator::ZeroRotator);
+    ADirectionalLight* Sun=World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(),FVector::ZeroVector,FRotator(-42.f,-32.f,0.f));if(Sun){Sun->GetLightComponent()->SetIntensity(4.0f);Sun->GetLightComponent()->SetCastShadows(true);}
+    ASkyLight* Sky=World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);if(Sky){Sky->GetLightComponent()->SetIntensity(1.1f);Sky->GetLightComponent()->RecaptureSky();}
+    World->SpawnActor<ASkyAtmosphere>(ASkyAtmosphere::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
     World->SpawnActor<ADhakaWeatherController>(ADhakaWeatherController::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
     if(VehiclePawnClass){
         const FVector SpawnLocation(-53333.f,-53333.f,125.f);
