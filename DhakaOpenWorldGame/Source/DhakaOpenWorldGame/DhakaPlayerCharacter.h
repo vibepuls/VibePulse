@@ -24,6 +24,8 @@ private:
     void InteractVehicle();
     void StartJump();
     void StopJump();
+    void CycleCamera();
+    bool bFirstPerson = false;
     float NormalWalkSpeed = 420.f;
     float SprintSpeed = 720.f;
 };
