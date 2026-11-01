@@ -32,8 +32,8 @@ export class WeatherSystem {
     const cfg = WEATHER[this.type], positions = this.points.geometry.attributes.position.array;
     this.points.position.set(player.x,0,player.z);
     if (cfg.rain > 0) {
-      const count = positions.length / 3;
-      for (let i=0;i<count;i++) { const j=i*3; positions[j+1]-=this.velocities[i]*dt*cfg.wind; positions[j]+=Math.sin(i+performance.now()*0.0005)*dt*cfg.wind; if(positions[j+1]<0){positions[j+1]=20+Math.random()*35;positions[j]=(Math.random()-.5)*90;positions[j+2]=(Math.random()-.5)*90;} }
+      const count = positions.length / 3, now = performance.now() * 0.0005;
+      for (let i=0;i<count;i++) { const j=i*3; positions[j+1]-=this.velocities[i]*dt*cfg.wind; positions[j]+=Math.sin(i+now)*dt*cfg.wind; if(positions[j+1]<0){positions[j+1]=20+Math.random()*35;positions[j]=(Math.random()-.5)*90;positions[j+2]=(Math.random()-.5)*90;} }
       this.points.geometry.attributes.position.needsUpdate = true;
     }
   }
