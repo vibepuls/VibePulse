@@ -36,6 +36,8 @@ router.post('/sessions', wrap(async (req, res) => {
   await query('INSERT INTO dhaka_game_profiles(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING', [req.user.id]);
   await query(`UPDATE dhaka_game_sessions SET status='expired',ended_at=NOW()
     WHERE user_id=$1 AND status='active' AND started_at < NOW()-INTERVAL '8 hours'`, [req.user.id]);
+  await query(`UPDATE dhaka_game_sessions SET status='finished',ended_at=NOW()
+    WHERE user_id=$1 AND status='active'`, [req.user.id]);
   const result = await query(`INSERT INTO dhaka_game_sessions(user_id,active_mission_id,mission_started_at)
     VALUES($1,'explore',NOW()) RETURNING id,active_mission_id,started_at`, [req.user.id]);
   res.status(201).json({ session: result.rows[0] });
