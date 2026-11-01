@@ -10,13 +10,23 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
     Super::OnConstruction(Transform); ClearGenerated(); FRandomStream R(RandomSeed);
     const float Step=CityExtent/FMath::Max(4,GridBlocks); const float Start=-CityExtent*0.5f;
     AddBoxMesh(FVector(0,0,-90.f),FVector(CityExtent+20000.f,CityExtent+20000.f,100.f),FLinearColor(0.19f,0.27f,0.17f),true);
+    constexpr float RiverCenterX=135000.f, RiverHalfWidth=9000.f;
+    AddBoxMesh(FVector(RiverCenterX,0,-25.f),FVector(RiverHalfWidth*2.f,CityExtent+Step,16.f),FLinearColor(0.035f,0.25f,0.38f),false);
+    AddBoxMesh(FVector(RiverCenterX-RiverHalfWidth-180.f,0,-5.f),FVector(360.f,CityExtent+Step,35.f),FLinearColor(0.42f,0.34f,0.23f),false);
+    AddBoxMesh(FVector(RiverCenterX+RiverHalfWidth+180.f,0,-5.f),FVector(360.f,CityExtent+Step,35.f),FLinearColor(0.42f,0.34f,0.23f),false);
+    // Low-poly passenger boats and river launches.
+    for(int32 Boat=0;Boat<4;++Boat){const float Y=-105000.f+Boat*68000.f;const FLinearColor Hull=Boat%2?FLinearColor(.76f,.19f,.1f):FLinearColor(.1f,.28f,.36f);AddBoxMesh(FVector(RiverCenterX,Y,35.f),FVector(1500.f,420.f,100.f),Hull,false);AddBoxMesh(FVector(RiverCenterX-120.f,Y,125.f),FVector(620.f,300.f,150.f),FLinearColor(.86f,.82f,.69f),false);AddBoxMesh(FVector(RiverCenterX-120.f,Y,205.f),FVector(640.f,320.f,18.f),FLinearColor(.13f,.16f,.18f),false);}
     if(bGenerateRoads){
         for(int32 I=0;I<=GridBlocks;++I){
             const float P=Start+I*Step;
-            AddBoxMesh(FVector(P,0,0),FVector(900.f,CityExtent+Step,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
+            const bool bRiverRoad=P>RiverCenterX-RiverHalfWidth && P<RiverCenterX+RiverHalfWidth;
+            if(!bRiverRoad){
+                AddBoxMesh(FVector(P,0,0),FVector(900.f,CityExtent+Step,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
+                AddBoxMesh(FVector(P,0,10.f),FVector(1.5f,CityExtent+Step,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
+            }
             AddBoxMesh(FVector(0,P,0),FVector(CityExtent+Step,900.f,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
-            AddBoxMesh(FVector(P,0,10.f),FVector(1.5f,CityExtent+Step,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
             AddBoxMesh(FVector(0,P,10.f),FVector(CityExtent+Step,1.5f,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
+            if(bRiverRoad)for(float Side : {-1.f,1.f})AddBoxMesh(FVector(RiverCenterX,P+Side*520.f,125.f),FVector(RiverHalfWidth*2.f,22.f,80.f),FLinearColor(.65f,.68f,.67f),true);
         }
     }
     if(bGenerateBuildings){
