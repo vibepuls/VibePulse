@@ -26,8 +26,8 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAxis("LookUp",this,&ADhakaPlayerCharacter::LookUp);
     Input->BindAction("Sprint",IE_Pressed,this,&ADhakaPlayerCharacter::StartSprint);
     Input->BindAction("Sprint",IE_Released,this,&ADhakaPlayerCharacter::StopSprint);
-    Input->BindAction("Jump",IE_Pressed,this,&ACharacter::Jump);
-    Input->BindAction("Jump",IE_Released,this,&ACharacter::StopJumping);
+    Input->BindAction("Jump",IE_Pressed,this,&ADhakaPlayerCharacter::StartJump);
+    Input->BindAction("Jump",IE_Released,this,&ADhakaPlayerCharacter::StopJump);
     Input->BindAction("InteractVehicle",IE_Pressed,this,&ADhakaPlayerCharacter::InteractVehicle);
 }
 void ADhakaPlayerCharacter::MoveForward(float V){if(!Controller||FMath::IsNearlyZero(V))return;const FRotator Yaw(0,Controller->GetControlRotation().Yaw,0);AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),V);}
@@ -36,6 +36,8 @@ void ADhakaPlayerCharacter::Turn(float V){AddControllerYawInput(V);}
 void ADhakaPlayerCharacter::LookUp(float V){AddControllerPitchInput(V);}
 void ADhakaPlayerCharacter::StartSprint(){GetCharacterMovement()->MaxWalkSpeed=SprintSpeed;}
 void ADhakaPlayerCharacter::StopSprint(){GetCharacterMovement()->MaxWalkSpeed=NormalWalkSpeed;}
+void ADhakaPlayerCharacter::StartJump(){Jump();}
+void ADhakaPlayerCharacter::StopJump(){StopJumping();}
 void ADhakaPlayerCharacter::InteractVehicle()
 {
     APlayerController* PC=Cast<APlayerController>(GetController());if(!PC||!GetWorld())return;
