@@ -35,6 +35,17 @@ function paintScene(ctx, layers, frame, images, includeGrid = false) {
       const scale = state.scale ?? 1, iw=img.naturalWidth*scale, ih=img.naturalHeight*scale;
       ctx.save(); ctx.globalAlpha=state.opacity ?? 1; ctx.translate(state.x ?? W/2, state.y ?? H/2); ctx.rotate((state.rotation||0)*Math.PI/180);
       ctx.drawImage(img,-iw/2,-ih/2,iw,ih);
+      if (layer.rigged && layer.mouthEnabled !== false) {
+        const mx = Number(layer.mouthX ?? 0) * scale;
+        const my = Number(layer.mouthY ?? (-img.naturalHeight * 0.12)) * scale;
+        const mw = Math.max(12, Number(layer.mouthWidth ?? img.naturalWidth * 0.12) * scale);
+        const mh = Math.max(5, Number(layer.mouthHeight ?? img.naturalHeight * 0.035) * scale) * (layer.mouthOpen ? 1.8 : 0.65);
+        ctx.save();
+        ctx.fillStyle = '#241015'; ctx.strokeStyle = '#1b1012'; ctx.lineWidth = Math.max(1, 1.5 * scale);
+        ctx.beginPath(); ctx.ellipse(mx, my, mw / 2, mh / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (layer.mouthOpen) { ctx.fillStyle = '#d95a72'; ctx.beginPath(); ctx.ellipse(mx, my + mh * .22, mw * .22, mh * .16, 0, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+      }
       if (layer.selected) { ctx.strokeStyle='#38bdf8';ctx.lineWidth=2;ctx.setLineDash([7,5]);ctx.strokeRect(-iw/2,-ih/2,iw,ih); }
       ctx.restore();
     } else if (layer.kind === 'drawing' && layer.points?.length > 1) {
@@ -78,7 +89,7 @@ export default function AnimationStudio() {
   };
   const addToStage=(asset)=>{
     const img=imagesRef.current[asset.id];
-    const add={id:uid(),assetId:asset.id,name:asset.name,kind:'image',visible:true,locked:false,x:W/2,y:H/2,scale:img?Math.min(400/img.naturalWidth,480/img.naturalHeight,1):0.5,rotation:0,opacity:1,keys:[],rigged:false,mouthEnabled:true,mouthOpen:false,mouthX:0,mouthY:img?Math.min(150,img.naturalHeight*.18):60};
+    const add={id:uid(),assetId:asset.id,name:asset.name,kind:'image',visible:true,locked:false,x:W/2,y:H/2,scale:img?Math.min(400/img.naturalWidth,480/img.naturalHeight,1):0.5,rotation:0,opacity:1,keys:[],rigged:false,mouthEnabled:true,mouthOpen:false,mouthX:0,mouthY:img?-(img.naturalHeight*.12):-60,mouthX:0,mouthWidth:img?img.naturalWidth*.12:36,mouthHeight:img?img.naturalHeight*.035:12};
     snapshot([...layers,add]);setSelectedId(add.id);setStatus('Character/image added to stage');
   };
   const rigCharacter=()=>{if(!selected||selected.kind!=='image'){setStatus('Select a character image layer first');return;} updateLayer(selected.id,{rigged:true,mouthEnabled:true,mouthY:selected.mouthY??60});setStatus('Basic mouth rig enabled. Adjust mouth position for your character.');};
