@@ -23,19 +23,20 @@ export class VehicleController {
   update(player, input, dt) {
     if (!player || player.walking || !Number.isFinite(dt) || dt <= 0) return;
     const c = this.config;
+    const grip = clamp(Number(this.gripMultiplier ?? 1), 0.45, 1.1);
     const throttle = clamp(Number(input.throttle) || 0, -1, 1);
     const steer = clamp(Number(input.steer) || 0, -1, 1);
     const brake = clamp(Number(input.brake) || 0, 0, 1);
 
-    if (throttle > 0) player.speed = Math.min(c.maxForwardSpeed, player.speed + c.acceleration * throttle * dt);
-    else if (throttle < 0) player.speed = Math.max(-c.maxReverseSpeed, player.speed + c.brakeDeceleration * throttle * dt);
+    if (throttle > 0) player.speed = Math.min(c.maxForwardSpeed, player.speed + c.acceleration * throttle * grip * dt);
+    else if (throttle < 0) player.speed = Math.max(-c.maxReverseSpeed, player.speed + c.brakeDeceleration * throttle * grip * dt);
     else player.speed *= Math.exp(-c.coastDrag * 60 * dt);
 
-    player.speed *= Math.max(0, 1 - brake * 12 * dt);
+    player.speed *= Math.max(0, 1 - brake * 12 * dt * grip);
     if (Math.abs(player.speed) < 0.025) player.speed = 0;
 
     const speedFactor = Math.min(Math.abs(player.speed) / c.steeringSpeedReference, 1.5);
-    const steeringRate = c.steeringLowSpeed + speedFactor * (c.steeringHighSpeed - c.steeringLowSpeed) / 1.5;
+    const steeringRate = (c.steeringLowSpeed + speedFactor * (c.steeringHighSpeed - c.steeringLowSpeed) / 1.5) * grip;
     const reverseFactor = player.speed < -0.1 ? -1 : 1;
     player.heading -= steer * steeringRate * dt * reverseFactor;
 
