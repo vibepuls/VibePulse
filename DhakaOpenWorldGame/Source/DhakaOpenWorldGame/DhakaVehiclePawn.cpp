@@ -7,6 +7,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "DhakaSaveGame.h"
 #include "DhakaMissionSubsystem.h"
+#include "DhakaPlayerCharacter.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Controller.h"
 #include "Engine/GameInstance.h"
 
 ADhakaVehiclePawn::ADhakaVehiclePawn()
@@ -48,6 +51,7 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAxis("Brake",this,&ADhakaVehiclePawn::InputBrake);
     Input->BindAction("SaveGame",IE_Pressed,this,&ADhakaVehiclePawn::SaveProgress);
     Input->BindAction("LoadGame",IE_Pressed,this,&ADhakaVehiclePawn::LoadProgress);
+    Input->BindAction("ToggleVehicle",IE_Pressed,this,&ADhakaVehiclePawn::ToggleVehicleMode);
 }
 void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
@@ -93,4 +97,14 @@ void ADhakaVehiclePawn::LoadProgress()
         Missions->Wallet=FMath::Max<int64>(0,Save->Wallet);
         Missions->ActiveMissionIndex=INDEX_NONE;for(int32 I=0;I<Missions->Missions.Num();++I){Missions->Missions[I].bCompleted=Save->CompletedMissionIds.Contains(Missions->Missions[I].Id);if(Missions->ActiveMissionIndex==INDEX_NONE&&!Missions->Missions[I].bCompleted)Missions->ActiveMissionIndex=I;}
     }
+}
+
+void ADhakaVehiclePawn::ToggleVehicleMode()
+{
+    APlayerController* PC=Cast<APlayerController>(GetController());if(!PC||!GetWorld())return;
+    DriverController=PC;
+    if(Body)Body->SetPhysicsLinearVelocity(FVector::ZeroVector);
+    const FVector ExitLocation=GetActorLocation()+GetActorRightVector()*280.f+FVector(0,0,75.f);
+    ADhakaPlayerCharacter* Character=GetWorld()->SpawnActor<ADhakaPlayerCharacter>(ADhakaPlayerCharacter::StaticClass(),ExitLocation,GetActorRotation());
+    if(Character){bOccupied=false;Character->SetNearbyVehicle(this);PC->Possess(Character);}
 }
