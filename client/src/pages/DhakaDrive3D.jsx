@@ -135,7 +135,7 @@ export default function DhakaDrive() {
   const [running, setRunning] = useState(true);
   const [weather, setWeather] = useState(() => { try { return JSON.parse(localStorage.getItem('vibepulse-dhaka-save') || '{}').weather || 'clear'; } catch { return 'clear'; } });
   const [vehicleType, setVehicleType] = useState(() => { try { return JSON.parse(localStorage.getItem('vibepulse-dhaka-save') || '{}').vehicleType || 'car'; } catch { return 'car'; } });
-  const [ownedVehicles, setOwnedVehicles] = useState(() => { try { const a=JSON.parse(localStorage.getItem('vibepulse-dhaka-save')||'{}').ownedVehicles; return Array.isArray(a)&&a.length?a:['car']; } catch { return ['car']; } });
+  const [ownedVehicles, setOwnedVehicles] = useState(() => { try { const d=JSON.parse(localStorage.getItem('vibepulse-dhaka-save')||'{}'); const a=Array.isArray(d.ownedVehicles)&&d.ownedVehicles.length?d.ownedVehicles:['car']; return [...new Set([...a,d.vehicleType||'car'])]; } catch { return ['car']; } });
   const [ownedGarages, setOwnedGarages] = useState(() => { try { const a=JSON.parse(localStorage.getItem('vibepulse-dhaka-save')||'{}').ownedGarages; return Array.isArray(a)&&a.length?a:['starter']; } catch { return ['starter']; } });
   const carColorRef = useRef(carColor);
   useEffect(() => { carColorRef.current = carColor; }, [carColor]);
