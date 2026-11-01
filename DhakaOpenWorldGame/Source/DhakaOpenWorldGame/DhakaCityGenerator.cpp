@@ -3,7 +3,7 @@
 #include "Materials/Material.h"
 #include "UObject/ConstructorHelpers.h"
 
-ADhakaCityGenerator::ADhakaCityGenerator(){ PrimaryActorTick.bCanEverTick=false; SetActorEnableCollision(false); }
+ADhakaCityGenerator::ADhakaCityGenerator(){ PrimaryActorTick.bCanEverTick=false; SceneRoot=CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot")); SetRootComponent(SceneRoot); SetActorEnableCollision(false); }
 void ADhakaCityGenerator::ClearGenerated(){ for(auto* M:GeneratedMeshes){if(M){M->DestroyComponent();}} GeneratedMeshes.Reset(); }
 void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
 {
@@ -42,7 +42,7 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
 void ADhakaCityGenerator::AddBoxMesh(const FVector& Center,const FVector& Size,const FLinearColor& Color,bool bCollision)
 {
     UProceduralMeshComponent* Mesh=NewObject<UProceduralMeshComponent>(this);
-    if(!Mesh) return; Mesh->SetupAttachment(GetRootComponent()); AddInstanceComponent(Mesh); Mesh->RegisterComponent(); Mesh->SetRelativeLocation(Center);
+    if(!Mesh) return; Mesh->SetupAttachment(SceneRoot); AddInstanceComponent(Mesh); Mesh->RegisterComponent(); Mesh->SetRelativeLocation(Center);
     const float X=Size.X*0.5f,Y=Size.Y*0.5f,Z=Size.Z*0.5f;
     TArray<FVector> V={ {-X,-Y,-Z},{X,-Y,-Z},{X,Y,-Z},{-X,Y,-Z},{-X,-Y,Z},{X,-Y,Z},{X,Y,Z},{-X,Y,Z} };
     TArray<int32> T={0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,2,3,7,2,7,6,1,2,6,1,6,5,3,0,4,3,4,7};
