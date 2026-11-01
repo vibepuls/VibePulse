@@ -107,7 +107,7 @@ void ADhakaVehiclePawn::Tick(float Dt)
 {
     Super::Tick(Dt); if(!PhysicsBody || Dt<=0.f) return;
     const FVector Forward=GetActorForwardVector();
-    Speed=FVector::DotProduct(PhysicsPhysicsBody->GetPhysicsLinearVelocity(),Forward);
+    Speed=FVector::DotProduct(PhysicsBody->GetPhysicsLinearVelocity(),Forward);
     TravelDistanceKm+=PhysicsBody->GetPhysicsLinearVelocity().Size()*Dt/100000.f;
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
         if(Missions->Missions.IsValidIndex(Missions->ActiveMissionIndex)){
@@ -115,7 +115,7 @@ void ADhakaVehiclePawn::Tick(float Dt)
             if(FVector::Dist2D(GetActorLocation(),Mission.Target)<1800.f)Missions->CompleteActiveMission();
         }
     }
-    PhysicsPhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*PhysicsPhysicsBody->GetMass());
+    PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*PhysicsBody->GetMass());
     if(BrakeInput>0.f) PhysicsBody->AddForce(-PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*PhysicsBody->GetMass()*BrakeInput);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
     PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*PhysicsBody->GetMass()*4.f));
