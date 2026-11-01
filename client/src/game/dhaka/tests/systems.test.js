@@ -47,3 +47,14 @@ test('collision grid returns only nearby entities', () => {
   grid.rebuild(items);
   assert.deepEqual(grid.nearby(0, 0, 10).map(x => x.id), ['near']);
 });
+
+test('multi-stop missions advance through their route before completing', () => {
+  const landmarks = Array.from({length: 7}, (_, i) => ({ name: 'Landmark ' + i }));
+  const missions = new MissionSystem({ landmarks });
+  const started = missions.start('taxi', 1, 3);
+  assert.equal(started.target.name, 'Landmark 4');
+  const pickup = missions.advance();
+  assert.equal(pickup.complete, false);
+  assert.equal(pickup.target.name, 'Landmark 0');
+  assert.equal(missions.advance().complete, true);
+});
