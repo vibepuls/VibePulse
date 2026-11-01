@@ -75,6 +75,13 @@ export default function AnimationStudio() {
   useEffect(()=>{render(frame,layers,tool==='select');},[render,frame,layers,tool]);
   useEffect(()=>{if(!playing)return; let last=performance.now(),acc=0; const tick=(now)=>{acc+=now-last;last=now;const step=1000/FPS;if(acc>=step){setFrame(f=>{const n=f+Math.floor(acc/step);return n>=TOTAL_FRAMES?0:n;});acc%=step;}rafRef.current=requestAnimationFrame(tick);};rafRef.current=requestAnimationFrame(tick);return()=>cancelAnimationFrame(rafRef.current);},[playing]);
   useEffect(()=>{document.title='VibePulse Animation Studio';return()=>{document.title='VibePulse';Object.values(imagesRef.current).forEach(i=>{if(i.src?.startsWith('blob:'))URL.revokeObjectURL(i.src);});};},[]);
+  useEffect(()=>{
+    const id='builtin-vibepulse-cartoon';
+    const img=new Image();
+    img.onload=()=>{imagesRef.current[id]=img;setAssets(prev=>prev.some(a=>a.id===id)?prev:[{id,name:'VibePulse Cartoon Character',kind:'image',url:'/characters/vibepulse-cartoon-character.svg'},...prev]);render();};
+    img.onerror=()=>setStatus('Default character asset could not load');
+    img.src='/characters/vibepulse-cartoon-character.svg';
+  },[]);
 
   const addFiles=async(files)=>{
     const accepted=Array.from(files||[]).filter(f=>f.type.startsWith('image/'));
@@ -89,7 +96,7 @@ export default function AnimationStudio() {
   };
   const addToStage=(asset)=>{
     const img=imagesRef.current[asset.id];
-    const add={id:uid(),assetId:asset.id,name:asset.name,kind:'image',visible:true,locked:false,x:W/2,y:H/2,scale:img?Math.min(400/img.naturalWidth,480/img.naturalHeight,1):0.5,rotation:0,opacity:1,keys:[],rigged:false,mouthEnabled:true,mouthOpen:false,mouthX:0,mouthY:img?-(img.naturalHeight*.12):-60,mouthX:0,mouthWidth:img?img.naturalWidth*.12:36,mouthHeight:img?img.naturalHeight*.035:12};
+    const add={id:uid(),assetId:asset.id,name:asset.name,kind:'image',visible:true,locked:false,x:W/2,y:H/2,scale:img?Math.min(400/img.naturalWidth,480/img.naturalHeight,1):0.5,rotation:0,opacity:1,keys:[],rigged:false,mouthEnabled:true,mouthOpen:false,mouthX:0,mouthY:img?-(img.naturalHeight*.30):-300,mouthX:0,mouthWidth:img?img.naturalWidth*.14:60,mouthHeight:img?img.naturalHeight*.04:20};
     snapshot([...layers,add]);setSelectedId(add.id);setStatus('Character/image added to stage');
   };
   const rigCharacter=()=>{if(!selected||selected.kind!=='image'){setStatus('Select a character image layer first');return;} updateLayer(selected.id,{rigged:true,mouthEnabled:true,mouthY:selected.mouthY??60});setStatus('Basic mouth rig enabled. Adjust mouth position for your character.');};
@@ -129,7 +136,7 @@ export default function AnimationStudio() {
         <div className="vp-anim-tools">{[[MousePointer2,'select','Selection'],[Hand,'hand','Hand'],[Pencil,'brush','Brush']].map(([Icon,id,label])=><button key={id} className={tool===id?'active':''} onClick={()=>id==='brush'&&selected?.kind!=='drawing'?addBlankDrawing():setTool(id)} title={label}><Icon size={18}/></button>)}</div>
         <div className="vp-anim-panel-title">PROJECT ASSETS <label title="Import images"><ImagePlus size={15}/><input hidden type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={e=>addFiles(e.target.files)}/></label></div>
         <label className="vp-anim-import"><ImagePlus size={19}/><span>Import images / characters<small>PNG · JPG · WEBP</small></span><input hidden type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={e=>addFiles(e.target.files)}/></label>
-        <div className="vp-anim-assets">{assets.map(a=><button className="vp-anim-asset" key={a.id} onDoubleClick={()=>addToStage(a)} onClick={()=>setStatus('Double-click to add '+a.name)} title="Double-click to add to stage"><img src={a.dataUrl} alt=""/><span>{a.name}</span><Plus size={14} onClick={e=>{e.stopPropagation();addToStage(a);}}/></button>)}</div>
+        <div className="vp-anim-assets">{assets.map(a=><button className="vp-anim-asset" key={a.id} onDoubleClick={()=>addToStage(a)} onClick={()=>addToStage(a)} title="Click to add to stage"><img src={a.dataUrl||a.url} alt=""/><span>{a.name}</span><Plus size={14} onClick={e=>{e.stopPropagation();addToStage(a);}}/></button>)}</div>
         <div className="vp-anim-panel-title">QUICK ACTIONS</div>
         <button className="vp-anim-wide-action" onClick={addBlankDrawing}><Pencil size={15}/> New drawing layer</button>
         <button className="vp-anim-wide-action" onClick={()=>{if(selected){snapshot([...layers,{...selected,id:uid(),name:selected.name+' copy',x:(selected.x||W/2)+30,y:(selected.y||H/2)+30,keys:selected.keys.map(k=>({...k}))}]);setStatus('Layer duplicated');}}}><Copy size={15}/> Duplicate selected</button>
