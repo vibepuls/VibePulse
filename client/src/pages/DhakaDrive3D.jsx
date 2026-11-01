@@ -309,7 +309,7 @@ export default function DhakaDrive() {
       signCtx.fillStyle='#fff3c4';signCtx.font='bold 46px sans-serif';signCtx.textAlign='center';signCtx.textBaseline='middle';signCtx.fillText('চা • ফুচকা • ঝালমুড়ি',256,64);
       const signTexture=new THREE.CanvasTexture(signCanvas);signTexture.colorSpace=THREE.SRGBColorSpace;
       const signMaterial=new THREE.SpriteMaterial({map:signTexture,transparent:true,depthWrite:false});
-      for(let i=0;i<48;i++){
+      for(let i=0;i<(quality==='Low'?16:quality==='Medium'?32:48);i++){
         const x=(Math.random()-.5)*half*1.8,z=(Math.random()-.5)*half*1.8;
         const stall=new THREE.Group();
         const cart=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.15,1.8),new THREE.MeshStandardMaterial({color:pick([0x9c6b3e,0x3c6b56,0x8b4a35,0x6a647b]),roughness:.85}));cart.position.y=.65;stall.add(cart);
@@ -321,8 +321,9 @@ export default function DhakaDrive() {
       }
       // Sagging overhead electrical wires and concrete utility poles, a recognizable dense-street silhouette.
       const wireMaterial=new THREE.LineBasicMaterial({color:0x252d31,transparent:true,opacity:.82});
-      for(let x=-half+block;x<half-block;x+=block*1.65){
-        for(let z=-half+block;z<half-block;z+=block*1.65){
+      const wireStep=block*(quality==='Low'?3.3:quality==='Medium'?2.2:1.65);
+      for(let x=-half+block;x<half-block;x+=wireStep){
+        for(let z=-half+block;z<half-block;z+=wireStep){
           const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,7.5,6),new THREE.MeshStandardMaterial({color:0x62696a,roughness:.95}));
           pole.position.set(x,3.75,z);scene.add(pole);
           const pts=[new THREE.Vector3(x,7.1,z),new THREE.Vector3(x+block*.45,6.0,z+block*.25),new THREE.Vector3(x+block*.9,6.25,z+block*.7),new THREE.Vector3(x+block*1.25,7.1,z+block)];
@@ -330,7 +331,7 @@ export default function DhakaDrive() {
         }
       }
       // Broken asphalt patches and potholes placed on the procedural street grid.
-      for(let i=0;i<46;i++){
+      for(let i=0;i<(quality==='Low'?12:quality==='Medium'?26:46);i++){
         const pothole=new THREE.Mesh(new THREE.CircleGeometry(.45+Math.random()*.8,9),new THREE.MeshStandardMaterial({color:0x25292b,roughness:1}));
         pothole.rotation.x=-Math.PI/2;pothole.scale.set(1.3,.72,1);pothole.position.set((Math.floor(Math.random()*25)-12)*block+.3,.035,(Math.floor(Math.random()*25)-12)*block+.6);scene.add(pothole);
       }
