@@ -37,7 +37,7 @@ void ADhakaGameMode::BeginPlay()
     // Low-poly crowd agents use randomized footpath destinations and pause states.
     for(int32 I=0;I<64;++I){
         const float X=FMath::FRandRange(-150000.f,150000.f),Y=FMath::FRandRange(-150000.f,150000.f);
-        ADhakaPedestrian* Ped=World->SpawnActor<ADhakaPedestrian>(ADhakaPedestrian::StaticClass(),FVector(X,Y,0.f),FRotator::ZeroRotator);
+        ADhakaPedestrian* Ped=World->SpawnActor<ADhakaPedestrian>(ADhakaPedestrian::StaticClass(),FVector(X,Y,92.f),FRotator::ZeroRotator);
         if(Ped){Ped->Destination=Ped->GetActorLocation()+FVector(FMath::FRandRange(-900.f,900.f),FMath::FRandRange(-900.f,900.f),0.f);Ped->WalkSpeed=FMath::FRandRange(110.f,175.f);}
     }
 }
