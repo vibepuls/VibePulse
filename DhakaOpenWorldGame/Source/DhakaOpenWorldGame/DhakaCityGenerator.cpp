@@ -1,6 +1,8 @@
 #include "DhakaCityGenerator.h"
 #include "ProceduralMeshComponent.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/ConstructorHelpers.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADhakaCityGenerator::ADhakaCityGenerator(){ PrimaryActorTick.bCanEverTick=false; SceneRoot=CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot")); SetRootComponent(SceneRoot); }
@@ -56,8 +58,8 @@ void ADhakaCityGenerator::AddBoxMesh(const FVector& Center,const FVector& Size,c
     TArray<FVector> N; N.Init(FVector::UpVector,8); TArray<FVector2D> UV={{0,0},{1,0},{1,1},{0,1},{0,0},{1,0},{1,1},{0,1}};
     TArray<FColor> Colors; Colors.Init(Color.ToFColor(true),8); TArray<FProcMeshTangent> Tangents; Tangents.Init(FProcMeshTangent(1,0,0),8);
     Mesh->CreateMeshSection(0,V,T,N,UV,Colors,Tangents,bCollision);
-    static UMaterialInterface* Mat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/VertexColorMaterial.VertexColorMaterial"));
-    if(Mat) Mesh->SetMaterial(0,Mat);
+    if(VertexColorMaterial)Mesh->SetMaterial(0,VertexColorMaterial);
+    else if(UMaterialInterface* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"))){UMaterialInstanceDynamic* Tint=UMaterialInstanceDynamic::Create(Base,this);Tint->SetVectorParameterValue(TEXT("BaseColor"),Color);Mesh->SetMaterial(0,Tint);}
     GeneratedMeshes.Add(Mesh);
 }
 
@@ -112,7 +114,7 @@ void ADhakaCityGenerator::AddBuildingMesh(float X,float Y,float Width,float Dept
     Box(FVector(0,-Depth*.5f-18.f,180.f),FVector(Width*.75f,8.f,42.f),FLinearColor(.91f,.74f,.29f));
     if(Random.FRand()<.65f)Box(FVector(Width*.25f,Depth*.15f,Height+90.f),FVector(280.f,220.f,180.f),FLinearColor(.42f,.43f,.4f));
     Mesh->CreateMeshSection(0,V,T,N,UV,C,Tangents,true);
-    static UMaterialInterface* VertexMat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/VertexColorMaterial.VertexColorMaterial"));
-    if(VertexMat)Mesh->SetMaterial(0,VertexMat);
+    if(VertexColorMaterial)Mesh->SetMaterial(0,VertexColorMaterial);
+    else if(UMaterialInterface* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"))){UMaterialInstanceDynamic* Tint=UMaterialInstanceDynamic::Create(Base,this);Tint->SetVectorParameterValue(TEXT("BaseColor"),Color);Mesh->SetMaterial(0,Tint);}
     GeneratedMeshes.Add(Mesh);
 }
