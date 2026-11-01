@@ -4,6 +4,7 @@
 #include "DhakaCityGenerator.generated.h"
 
 class USceneComponent;
+class UMaterialInterface;
 
 UCLASS()
 class DHAKAOPENWORLDGAME_API ADhakaCityGenerator : public AActor
@@ -20,6 +21,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City") bool bGenerateStreetProps = true;
 private:
     UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> SceneRoot;
+    UPROPERTY(Transient) TObjectPtr<UMaterialInterface> VertexColorMaterial;
     UPROPERTY(Transient) TArray<TObjectPtr<class UProceduralMeshComponent>> GeneratedMeshes;
     void ClearGenerated();
     void AddBoxMesh(const FVector& Center, const FVector& Size, const FLinearColor& Color, bool bCollision);
