@@ -35,8 +35,14 @@ ADhakaPedestrian::ADhakaPedestrian()
     Hair=MakePart(TEXT("Hair"),Sphere.Succeeded()?Sphere.Object:nullptr,FVector(.3f,.3f,.13f),FVector(0,0,169.f));
     LeftEye=MakePart(TEXT("LeftEye"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.035f,.045f,.035f),FVector(14,-5,154.f));
     RightEye=MakePart(TEXT("RightEye"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.035f,.045f,.035f),FVector(14,5,154.f));
+    Nose=MakePart(TEXT("Nose"),Sphere.Succeeded()?Sphere.Object:nullptr,FVector(.06f,.055f,.065f),FVector(16,0,148.f));
+    Mouth=MakePart(TEXT("Mouth"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.025f,.09f,.025f),FVector(13,0,140.f));
+    LeftHand=MakePart(TEXT("LeftHand"),Sphere.Succeeded()?Sphere.Object:nullptr,FVector(.11f,.11f,.11f),FVector(0,-40,65.f));
+    RightHand=MakePart(TEXT("RightHand"),Sphere.Succeeded()?Sphere.Object:nullptr,FVector(.11f,.11f,.11f),FVector(0,40,65.f));
+    LeftFoot=MakePart(TEXT("LeftFoot"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.24f,.16f,.1f),FVector(14,-12,5.f));
+    RightFoot=MakePart(TEXT("RightFoot"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.24f,.16f,.1f),FVector(14,12,5.f));
     auto Apply=[&](UStaticMeshComponent* Part,UMaterialInterface* Material){if(Part&&Material)Part->SetMaterial(0,Material);};
-    Apply(Torso,Shirt);Apply(LeftArm,Shirt);Apply(RightArm,Shirt);Apply(Head,Skin);Apply(LeftLeg,Pants);Apply(RightLeg,Pants);Apply(Hair,HairMat);Apply(LeftEye,EyeMat);Apply(RightEye,EyeMat);
+    Apply(Torso,Shirt);Apply(LeftArm,Shirt);Apply(RightArm,Shirt);Apply(Head,Skin);Apply(LeftLeg,Pants);Apply(RightLeg,Pants);Apply(Hair,HairMat);Apply(LeftEye,EyeMat);Apply(RightEye,EyeMat);Apply(Nose,Skin);Apply(Mouth,EyeMat);Apply(LeftHand,Skin);Apply(RightHand,Skin);Apply(LeftFoot,DarkMat);Apply(RightFoot,DarkMat);
 }
 void ADhakaPedestrian::Tick(float Dt)
 {
