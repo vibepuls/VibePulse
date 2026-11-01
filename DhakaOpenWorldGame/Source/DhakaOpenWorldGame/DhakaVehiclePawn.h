@@ -11,7 +11,8 @@ public:
     ADhakaVehiclePawn();
     virtual void Tick(float DeltaSeconds) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) class UStaticMeshComponent* Body;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UBoxComponent> PhysicsBody;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Body;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) class USpringArmComponent* SpringArm;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) class UCameraComponent* Camera;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vehicle") float Acceleration = 2400.f;
