@@ -14,7 +14,8 @@ const AREAS = [
   { name: 'Farmgate', x: -500, z: 500 }, { name: 'Shahbagh', x: 500, z: 400 },
   { name: 'Old Dhaka', x: -850, z: 1050 }, { name: 'Sadarghat', x: 150, z: 1350 },
   { name: 'Motijheel', x: 1000, z: 700 }, { name: 'Mirpur', x: 1050, z: -900 },
-  { name: 'Airport Road', x: 1500, z: -100 }
+  { name: 'Airport Road', x: 1500, z: -100 }, { name: 'Dhanmondi', x: -1150, z: 450 },
+  { name: 'Uttara', x: 1450, z: -1250 }, { name: 'Mohakhali', x: -120, z: -780 }, { name: 'Jatrabari', x: 1250, z: 1250 }
 ];
 const LANDMARKS = [
   { name: 'Lalbagh Fort', x: -880, z: 1030, color: 0xb96d45, type: 'fort' },
@@ -23,7 +24,9 @@ const LANDMARKS = [
   { name: 'National Parliament', x: -350, z: -100, color: 0xaaa99e, type: 'parliament' },
   { name: 'Gulshan Circle 2', x: -520, z: -520, color: 0x79a9b6, type: 'tower' },
   { name: 'Shaheed Minar', x: 550, z: 320, color: 0xf0eee3, type: 'monument' },
-  { name: 'Mirpur Stadium', x: 1200, z: -930, color: 0x638f72, type: 'stadium' }
+  { name: 'Mirpur Stadium', x: 1200, z: -930, color: 0x638f72, type: 'stadium' },
+  { name: 'TSC / Dhaka University', x: 120, z: 180, color: 0xc9ad78, type: 'tower' },
+  { name: 'Buriganga Riverfront', x: 530, z: 1510, color: 0x397e9c, type: 'terminal' }
 ];
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -259,6 +262,38 @@ export default function DhakaDrive() {
         const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.2,7,6),poleMat);pole.position.set(x+14,3.5,z+14);scene.add(pole);
         const head=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.1,.9),new THREE.MeshStandardMaterial({color:pick([0x247b49,0xc39a29,0xa43e34]),emissive:0x100e08}));head.position.set(x+14,6.6,z+14);scene.add(head);
       }
+      // Dense Dhaka-style informal commerce: tea, fuchka, fruit and jhalmuri carts with Bengali signboards.
+      const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=128;
+      const signCtx=signCanvas.getContext('2d');
+      signCtx.fillStyle='#123c2c';signCtx.fillRect(0,0,512,128);signCtx.strokeStyle='#e8c65a';signCtx.lineWidth=7;signCtx.strokeRect(5,5,502,118);
+      signCtx.fillStyle='#fff3c4';signCtx.font='bold 46px sans-serif';signCtx.textAlign='center';signCtx.textBaseline='middle';signCtx.fillText('চা • ফুচকা • ঝালমুড়ি',256,64);
+      const signTexture=new THREE.CanvasTexture(signCanvas);signTexture.colorSpace=THREE.SRGBColorSpace;
+      const signMaterial=new THREE.SpriteMaterial({map:signTexture,transparent:true,depthWrite:false});
+      for(let i=0;i<48;i++){
+        const x=(Math.random()-.5)*half*1.8,z=(Math.random()-.5)*half*1.8;
+        const stall=new THREE.Group();
+        const cart=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.15,1.8),new THREE.MeshStandardMaterial({color:pick([0x9c6b3e,0x3c6b56,0x8b4a35,0x6a647b]),roughness:.85}));cart.position.y=.65;stall.add(cart);
+        const counter=new THREE.Mesh(new THREE.BoxGeometry(3.65,.14,1.95),new THREE.MeshStandardMaterial({color:0x9b8c72,roughness:.9}));counter.position.y=1.28;stall.add(counter);
+        const canopy=new THREE.Mesh(new THREE.BoxGeometry(4.2,.16,2.6),new THREE.MeshStandardMaterial({color:pick([0xc84d3b,0x2e7b53,0xd6b744,0x2d6c91]),roughness:.8}));canopy.position.y=2.55;stall.add(canopy);
+        for(const wx of [-1.25,1.25]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.16,10),new THREE.MeshStandardMaterial({color:0x20252a}));wheel.rotation.z=Math.PI/2;wheel.position.set(wx,.32,.72);stall.add(wheel);}
+        const sign=new THREE.Sprite(signMaterial);sign.scale.set(4.2,1.05,1);sign.position.set(0,3.45,-1.22);stall.add(sign);
+        stall.position.set(x,0,z);stall.rotation.y=Math.random()*Math.PI*2;scene.add(stall);
+      }
+      // Sagging overhead electrical wires and concrete utility poles, a recognizable dense-street silhouette.
+      const wireMaterial=new THREE.LineBasicMaterial({color:0x252d31,transparent:true,opacity:.82});
+      for(let x=-half+block;x<half-block;x+=block*1.65){
+        for(let z=-half+block;z<half-block;z+=block*1.65){
+          const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.18,7.5,6),new THREE.MeshStandardMaterial({color:0x62696a,roughness:.95}));
+          pole.position.set(x,3.75,z);scene.add(pole);
+          const pts=[new THREE.Vector3(x,7.1,z),new THREE.Vector3(x+block*.45,6.0,z+block*.25),new THREE.Vector3(x+block*.9,6.25,z+block*.7),new THREE.Vector3(x+block*1.25,7.1,z+block)];
+          const wireGeo=new THREE.BufferGeometry().setFromPoints(pts);scene.add(new THREE.Line(wireGeo,wireMaterial));
+        }
+      }
+      // Broken asphalt patches and potholes placed on the procedural street grid.
+      for(let i=0;i<46;i++){
+        const pothole=new THREE.Mesh(new THREE.CircleGeometry(.45+Math.random()*.8,9),new THREE.MeshStandardMaterial({color:0x25292b,roughness:1}));
+        pothole.rotation.x=-Math.PI/2;pothole.scale.set(1.3,.72,1);pothole.position.set((Math.floor(Math.random()*25)-12)*block+.3,.035,(Math.floor(Math.random()*25)-12)*block+.6);scene.add(pothole);
+      }
       const trafficColors=[0xf0c53e,0xe9e6df,0xc84a3b,0x286e9d,0x242b33,0x23825b,0xc4c9c9];
       for(let i=0;i<140;i++){
         const horizontal=Math.random()<.5, lane=(Math.random()<.5?-1:1)*4.7, road= Math.round((Math.random()*28-14))*block;
@@ -332,10 +367,13 @@ export default function DhakaDrive() {
         const active= p.walking?world.playerPed:world.playerCar;active.visible=true; (p.walking?world.playerCar:world.playerPed).visible=false;
         active.position.set(p.x,0,p.z);active.rotation.y=p.heading;
         if(p.walking){active.position.y=Math.abs(Math.sin(world.frame*.18))*.05;}
-        const behind=world.cameraMode==='Close'?(p.walking?3.4:5.4):world.cameraMode==='Cinematic'?(p.walking?16:25):(p.walking?10:17);
-        const height=world.cameraMode==='Close'?(p.walking?2.8:3.5):world.cameraMode==='Cinematic'?(p.walking?10:13):(p.walking?6:8);
+        const firstPerson=world.cameraMode==='First Person';
+        const behind=firstPerson?-0.35:world.cameraMode==='Close'?(p.walking?3.4:5.4):world.cameraMode==='Cinematic'?(p.walking?16:25):(p.walking?10:17);
+        const height=firstPerson?(p.walking?1.65:1.55):world.cameraMode==='Close'?(p.walking?2.8:3.5):world.cameraMode==='Cinematic'?(p.walking?10:13):(p.walking?6:8);
         const desired=new THREE.Vector3(p.x+Math.sin(p.heading)*behind,height,p.z+Math.cos(p.heading)*behind);
-        camera.position.lerp(desired,1-Math.pow(.001,dt));tempTarget.set(p.x,world.cameraMode==='Close'?(p.walking?1.6:1.0):(p.walking?1.25:1.4),p.z);camera.lookAt(tempTarget);
+        camera.position.lerp(desired,1-Math.pow(.001,dt));
+        if(firstPerson)tempTarget.set(p.x-Math.sin(p.heading)*12,height,p.z-Math.cos(p.heading)*12);else tempTarget.set(p.x,world.cameraMode==='Close'?(p.walking?1.6:1.0):(p.walking?1.25:1.4),p.z);
+        camera.lookAt(tempTarget);
         world.destinationMarker.rotation.y+=dt*.5;
         if(world.frame-world.lastHud>12){
           world.lastHud=world.frame;
@@ -380,7 +418,7 @@ export default function DhakaDrive() {
   return <div className="min-h-screen bg-[#070b10] text-white">
     <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0b121b]/95 px-4 py-3 backdrop-blur-xl md:px-6">
       <div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-red-500 to-orange-600 shadow-lg shadow-red-950/50"><CarFront size={24}/></div><div><div className="text-lg font-black tracking-[.13em]">DHAKA <span className="text-red-400">OPEN WORLD</span></div><div className="text-[11px] text-slate-400">VibePulse • 3D city driving experience</div></div></div>
-      <div className="flex flex-wrap gap-2"><button onClick={()=>setRunning(v=>!v)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-500">{running?<Pause size={15} className="mr-1 inline"/>:<Play size={15} className="mr-1 inline"/>}{running?'Pause':'Resume'}</button><button onClick={()=>setMuted(v=>!v)} title="Toggle generated engine/horn sounds" className="rounded-lg border border-white/15 px-3 py-2">{muted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><button onClick={()=>audioRef.current?.horn()} title="Horn (H)" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">HORN</button><button onClick={()=>setNightMode(v=>!v)} title="Toggle day/night" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">{nightMode?'Night':'Day'}</button><button onClick={()=>{const next=cameraMode==='Chase'?'Close':cameraMode==='Close'?'Cinematic':'Chase';setCameraMode(next);if(engine.current)engine.current.world.cameraMode=next;}} title="Change camera (V)" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">📷 {cameraMode}</button><button onClick={reset} title="Reset position" className="rounded-lg border border-white/15 px-3 py-2"><RotateCcw size={17}/></button></div>
+      <div className="flex flex-wrap gap-2"><button onClick={()=>setRunning(v=>!v)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-500">{running?<Pause size={15} className="mr-1 inline"/>:<Play size={15} className="mr-1 inline"/>}{running?'Pause':'Resume'}</button><button onClick={()=>setMuted(v=>!v)} title="Toggle generated engine/horn sounds" className="rounded-lg border border-white/15 px-3 py-2">{muted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><button onClick={()=>audioRef.current?.horn()} title="Horn (H)" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">HORN</button><button onClick={()=>setNightMode(v=>!v)} title="Toggle day/night" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">{nightMode?'Night':'Day'}</button><button onClick={()=>{const next=cameraMode==='Chase'?'Close':cameraMode==='Close'?'Cinematic':cameraMode==='Cinematic'?'First Person':'Chase';setCameraMode(next);if(engine.current)engine.current.world.cameraMode=next;}} title="Change camera (V)" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">📷 {cameraMode}</button><button onClick={reset} title="Reset position" className="rounded-lg border border-white/15 px-3 py-2"><RotateCcw size={17}/></button></div>
     </header>
     <main className="mx-auto max-w-[1700px] p-3 md:p-5">
       <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-5">{[['SPEED',hud.speed+' km/h'],['CURRENT DISTRICT',hud.area],['WALLET','৳ '+hud.money.toLocaleString()],['TRAVEL DISTANCE',hud.distance+' km'],['WANTED LEVEL','★'.repeat(hud.wantedLevel||0)+(hud.wantedLevel?'':' —')]].map(([a,b])=><div key={a} className="rounded-xl border border-white/10 bg-[#101924] p-3"><div className="text-[10px] font-bold tracking-[.17em] text-slate-500">{a}</div><div className="mt-1 truncate text-base font-bold">{b}</div></div>)}</div>
@@ -397,7 +435,7 @@ export default function DhakaDrive() {
         </div>
         <div className="absolute bottom-3 left-[76px] flex gap-2 sm:hidden">
           <button onClick={()=>{if(engine.current){engine.current.world.player.walking=!engine.current.world.player.walking;setWalkMode(engine.current.world.player.walking);engine.current.world.player.speed=0;}}} className="rounded-lg border border-white/20 bg-black/70 px-3 py-2 text-[10px] font-bold">{walkMode?'GET IN CAR':'WALK'}</button>
-          <button onClick={()=>{if(engine.current){const w=engine.current.world;w.cameraMode=w.cameraMode==='Chase'?'Close':w.cameraMode==='Close'?'Cinematic':'Chase';setCameraMode(w.cameraMode);}}} className="rounded-lg border border-white/20 bg-black/70 px-3 py-2 text-[10px] font-bold">CAM</button>
+          <button onClick={()=>{if(engine.current){const w=engine.current.world;w.cameraMode=w.cameraMode==='Chase'?'Close':w.cameraMode==='Close'?'Cinematic':w.cameraMode==='Cinematic'?'First Person':'Chase';setCameraMode(w.cameraMode);}}} className="rounded-lg border border-white/20 bg-black/70 px-3 py-2 text-[10px] font-bold">CAM</button>
         </div>
         <div className="absolute bottom-3 left-3 hidden w-[132px] overflow-hidden rounded-xl border border-white/20 bg-black/65 shadow-xl sm:block"><div className="border-b border-white/10 px-2 py-1 text-[9px] font-black tracking-[.18em] text-emerald-300">MINI MAP</div><canvas ref={mapCanvasRef} width="132" height="132" className="block h-[132px] w-[132px]"/></div>
         <div className="absolute bottom-3 right-3 hidden rounded-xl border border-white/15 bg-black/65 p-3 backdrop-blur-md sm:block"><div className="mb-2 flex items-center gap-2 text-xs font-bold"><Gauge size={15} className="text-red-300"/> GRAPHICS</div><select value={quality} onChange={e=>setQuality(e.target.value)} className="rounded-md border border-white/15 bg-slate-900 px-3 py-1.5 text-sm"><option>High</option><option>Medium</option><option>Low</option></select></div>
@@ -406,7 +444,7 @@ export default function DhakaDrive() {
       <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-[#101924] p-3"><span className="text-xs font-black tracking-widest text-slate-400">VEHICLE PAINT</span>{[{label:"Red",value:"#c72f2f"},{label:"Blue",value:"#2563eb"},{label:"Black",value:"#20252c"},{label:"White",value:"#e5e7eb"},{label:"Yellow",value:"#eab308"},{label:"Green",value:"#15803d"}].map(c=><button key={c.value} title={c.label} aria-label={c.label+" car paint"} onClick={()=>{setCarColor(c.value);const car=engine.current?.world.playerCar;if(car)car.children.forEach(child=>{if(child.material&&child.material.color&&child.geometry?.type==="BoxGeometry"&&child.position.y>0.4&&child.position.y<1.3)child.material.color.set(c.value);});}} className={"h-7 w-7 rounded-full border-2 "+(carColor===c.value?"border-white ring-2 ring-emerald-400":"border-white/20")} style={{backgroundColor:c.value}}/>)} </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_340px]">
         <section className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 flex items-center gap-2 font-bold"><MapPin size={18} className="text-emerald-300"/> Explore Dhaka districts & landmarks</h2><div className="flex flex-wrap gap-2">{LANDMARKS.map(lm=><button key={lm.name} onClick={()=>chooseLandmark(lm)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-emerald-400 hover:bg-emerald-400/10">{lm.name}</button>)}</div><div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-xs font-black uppercase tracking-widest text-slate-500">Weather</span><select value={weather} onChange={e=>setWeather(e.target.value)} className="rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-sm"><option value="clear">Clear</option><option value="smog">Dhaka Smog</option><option value="rain">Rain</option><option value="monsoon">Monsoon</option><option value="fog">Morning Fog</option></select><span className="text-xs text-slate-500">Rain and fog affect visibility.</span></div><p className="mt-3 text-xs leading-5 text-slate-500">A procedurally built, original 3D city inspired by Dhaka's dense roads, mixed traffic, street markets, river ghats and landmark architecture. The layout is game-fiction, not a survey-accurate city map.</p></section>
-        <aside className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 font-bold">Missions & Controls</h2><div className="mb-4 grid grid-cols-2 gap-2">{MissionSystem.Types && Object.values(MissionSystem.Types).filter(m=>m.id!=='explore').map(m=><button key={m.id} onClick={()=>engine.current?.startMission(m.id)} className="rounded-lg border border-cyan-300/15 bg-cyan-300/5 px-2 py-2 text-left text-xs hover:bg-cyan-300/10"><b className="block text-cyan-200">{m.title}</b><span className="mt-1 block text-slate-400">৳{m.reward} reward</span></button>)}</div><h3 className="mb-2 text-sm font-bold text-slate-300">Controls</h3><div className="space-y-2 text-sm text-slate-300"><p><b className="text-white">W / ↑</b> Accelerate / walk forward</p><p><b className="text-white">S / ↓</b> Reverse / walk backward</p><p><b className="text-white">A / D</b> Steer / turn</p><p><b className="text-white">C</b> Switch car / on foot</p><p><b className="text-white">V</b> Change camera view</p><p><b className="text-white">Space</b> Brake</p><p><b className="text-white">H</b> Horn</p><p><b className="text-white">B</b> Rickshaw bell</p><p><b className="text-white">Esc</b> Pause / resume</p><p><b className="text-white">R</b> Reset car position</p></div><div className="mt-4 grid grid-cols-2 gap-2">{LANDMARKS.slice(0,4).map(lm=><button key={lm.name} onClick={()=>{setHud(old=>({...old,mission:'Reach '+lm.name}));chooseLandmark(lm);}} className="rounded-lg bg-emerald-700/80 px-2 py-2 text-xs font-bold hover:bg-emerald-600">Go: {lm.name}</button>)}</div><p className="mt-3 text-xs text-slate-500">3D prototype with a procedural environment, traffic, walk/drive modes and landmark objectives. Continued work can expand missions, interiors, animations and assets.</p></aside>
+        <aside className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 font-bold">Missions & Controls</h2><div className="mb-4 grid grid-cols-2 gap-2">{MissionSystem.Types && Object.values(MissionSystem.Types).filter(m=>m.id!=='explore').map(m=><button key={m.id} onClick={()=>engine.current?.startMission(m.id)} className="rounded-lg border border-cyan-300/15 bg-cyan-300/5 px-2 py-2 text-left text-xs hover:bg-cyan-300/10"><b className="block text-cyan-200">{m.title}</b><span className="mt-1 block text-slate-400">৳{m.reward} reward</span></button>)}</div><h3 className="mb-2 text-sm font-bold text-slate-300">Controls</h3><div className="space-y-2 text-sm text-slate-300"><p><b className="text-white">W / ↑</b> Accelerate / walk forward</p><p><b className="text-white">S / ↓</b> Reverse / walk backward</p><p><b className="text-white">A / D</b> Steer / turn</p><p><b className="text-white">C</b> Switch car / on foot</p><p><b className="text-white">V</b> Cycle Chase / Close / Cinematic / First Person</p><p><b className="text-white">Space</b> Brake</p><p><b className="text-white">H</b> Horn</p><p><b className="text-white">B</b> Rickshaw bell</p><p><b className="text-white">Esc</b> Pause / resume</p><p><b className="text-white">R</b> Reset car position</p></div><div className="mt-4 grid grid-cols-2 gap-2">{LANDMARKS.slice(0,4).map(lm=><button key={lm.name} onClick={()=>{setHud(old=>({...old,mission:'Reach '+lm.name}));chooseLandmark(lm);}} className="rounded-lg bg-emerald-700/80 px-2 py-2 text-xs font-bold hover:bg-emerald-600">Go: {lm.name}</button>)}</div><p className="mt-3 text-xs text-slate-500">3D prototype with a procedural environment, traffic, walk/drive modes and landmark objectives. Continued work can expand missions, interiors, animations and assets.</p></aside>
       </div>
     </main>
   </div>;
