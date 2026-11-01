@@ -20,7 +20,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vehicle") float SteeringRate = 68.f;
     UPROPERTY(BlueprintReadOnly) float Speed = 0.f;
     UPROPERTY(BlueprintReadWrite) FLinearColor PaintColor = FLinearColor(0.72f,0.08f,0.07f,1.f);
+    UFUNCTION(BlueprintCallable) void SetPaintColor(FLinearColor NewColor);
 private:
+    UPROPERTY() TObjectPtr<class UMaterialInstanceDynamic> BodyMaterial;
+    UPROPERTY() TArray<TObjectPtr<class UStaticMeshComponent>> VisualParts;
     float ThrottleInput = 0.f;
     float SteeringInput = 0.f;
     float BrakeInput = 0.f;
