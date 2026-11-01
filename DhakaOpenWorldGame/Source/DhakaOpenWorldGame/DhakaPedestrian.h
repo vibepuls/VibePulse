@@ -24,6 +24,12 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Hair;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> LeftEye;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> RightEye;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Nose;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Mouth;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> LeftHand;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> RightHand;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> LeftFoot;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> RightFoot;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Crowd") EDhakaPedestrianState State = EDhakaPedestrianState::Walk;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Crowd") float WalkSpeed = 150.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Crowd") FVector Destination = FVector::ZeroVector;
