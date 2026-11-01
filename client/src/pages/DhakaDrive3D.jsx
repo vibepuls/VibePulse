@@ -31,10 +31,10 @@ const LANDMARKS = [
 ];
 const VEHICLE_COSTS = Object.freeze({car:0,hatchback:8000,suv:24000,luxury:75000,van:18000,microbus:26000,deliveryVan:15000,pickup:22000,bus:80000,minibus:42000,schoolBus:65000,coach:110000,truck:55000,firetruck:150000,ambulance:125000,police:90000,cng:8500,rickshaw:2500,batteryRickshaw:12000,handcart:1000,motorcycle:9000,scooter:6000,bicycle:1500,boat:30000,riverLaunch:125000});
 const GARAGES = Object.freeze([
-  {id:'starter',name:'Gulshan Starter Garage',x:-520,z:-520,price:0,slots:2},
-  {id:'old-dhaka',name:'Old Dhaka Workshop',x:-880,z:1030,price:12000,slots:3},
-  {id:'mirpur',name:'Mirpur Motor Hub',x:1200,z:-930,price:18000,slots:4},
-  {id:'sadarghat',name:'Sadarghat Marina',x:400,z:1450,price:45000,slots:5}
+  {id:'starter',name:'Gulshan Starter Garage',x:-490,z:-470,price:0,slots:2},
+  {id:'old-dhaka',name:'Old Dhaka Workshop',x:-830,z:980,price:12000,slots:3},
+  {id:'mirpur',name:'Mirpur Motor Hub',x:1150,z:-880,price:18000,slots:4},
+  {id:'sadarghat',name:'Sadarghat Marina',x:450,z:1390,price:45000,slots:5}
 ]);
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -305,6 +305,23 @@ export default function DhakaDrive() {
         }
         g.position.set(lm.x,0,lm.z);scene.add(g);
         world.labels.push({ name: lm.name, position: new THREE.Vector3(lm.x, 32, lm.z) });
+      }
+      // Purchasable physical garage properties with shutters, signage, parking bays and a display vehicle.
+      for(const garage of GARAGES){
+        const g=new THREE.Group();
+        const wallMat=new THREE.MeshStandardMaterial({color:garage.id==='starter'?0x66757b:0x4b5964,roughness:.9});
+        const roofMat=new THREE.MeshStandardMaterial({color:0x252d35,roughness:.85});
+        const doorMat=new THREE.MeshStandardMaterial({color:world.ownedGarages.includes(garage.id)?0x23855b:0x9b593c,roughness:.7,metalness:.18});
+        const floor=new THREE.Mesh(new THREE.BoxGeometry(29,.25,21),new THREE.MeshStandardMaterial({color:0x545a5b,roughness:.95}));floor.position.y=.12;g.add(floor);
+        for(const [x,z,w,d,h] of [[-14,0,1,21,6],[14,0,1,21,6],[0,10,29,1,6]]){const wall=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),wallMat);wall.position.set(x,h/2,z);g.add(wall);}
+        const roof=new THREE.Mesh(new THREE.BoxGeometry(31,.8,23),roofMat);roof.position.y=6.4;g.add(roof);
+        const shutter=new THREE.Mesh(new THREE.BoxGeometry(1,4.8,8),doorMat);shutter.position.set(-13.2,2.5,0);g.add(shutter);
+        for(let bay=0;bay<3;bay++){const line=new THREE.Mesh(new THREE.BoxGeometry(.09,.025,7.5),new THREE.MeshStandardMaterial({color:0xf2cf67}));line.position.set(-7+bay*7,.28,4.5);g.add(line);}
+        const boardCanvas=document.createElement('canvas');boardCanvas.width=512;boardCanvas.height=96;const bc=boardCanvas.getContext('2d');bc.fillStyle='#102a25';bc.fillRect(0,0,512,96);bc.fillStyle='#f5df90';bc.font='bold 35px sans-serif';bc.textAlign='center';bc.textBaseline='middle';bc.fillText(garage.name.toUpperCase().slice(0,25),256,48);
+        const board=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(boardCanvas),transparent:true,depthWrite:false}));board.scale.set(13,2.4,1);board.position.set(0,7.8,-10.8);g.add(board);
+        g.position.set(garage.x,0,garage.z);scene.add(g);
+        const parked=makeVehicle(THREE,garage.id==='starter'?0x2563eb:0xb9c0c7,'car',false);parked.scale.set(.8,.8,.8);parked.position.set(garage.x+3,0,garage.z+1);scene.add(parked);
+        world.labels.push({name:garage.name,position:new THREE.Vector3(garage.x,10,garage.z)});
       }
       // Street light poles, signal heads and local traffic.
       const poleMat = new THREE.MeshStandardMaterial({ color: 0x505b60, metalness: 0.55 });
