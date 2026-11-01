@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS dhaka_game_sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','finished','expired')),
-  active_mission_id TEXT NOT NULL DEFAULT 'explore',
+  active_mission_id TEXT DEFAULT 'explore',
   mission_started_at TIMESTAMPTZ DEFAULT NOW(),
   mission_target_x DOUBLE PRECISION,
   mission_target_z DOUBLE PRECISION,
