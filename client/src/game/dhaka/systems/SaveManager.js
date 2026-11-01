@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'vibepulse-dhaka-save';
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 const finite = (value, fallback) => Number.isFinite(value) ? value : fallback;
 
 export class SaveManager {
