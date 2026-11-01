@@ -12,8 +12,8 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
     if(bGenerateRoads){
         for(int32 I=0;I<=GridBlocks;++I){
             const float P=Start+I*Step;
-            AddBoxMesh(FVector(P,0,0),FVector(26.f,CityExtent+Step,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
-            AddBoxMesh(FVector(0,P,0),FVector(CityExtent+Step,26.f,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
+            AddBoxMesh(FVector(P,0,0),FVector(900.f,CityExtent+Step,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
+            AddBoxMesh(FVector(0,P,0),FVector(CityExtent+Step,900.f,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
             AddBoxMesh(FVector(P,0,10.f),FVector(1.5f,CityExtent+Step,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
             AddBoxMesh(FVector(0,P,10.f),FVector(CityExtent+Step,1.5f,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
         }
