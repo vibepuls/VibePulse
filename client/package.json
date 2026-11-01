@@ -21,6 +21,7 @@
     "autoprefixer": "^10.4.21",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "three": "^0.180.0"
   }
 }
