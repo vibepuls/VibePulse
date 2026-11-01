@@ -6,12 +6,18 @@ router.use(authenticate);
 
 const MISSIONS = Object.freeze({
   explore: { reward: 500, minimumSeconds: 20 },
-  taxi: { reward: 850, minimumSeconds: 25 },
-  delivery: { reward: 700, minimumSeconds: 25 },
-  race: { reward: 1200, minimumSeconds: 30 },
-  rickshaw: { reward: 600, minimumSeconds: 20 },
-  bus: { reward: 1000, minimumSeconds: 30 },
-  collection: { reward: 450, minimumSeconds: 15 },
+  taxi: { reward: 850, minimumSeconds: 25, target: [-880,1030] },
+  delivery: { reward: 700, minimumSeconds: 25, target: [-520,-520] },
+  race: { reward: 1200, minimumSeconds: 30, target: [1200,-930] },
+  rickshaw: { reward: 600, minimumSeconds: 20, target: [550,320] },
+  bus: { reward: 1000, minimumSeconds: 30, target: [400,1450] },
+  collection: { reward: 450, minimumSeconds: 15, target: [-350,-100] },
+});
+const LANDMARK_TARGETS = [
+  [-880,1030], [180,1300], [400,1450], [-350,-100], [-520,-520], [550,320], [1200,-930],
+];
+const UNUSED_MISSION_CONFIG = Object.freeze({}); 
+
 });
 
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -46,9 +52,14 @@ router.post('/sessions', wrap(async (req, res) => {
 router.post('/sessions/:sessionId/missions/:missionId/start', wrap(async (req, res) => {
   const mission = MISSIONS[req.params.missionId];
   if (!mission) return res.status(400).json({ error: 'Unknown mission.' });
-  const result = await query(`UPDATE dhaka_game_sessions SET active_mission_id=$3,mission_started_at=NOW()
+  const requestedIndex = Number.isInteger(Number(req.body.targetIndex)) ? Number(req.body.targetIndex) : 0;
+  const target = req.params.missionId === 'explore'
+    ? LANDMARK_TARGETS[Math.max(0,Math.min(LANDMARK_TARGETS.length-1,requestedIndex))]
+    : mission.target;
+  const targetX = target?.[0] ?? -880, targetZ = target?.[1] ?? 1030;
+  const result = await query(`UPDATE dhaka_game_sessions SET active_mission_id=$3,mission_started_at=NOW(),mission_target_x=$4,mission_target_z=$5
     WHERE id=$1 AND user_id=$2 AND status='active' AND started_at > NOW()-INTERVAL '8 hours'
-    RETURNING id,active_mission_id,mission_started_at`, [req.params.sessionId, req.user.id, req.params.missionId]);
+    RETURNING id,active_mission_id,mission_started_at,mission_target_x,mission_target_z`, [req.params.sessionId, req.user.id, req.params.missionId,targetX,targetZ]);
   if (!result.rows.length) return res.status(404).json({ error: 'Active game session not found.' });
   res.json({ session: result.rows[0], reward: mission.reward, minimumSeconds: mission.minimumSeconds });
 }));
@@ -59,13 +70,18 @@ router.post('/sessions/:sessionId/missions/:missionId/complete', wrap(async (req
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const locked = await client.query(`SELECT id,active_mission_id,mission_started_at,started_at
+    const locked = await client.query(`SELECT id,active_mission_id,mission_started_at,started_at,player_x,player_z,mission_target_x,mission_target_z
       FROM dhaka_game_sessions WHERE id=$1 AND user_id=$2 AND status='active' FOR UPDATE`, [req.params.sessionId, req.user.id]);
     if (!locked.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active game session not found.' }); }
     const session = locked.rows[0];
     if (session.active_mission_id !== req.params.missionId) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'This mission is not active in the server session.' }); }
     const seconds = (Date.now() - new Date(session.mission_started_at).getTime()) / 1000;
     if (seconds < mission.minimumSeconds) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Mission duration is too short to validate.' }); }
+    if (!Number.isFinite(Number(session.player_x)) || !Number.isFinite(Number(session.player_z)) ||
+        !Number.isFinite(Number(session.mission_target_x)) || !Number.isFinite(Number(session.mission_target_z)) ||
+        Math.hypot(Number(session.player_x)-Number(session.mission_target_x),Number(session.player_z)-Number(session.mission_target_z)) > 50) {
+      await client.query('ROLLBACK'); return res.status(400).json({ error: 'Reach the mission destination before claiming the reward.' });
+    }
     if (seconds > 2700 || Date.now() - new Date(session.started_at).getTime() > 8 * 60 * 60 * 1000) {
       await client.query(`UPDATE dhaka_game_sessions SET status='expired',ended_at=NOW() WHERE id=$1`, [session.id]);
       await client.query('COMMIT'); return res.status(410).json({ error: 'Game session expired. Start a new session.' });
