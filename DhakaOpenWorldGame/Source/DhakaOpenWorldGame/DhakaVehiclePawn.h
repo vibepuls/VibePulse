@@ -21,9 +21,14 @@ public:
     UPROPERTY(BlueprintReadOnly) float Speed = 0.f;
     UPROPERTY(BlueprintReadOnly) float TravelDistanceKm = 0.f;
     UPROPERTY(BlueprintReadWrite) FLinearColor PaintColor = FLinearColor(0.72f,0.08f,0.07f,1.f);
+    UPROPERTY(BlueprintReadOnly) bool bOccupied = true;
+    void SetOccupied(bool bValue) { bOccupied=bValue; }
+    void SetDriverController(class AController* Controller) { DriverController=Controller; }
+    UFUNCTION(BlueprintCallable) void ToggleVehicleMode();
     UFUNCTION(BlueprintCallable) void SetPaintColor(FLinearColor NewColor);
 private:
     UPROPERTY() TObjectPtr<class UMaterialInstanceDynamic> BodyMaterial;
+    UPROPERTY() TObjectPtr<class AController> DriverController;
     UPROPERTY() TArray<TObjectPtr<class UStaticMeshComponent>> VisualParts;
     float ThrottleInput = 0.f;
     float SteeringInput = 0.f;
