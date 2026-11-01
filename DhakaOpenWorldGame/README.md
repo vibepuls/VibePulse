@@ -12,7 +12,7 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 ## Open and build
 1. Install Unreal Engine 5.5 and the matching C++ toolchain (Visual Studio with the Desktop development with C++ workload on Windows).
 2. Open `DhakaOpenWorldGame.uproject` in Unreal Editor and allow project files to be generated.
-3. Generate a level, add `ADhakaCityGenerator` and an `ADhakaVehiclePawn`, and set the pawn as the player pawn in a GameMode/level.
+3. Open the default Entry map or create a level and select `ADhakaGameMode`. The GameMode automatically generates the city, spawns the player vehicle, ambient traffic, pedestrian crowd and weather controller.
 4. Build Development Editor first, then package Windows or Android from Unreal's Platforms menu after installing the relevant Android SDK/NDK and platform components.
 
 ## Important implementation boundary
