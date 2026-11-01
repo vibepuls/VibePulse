@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS dhaka_game_sessions (
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','finished','expired')),
   active_mission_id TEXT NOT NULL DEFAULT 'explore',
   mission_started_at TIMESTAMPTZ DEFAULT NOW(),
+  player_x DOUBLE PRECISION,
+  player_z DOUBLE PRECISION,
+  player_heading DOUBLE PRECISION NOT NULL DEFAULT 0,
+  vehicle_type TEXT NOT NULL DEFAULT 'car',
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   ended_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
