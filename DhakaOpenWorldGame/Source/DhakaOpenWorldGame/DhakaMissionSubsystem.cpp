@@ -11,7 +11,7 @@ void UDhakaMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     Add("market_delivery", TEXT("Market Delivery"), TEXT("Deliver a package to Old Dhaka market."), 700, FVector(-85000,100000,0));
     Add("bus_route", TEXT("City Bus Route"), TEXT("Complete the marked city bus stop route."), 1000, FVector(100000,70000,0));
     Add("street_sprint", TEXT("Dhaka Street Sprint"), TEXT("Reach the finish point before the timer expires."), 1200, FVector(150000,-10000,0));
-    Add("sadarghat", TEXT("Riverfront Visit"), TEXT("Visit Sadarghat and the Buriganga riverfront."), 600, FVector(40000,145000,0));
+    Add("sadarghat", TEXT("Riverfront Visit"), TEXT("Visit Sadarghat and the Buriganga riverfront."), 600, FVector(130000,145000,0));
     StartMission("explore_lalbagh");
 }
 bool UDhakaMissionSubsystem::StartMission(FName MissionId)
