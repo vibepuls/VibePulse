@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS dhaka_game_sessions (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','finished','expired')),
   active_mission_id TEXT NOT NULL DEFAULT 'explore',
-  mission_started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  mission_started_at TIMESTAMPTZ DEFAULT NOW(),
   started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   ended_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
