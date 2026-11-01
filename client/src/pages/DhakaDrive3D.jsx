@@ -188,7 +188,7 @@ export default function DhakaDrive() {
       const sun = new THREE.DirectionalLight(0xffe0b1, 3.1); sun.position.set(-180, 260, -80); sun.castShadow = quality !== 'Low'; sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -180; sun.shadow.camera.right = 180; sun.shadow.camera.top = 180; sun.shadow.camera.bottom = -180; scene.add(sun);
       const groundMat = new THREE.MeshStandardMaterial({ color: 0x738b6c, roughness: 1 });
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(3600, 3600), groundMat); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.12; ground.receiveShadow = true; scene.add(ground);
-      const roadMat = new THREE.MeshStandardMaterial({ color: 0x353b42, roughness: 0.96 }); weatherSystem.registerMaterial(roadMat);
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x353b42, roughness: 0.96 }); weatherSystem.registerMaterial(roadMat); weatherSystem.set(weather, scene);
       const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xbab5a5, roughness: 1 });
       const lineMat = new THREE.MeshStandardMaterial({ color: 0xe6d7a4, roughness: 1 });
       const block = 110, roadWidth = 18, half = 1700;
@@ -368,6 +368,7 @@ export default function DhakaDrive() {
         const dt=Math.min(clock.getDelta(),.04);world.frame++;
         const p=world.player;
         if(world.running){
+          vehicleController.gripMultiplier=world.weather?.type==='monsoon'?0.58:world.weather?.type==='rain'?0.78:world.weather?.type==='fog'?0.9:1;
           world.weather?.update(dt, p);
           world.audio?.updateEngine(p.speed, p.walking);
           if (world.missions.definition.duration > 0 && world.missions.startedAt > 0 && world.missions.remaining(clock.elapsedTime) <= 0) { setNotice(world.missions.definition.title + ' expired. Start the mission again to retry.'); world.missions.start('explore', clock.elapsedTime); }
