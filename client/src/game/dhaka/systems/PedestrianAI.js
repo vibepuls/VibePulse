@@ -1,4 +1,4 @@
-const STATES = Object.freeze({ WALK: 'walk', WAIT: 'wait', CROSS: 'cross', IDLE: 'idle' });
+const STATES = Object.freeze({ WALK: 'walk', WAIT: 'wait', CROSS: 'cross', IDLE: 'idle', SHOP: 'shop', TALK: 'talk', BOARD: 'board' });
 
 /**
  * Deterministic low-cost pedestrian state machine.
@@ -15,6 +15,14 @@ export class PedestrianAI {
     if (!Array.isArray(agents) || dt <= 0) return;
     for (const agent of agents) {
       if (!agent?.mesh) continue;
+      if ([STATES.SHOP,STATES.TALK,STATES.BOARD].includes(agent.state)) {
+        if (nowSeconds < (agent.actionUntil ?? 0)) continue;
+        agent.state = STATES.WALK;
+      }
+      if (agent.state === STATES.IDLE) {
+        if (nowSeconds < (agent.waitUntil ?? 0)) continue;
+        agent.state = STATES.WALK;
+      }
       if (agent.state === STATES.WAIT) {
         if (nowSeconds >= (agent.waitUntil ?? 0)) agent.state = STATES.CROSS;
         continue;
@@ -24,6 +32,7 @@ export class PedestrianAI {
       const distance = Math.hypot(dx, dz);
       if (distance <= this.arrivalRadius) {
         agent.state = STATES.IDLE;
+        agent.waitUntil = nowSeconds + 1.2;
         agent.mesh.rotation.y = Math.atan2(dx, dz);
         continue;
       }
