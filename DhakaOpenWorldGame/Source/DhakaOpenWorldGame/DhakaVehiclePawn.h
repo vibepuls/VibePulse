@@ -19,6 +19,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vehicle") float BrakeStrength = 3600.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vehicle") float SteeringRate = 68.f;
     UPROPERTY(BlueprintReadOnly) float Speed = 0.f;
+    UPROPERTY(BlueprintReadOnly) float TravelDistanceKm = 0.f;
     UPROPERTY(BlueprintReadWrite) FLinearColor PaintColor = FLinearColor(0.72f,0.08f,0.07f,1.f);
     UFUNCTION(BlueprintCallable) void SetPaintColor(FLinearColor NewColor);
 private:
@@ -30,4 +31,6 @@ private:
     void InputThrottle(float Value);
     void InputSteer(float Value);
     void InputBrake(float Value);
+    void SaveProgress();
+    void LoadProgress();
 };
