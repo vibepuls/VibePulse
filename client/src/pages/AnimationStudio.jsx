@@ -156,7 +156,12 @@ export default function AnimationStudio() {
           <label>Voice speed <span>{voiceRate.toFixed(2)}×</span><input type="range" min="0.65" max="1.35" step="0.05" value={voiceRate} onChange={e=>setVoiceRate(Number(e.target.value))}/></label>
           <div className="vp-anim-character-buttons"><button onClick={speakAsCharacter}>▶ Speak + lip movement</button><button onClick={stopSpeech}>■ Stop</button></div>
           <button onClick={makeWalkCycle}>↔ Create walk motion</button>
-          {selected?.kind==='image'&&selected.rigged&&<label>Mouth vertical position<input type="range" min={-220} max={220} value={selected.mouthY??60} onChange={e=>updateLayer(selected.id,{mouthY:Number(e.target.value)})}/></label>}
+          {selected?.kind==='image'&&selected.rigged&&<>
+            <label>Mouth horizontal position <span>{Math.round(selected.mouthX??0)}</span><input type="range" min={-180} max={180} value={selected.mouthX??0} onChange={e=>updateLayer(selected.id,{mouthX:Number(e.target.value)})}/></label>
+            <label>Mouth vertical position <span>{Math.round(selected.mouthY??0)}</span><input type="range" min={-260} max={260} value={selected.mouthY??0} onChange={e=>updateLayer(selected.id,{mouthY:Number(e.target.value)})}/></label>
+            <label>Mouth width <span>{Math.round(selected.mouthWidth??36)}</span><input type="range" min="10" max="180" value={selected.mouthWidth??36} onChange={e=>updateLayer(selected.id,{mouthWidth:Number(e.target.value)})}/></label>
+            <label>Mouth height <span>{Math.round(selected.mouthHeight??12)}</span><input type="range" min="4" max="70" value={selected.mouthHeight??12} onChange={e=>updateLayer(selected.id,{mouthHeight:Number(e.target.value)})}/></label>
+          </>}
           <small>Basic voice/lip movement is a starter rig, not phoneme-accurate lip-sync. Place the mouth on your character and test it.</small>
         </div>
         <div className="vp-anim-panel-title">LAYERS <span>{layers.length}</span></div>
