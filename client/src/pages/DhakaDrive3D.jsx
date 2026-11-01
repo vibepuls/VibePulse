@@ -72,7 +72,13 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
     const seat = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.45, 0.75), dark); seat.position.set(0, 1.0, 0.25); group.add(seat);
     const front = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), bodyMat); front.position.set(0, 0.8, -0.85); group.add(front);
   }
-  const wheelRadius = type === 'motorcycle' || type === 'scooter' || type === 'bicycle' ? 0.38 : type === 'rickshaw' ? 0.28 : type === 'cng' ? 0.31 : 0.38;
+  if (['police','ambulance','firetruck'].includes(type)) {
+    const redMat=new THREE.MeshStandardMaterial({color:0xff2525,emissive:0x8b0000});
+    const blueMat=new THREE.MeshStandardMaterial({color:0x258bff,emissive:0x003b99});
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.58,.12,.42),dark);bar.position.set(0,bodyHeight+1.02,-.1);group.add(bar);
+    for(const [x,mat] of [[-.38,redMat],[.38,blueMat]]){const lamp=new THREE.Mesh(new THREE.BoxGeometry(.34,.2,.3),mat);lamp.position.set(x,bodyHeight+1.2,-.1);group.add(lamp);}
+  }
+  const wheelRadius = type === 'motorcycle' || type === 'scooter' || type === 'bicycle' ? 0.38 : type === 'rickshaw' || type === 'batteryRickshaw' || type === 'handcart' ? 0.28 : type === 'cng' ? 0.31 : 0.38;
   const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.22, 12);
   if (type === 'motorcycle') {
     for (const z of [-0.72, 0.72]) { const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI/2; wheel.position.set(0, 0.4, z); group.add(wheel); }
