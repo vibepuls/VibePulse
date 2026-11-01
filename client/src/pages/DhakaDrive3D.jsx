@@ -77,6 +77,7 @@ export default function DhakaDrive() {
   const [notice, setNotice] = useState('Welcome to Dhaka. Drive safely and explore the city.');
   const [quality, setQuality] = useState('High');
   const [nightMode, setNightMode] = useState(false);
+  const [cameraMode, setCameraMode] = useState('Chase');
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -87,7 +88,7 @@ export default function DhakaDrive() {
     const world = {
       player: { x: -520, z: -520, heading: 0, speed: 0, walking: false, distance: 0 },
       cars: [], peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
-      missionTarget: LANDMARKS[0], running: true, keys
+      missionTarget: LANDMARKS[0], running: true, keys, cameraMode: 'Chase'
     };
     try {
       scene = new THREE.Scene();
@@ -236,7 +237,7 @@ export default function DhakaDrive() {
       const beam=new THREE.Mesh(new THREE.CylinderGeometry(.2,.7,20,10,1,true),new THREE.MeshBasicMaterial({color:0x55f3b2,transparent:true,opacity:.35,side:THREE.DoubleSide}));beam.position.y=10;destinationMarker.add(beam);scene.add(destinationMarker);world.destinationMarker=destinationMarker;
       const setTarget = (lm) => { world.missionTarget=lm;destinationMarker.position.set(lm.x,0,lm.z);setHud(old=>({...old,mission:'Reach '+lm.name}));setNotice('New objective: reach '+lm.name+'.'); };
       setTarget(LANDMARKS[0]);
-      const onKeyDown=(e)=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='c'){world.player.walking=!world.player.walking;setWalkMode(world.player.walking);world.player.speed=0;setNotice(world.player.walking?'On foot — explore the streets.':'You are back in the car.');}if(k==='escape')setRunning(v=>!v);if(k==='r'){world.player.x=-520;world.player.z=-520;world.player.heading=0;world.player.speed=0;}};
+      const onKeyDown=(e)=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='c'){world.player.walking=!world.player.walking;setWalkMode(world.player.walking);world.player.speed=0;setNotice(world.player.walking?'On foot — explore the streets.':'You are back in the car.');}if(k==='v'){world.cameraMode=world.cameraMode==='Chase'?'Close':world.cameraMode==='Close'?'Cinematic':'Chase';setCameraMode(world.cameraMode);}if(k==='escape')setRunning(v=>!v);if(k==='r'){world.player.x=-520;world.player.z=-520;world.player.heading=0;world.player.speed=0;}};
       const onKeyUp=(e)=>{keys[e.key.toLowerCase()]=false;};
       window.addEventListener('keydown',onKeyDown);window.addEventListener('keyup',onKeyUp);
       const onResize=()=>{if(!mount||disposed)return;camera.aspect=mount.clientWidth/Math.max(1,mount.clientHeight);camera.updateProjectionMatrix();renderer.setSize(mount.clientWidth,mount.clientHeight);};
@@ -270,9 +271,10 @@ export default function DhakaDrive() {
         const active= p.walking?world.playerPed:world.playerCar;active.visible=true; (p.walking?world.playerCar:world.playerPed).visible=false;
         active.position.set(p.x,0,p.z);active.rotation.y=p.heading;
         if(p.walking){active.position.y=Math.abs(Math.sin(world.frame*.18))*.05;}
-        const behind= p.walking?10:17, height=p.walking?6:8;
+        const behind=world.cameraMode==='Close'?(p.walking?3.4:5.4):world.cameraMode==='Cinematic'?(p.walking?16:25):(p.walking?10:17);
+        const height=world.cameraMode==='Close'?(p.walking?2.8:3.5):world.cameraMode==='Cinematic'?(p.walking?10:13):(p.walking?6:8);
         const desired=new THREE.Vector3(p.x-Math.sin(p.heading)*behind,height,p.z-Math.cos(p.heading)*behind);
-        camera.position.lerp(desired,1-Math.pow(.001,dt));tempTarget.set(p.x, p.walking?1.25:1.4,p.z);camera.lookAt(tempTarget);
+        camera.position.lerp(desired,1-Math.pow(.001,dt));tempTarget.set(p.x,world.cameraMode==='Close'?(p.walking?1.6:1.0):(p.walking?1.25:1.4),p.z);camera.lookAt(tempTarget);
         world.destinationMarker.rotation.y+=dt*.5;
         if(world.frame-world.lastHud>12){
           world.lastHud=world.frame;
@@ -316,7 +318,7 @@ export default function DhakaDrive() {
   return <div className="min-h-screen bg-[#070b10] text-white">
     <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0b121b]/95 px-4 py-3 backdrop-blur-xl md:px-6">
       <div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-red-500 to-orange-600 shadow-lg shadow-red-950/50"><CarFront size={24}/></div><div><div className="text-lg font-black tracking-[.13em]">DHAKA <span className="text-red-400">OPEN WORLD</span></div><div className="text-[11px] text-slate-400">VibePulse • 3D city driving experience</div></div></div>
-      <div className="flex flex-wrap gap-2"><button onClick={()=>setRunning(v=>!v)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-500">{running?<Pause size={15} className="mr-1 inline"/>:<Play size={15} className="mr-1 inline"/>}{running?'Pause':'Resume'}</button><button onClick={()=>setMuted(v=>!v)} title="Audio settings" className="rounded-lg border border-white/15 px-3 py-2">{muted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><button onClick={()=>setNightMode(v=>!v)} title="Toggle day/night" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">{nightMode?'Night':'Day'}</button><button onClick={reset} title="Reset position" className="rounded-lg border border-white/15 px-3 py-2"><RotateCcw size={17}/></button></div>
+      <div className="flex flex-wrap gap-2"><button onClick={()=>setRunning(v=>!v)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-500">{running?<Pause size={15} className="mr-1 inline"/>:<Play size={15} className="mr-1 inline"/>}{running?'Pause':'Resume'}</button><button onClick={()=>setMuted(v=>!v)} title="Audio settings" className="rounded-lg border border-white/15 px-3 py-2">{muted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><button onClick={()=>setNightMode(v=>!v)} title="Toggle day/night" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">{nightMode?'Night':'Day'}</button><button onClick={()=>{const next=cameraMode==='Chase'?'Close':cameraMode==='Close'?'Cinematic':'Chase';setCameraMode(next);if(engine.current)engine.current.world.cameraMode=next;}} title="Change camera (V)" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">📷 {cameraMode}</button><button onClick={reset} title="Reset position" className="rounded-lg border border-white/15 px-3 py-2"><RotateCcw size={17}/></button></div>
     </header>
     <main className="mx-auto max-w-[1700px] p-3 md:p-5">
       <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">{[['SPEED',hud.speed+' km/h'],['CURRENT DISTRICT',hud.area],['WALLET','৳ '+hud.money.toLocaleString()],['TRAVEL DISTANCE',hud.distance+' km']].map(([a,b])=><div key={a} className="rounded-xl border border-white/10 bg-[#101924] p-3"><div className="text-[10px] font-bold tracking-[.17em] text-slate-500">{a}</div><div className="mt-1 truncate text-base font-bold">{b}</div></div>)}</div>
@@ -338,7 +340,7 @@ export default function DhakaDrive() {
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_340px]">
         <section className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 flex items-center gap-2 font-bold"><MapPin size={18} className="text-emerald-300"/> Explore Dhaka districts & landmarks</h2><div className="flex flex-wrap gap-2">{LANDMARKS.map(lm=><button key={lm.name} onClick={()=>chooseLandmark(lm)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-emerald-400 hover:bg-emerald-400/10">{lm.name}</button>)}</div><p className="mt-3 text-xs leading-5 text-slate-500">A procedurally built, original 3D city inspired by Dhaka's dense roads, mixed traffic, street markets, river ghats and landmark architecture. The layout is game-fiction, not a survey-accurate city map.</p></section>
-        <aside className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 font-bold">Controls</h2><div className="space-y-2 text-sm text-slate-300"><p><b className="text-white">W / ↑</b> Accelerate / walk forward</p><p><b className="text-white">S / ↓</b> Reverse / walk backward</p><p><b className="text-white">A / D</b> Steer / turn</p><p><b className="text-white">C</b> Switch car / on foot</p><p><b className="text-white">Space</b> Brake</p><p><b className="text-white">Esc</b> Pause / resume</p><p><b className="text-white">R</b> Reset car position</p></div><div className="mt-4 grid grid-cols-2 gap-2">{LANDMARKS.slice(0,4).map(lm=><button key={lm.name} onClick={()=>{setHud(old=>({...old,mission:'Reach '+lm.name}));chooseLandmark(lm);}} className="rounded-lg bg-emerald-700/80 px-2 py-2 text-xs font-bold hover:bg-emerald-600">Go: {lm.name}</button>)}</div><p className="mt-3 text-xs text-slate-500">3D prototype with a procedural environment, traffic, walk/drive modes and landmark objectives. Continued work can expand missions, interiors, animations and assets.</p></aside>
+        <aside className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 font-bold">Controls</h2><div className="space-y-2 text-sm text-slate-300"><p><b className="text-white">W / ↑</b> Accelerate / walk forward</p><p><b className="text-white">S / ↓</b> Reverse / walk backward</p><p><b className="text-white">A / D</b> Steer / turn</p><p><b className="text-white">C</b> Switch car / on foot</p><p><b className="text-white">V</b> Change camera view</p><p><b className="text-white">Space</b> Brake</p><p><b className="text-white">Esc</b> Pause / resume</p><p><b className="text-white">R</b> Reset car position</p></div><div className="mt-4 grid grid-cols-2 gap-2">{LANDMARKS.slice(0,4).map(lm=><button key={lm.name} onClick={()=>{setHud(old=>({...old,mission:'Reach '+lm.name}));chooseLandmark(lm);}} className="rounded-lg bg-emerald-700/80 px-2 py-2 text-xs font-bold hover:bg-emerald-600">Go: {lm.name}</button>)}</div><p className="mt-3 text-xs text-slate-500">3D prototype with a procedural environment, traffic, walk/drive modes and landmark objectives. Continued work can expand missions, interiors, animations and assets.</p></aside>
       </div>
     </main>
   </div>;
