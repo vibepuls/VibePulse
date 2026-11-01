@@ -1,0 +1,39 @@
+{
+  "units": "meters-seconds",
+  "fixedStepSeconds": 0.0166667,
+  "maxSubSteps": 4,
+  "vehicle": {
+    "forwardAcceleration": 8,
+    "brakeDeceleration": 15,
+    "reverseAcceleration": 4,
+    "maxForwardSpeed": 42,
+    "maxReverseSpeed": 13,
+    "coastDrag": 0.035,
+    "rollingResistance": 0.012,
+    "steeringAtLowSpeed": 0.65,
+    "steeringAtHighSpeed": 2.15,
+    "steeringSpeedReference": 17,
+    "lateralGrip": 7.5,
+    "collisionRestitution": 0.18,
+    "collisionCooldownSeconds": 0.7
+  },
+  "walking": {
+    "speed": 3.2,
+    "sprintSpeed": 5.4,
+    "turnRate": 2.2,
+    "radius": 0.38
+  },
+  "collision": {
+    "playerVehicleHalfWidth": 1,
+    "playerVehicleHalfLength": 2.2,
+    "pedestrianRadius": 0.42,
+    "buildingPadding": 1
+  },
+  "traffic": {
+    "minSpeed": 4,
+    "maxSpeed": 15,
+    "followingDistance": 8,
+    "laneChangeCooldownSeconds": 3.5,
+    "yieldDistance": 12
+  }
+}
