@@ -179,7 +179,7 @@ export default function DhakaDrive() {
     const savedTargetIndex = Number.isInteger(savedGame.targetIndex) ? clamp(savedGame.targetIndex, 0, LANDMARKS.length - 1) : 0;
     const world = {
       player: { x: Number.isFinite(savedGame.x) ? clamp(savedGame.x, -1650, 1650) : -520, z: Number.isFinite(savedGame.z) ? clamp(savedGame.z, -1650, 1650) : -520, heading: Number.isFinite(savedGame.heading) ? savedGame.heading : 0, speed: 0, walking: false, jumpY: 0, jumpVelocity: 0, distance: Number.isFinite(savedGame.distance) ? savedGame.distance : 0 },
-      autoDayCycle, timeOfDay: 14,
+      autoDayCycle, timeOfDay: 14, stallLocations: [],
       ownedVehicles: [...new Set([...(Array.isArray(savedGame.ownedVehicles)?savedGame.ownedVehicles:['car']),vehicleType])],
       ownedGarages: Array.isArray(savedGame.ownedGarages)&&savedGame.ownedGarages.length?savedGame.ownedGarages:['starter'],
       cars: [], police: [], wantedLevel: 0, lastCrimeFrame: -9999, peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
@@ -345,7 +345,7 @@ export default function DhakaDrive() {
         const canopy=new THREE.Mesh(new THREE.BoxGeometry(4.2,.16,2.6),new THREE.MeshStandardMaterial({color:pick([0xc84d3b,0x2e7b53,0xd6b744,0x2d6c91]),roughness:.8}));canopy.position.y=2.55;stall.add(canopy);
         for(const wx of [-1.25,1.25]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.16,10),new THREE.MeshStandardMaterial({color:0x20252a}));wheel.rotation.z=Math.PI/2;wheel.position.set(wx,.32,.72);stall.add(wheel);}
         const sign=new THREE.Sprite(signMaterial);sign.scale.set(4.2,1.05,1);sign.position.set(0,3.45,-1.22);stall.add(sign);
-        stall.position.set(x,0,z);stall.rotation.y=Math.random()*Math.PI*2;scene.add(stall);
+        stall.position.set(x,0,z);stall.rotation.y=Math.random()*Math.PI*2;scene.add(stall);world.stallLocations.push(new THREE.Vector3(x,0,z));
       }
       // Sagging overhead electrical wires and concrete utility poles, a recognizable dense-street silhouette.
       const wireMaterial=new THREE.LineBasicMaterial({color:0x252d31,transparent:true,opacity:.82});
@@ -435,8 +435,10 @@ export default function DhakaDrive() {
             cop.flash+=dt*8;cop.lights[0].visible=Math.sin(cop.flash)>0;cop.lights[1].visible=Math.sin(cop.flash)<=0;
           }
           if(world.wantedLevel>0&&world.police.length&&world.police.every(cop=>Math.hypot(cop.mesh.position.x-p.x,cop.mesh.position.z-p.z)>220)){world.wantedLevel=Math.max(0,world.wantedLevel-1);if(world.wantedLevel===0){for(const cop of world.police){scene.remove(cop.mesh);}world.police=[];setNotice('You escaped the police. Wanted level cleared.');}}
-          for(const ped of world.peds){if(ped.state==='idle'){ped.targetX=clamp(ped.originX+(Math.random()-.5)*24,-1600,1600);ped.targetZ=clamp(ped.originZ+(Math.random()-.5)*24,-1600,1600);ped.state='walk';} }pedestrianAI.update(world.peds,dt,clock.elapsedTime,agent=>!world.cars.some(v=>Math.hypot(v.mesh.position.x-agent.x,v.mesh.position.z-agent.z)<5));
-          for(const ped of world.peds){const mesh=ped.mesh,phase=clock.elapsedTime*6+(ped.phase||0),swing=(ped.state==='walk'||ped.state==='cross')?Math.sin(phase)*.42:0;if(mesh.userData.legs?.length===2){mesh.userData.legs[0].rotation.x=swing;mesh.userData.legs[1].rotation.x=-swing;}if(mesh.userData.arms?.length===2){mesh.userData.arms[0].rotation.x=-swing*.7;mesh.userData.arms[1].rotation.x=swing*.7;}}
+          for(const ped of world.peds){if(ped.state==='idle'&&clock.elapsedTime>=(ped.waitUntil||0)){ped.targetX=clamp(ped.originX+(Math.random()-.5)*24,-1600,1600);ped.targetZ=clamp(ped.originZ+(Math.random()-.5)*24,-1600,1600);ped.state='walk';}}
+          pedestrianAI.update(world.peds,dt,clock.elapsedTime,agent=>!world.cars.some(v=>Math.hypot(v.mesh.position.x-agent.x,v.mesh.position.z-agent.z)<5));
+          for(const ped of world.peds){if(ped.state!=='walk'||Math.random()>.0035)continue;const stall=world.stallLocations.find(loc=>Math.hypot(loc.x-ped.x,loc.z-ped.z)<11);if(stall){ped.state='shop';ped.actionUntil=clock.elapsedTime+2+Math.random()*5;continue;}const companion=world.peds.find(other=>other!==ped&&other.state==='walk'&&Math.hypot(other.x-ped.x,other.z-ped.z)<2.5);if(companion&&Math.random()<.45){ped.state='talk';companion.state='talk';ped.actionUntil=companion.actionUntil=clock.elapsedTime+2+Math.random()*5;continue;}const bus=world.cars.find(v=>['bus','minibus'].includes(v.type)&&Math.hypot(v.mesh.position.x-ped.x,v.mesh.position.z-ped.z)<5);if(bus){ped.state='board';ped.actionUntil=clock.elapsedTime+1.5+Math.random()*3;}}
+          for(const ped of world.peds){const mesh=ped.mesh;mesh.visible=ped.state!=='board';const phase=clock.elapsedTime*6+(ped.phase||0),swing=(ped.state==='walk'||ped.state==='cross')?Math.sin(phase)*.42:0;if(mesh.userData.legs?.length===2){mesh.userData.legs[0].rotation.x=swing;mesh.userData.legs[1].rotation.x=-swing;}if(mesh.userData.arms?.length===2){mesh.userData.arms[0].rotation.x=-swing*.7;mesh.userData.arms[1].rotation.x=swing*.7;}}
           if(p.walking&&world.playerPed.userData.legs?.length===2){const swing=Math.sin(clock.elapsedTime*8)*.5;world.playerPed.userData.legs[0].rotation.x=swing;world.playerPed.userData.legs[1].rotation.x=-swing;}
         }
         const active= p.walking?world.playerPed:world.playerCar;active.visible=true; (p.walking?world.playerCar:world.playerPed).visible=false;
