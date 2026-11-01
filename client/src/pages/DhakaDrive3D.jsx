@@ -106,7 +106,12 @@ function makePedestrian(THREE) {
   const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.5, 3, 7), shirt); torso.position.y = 1.05; torso.castShadow = true; group.add(torso);
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), skin); head.position.y = 1.52; head.castShadow = true; group.add(head);
   const legsMat = new THREE.MeshStandardMaterial({ color: 0x333b48 });
-  for (const x of [-0.11, 0.11]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.48, 0.15), legsMat); leg.position.set(x, 0.45, 0); group.add(leg); }
+  const legs=[];
+  for (const x of [-0.11, 0.11]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.48, 0.15), legsMat); leg.position.set(x, 0.45, 0); group.add(leg); legs.push(leg); }
+  const arms=[];
+  for (const side of [-1,1]) { const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.32,3,6),shirt);arm.position.set(side*.29,1.12,0);arm.rotation.z=side*.16;group.add(arm);arms.push(arm); }
+  const hair=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshStandardMaterial({color:pick([0x191817,0x29211c,0x3a3027])}));hair.scale.set(1,.5,1);hair.position.set(0,1.64,0);group.add(hair);
+  group.userData.legs=legs;group.userData.arms=arms;group.userData.walkPhase=Math.random()*Math.PI*2;
   return group;
 }
 
@@ -401,6 +406,8 @@ export default function DhakaDrive() {
           }
           if(world.wantedLevel>0&&world.police.length&&world.police.every(cop=>Math.hypot(cop.mesh.position.x-p.x,cop.mesh.position.z-p.z)>220)){world.wantedLevel=Math.max(0,world.wantedLevel-1);if(world.wantedLevel===0){for(const cop of world.police){scene.remove(cop.mesh);}world.police=[];setNotice('You escaped the police. Wanted level cleared.');}}
           for(const ped of world.peds){if(ped.state==='idle'){ped.targetX=clamp(ped.originX+(Math.random()-.5)*24,-1600,1600);ped.targetZ=clamp(ped.originZ+(Math.random()-.5)*24,-1600,1600);ped.state='walk';} }pedestrianAI.update(world.peds,dt,clock.elapsedTime,agent=>!world.cars.some(v=>Math.hypot(v.mesh.position.x-agent.x,v.mesh.position.z-agent.z)<5));
+          for(const ped of world.peds){const mesh=ped.mesh,phase=clock.elapsedTime*6+(ped.phase||0),swing=(ped.state==='walk'||ped.state==='cross')?Math.sin(phase)*.42:0;if(mesh.userData.legs?.length===2){mesh.userData.legs[0].rotation.x=swing;mesh.userData.legs[1].rotation.x=-swing;}if(mesh.userData.arms?.length===2){mesh.userData.arms[0].rotation.x=-swing*.7;mesh.userData.arms[1].rotation.x=swing*.7;}}
+          if(p.walking&&world.playerPed.userData.legs?.length===2){const swing=Math.sin(clock.elapsedTime*8)*.5;world.playerPed.userData.legs[0].rotation.x=swing;world.playerPed.userData.legs[1].rotation.x=-swing;}
         }
         const active= p.walking?world.playerPed:world.playerCar;active.visible=true; (p.walking?world.playerCar:world.playerPed).visible=false;
         active.position.set(p.x,p.walking?(p.jumpY||0):0,p.z);active.rotation.y=p.heading;
