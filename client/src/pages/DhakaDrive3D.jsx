@@ -182,7 +182,7 @@ export default function DhakaDrive() {
       autoDayCycle, timeOfDay: 14, stallLocations: [],
       ownedVehicles: [...new Set([...(Array.isArray(savedGame.ownedVehicles)?savedGame.ownedVehicles:['car']),vehicleType])],
       ownedGarages: Array.isArray(savedGame.ownedGarages)&&savedGame.ownedGarages.length?savedGame.ownedGarages:['starter'],
-      cars: [], police: [], wantedLevel: 0, lastCrimeFrame: -9999, peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
+      cars: [], police: [], trafficSignals: [], wantedLevel: 0, lastCrimeFrame: -9999, peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
       missionTarget: LANDMARKS[savedTargetIndex], targetIndex: savedTargetIndex, money: Number.isFinite(savedGame.money) ? savedGame.money : 12500, running: true, keys, cameraMode: 'Chase', saveManager,
       missions: new MissionSystem({ landmarks: LANDMARKS, saved: { ...(savedGame.mission || {}), startTargetIndex: savedTargetIndex } }), weather: null, audio: audioRef.current, remotePlayers: new Map()
     };
@@ -328,7 +328,7 @@ export default function DhakaDrive() {
       for(let x=-half+110;x<=half-100;x+=220)for(let z=-half+110;z<=half-100;z+=220){
         if(Math.random()<.55)continue;
         const pole=new THREE.Mesh(new THREE.CylinderGeometry(.12,.2,7,6),poleMat);pole.position.set(x+14,3.5,z+14);scene.add(pole);
-        const head=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.1,.9),new THREE.MeshStandardMaterial({color:pick([0x247b49,0xc39a29,0xa43e34]),emissive:0x100e08}));head.position.set(x+14,6.6,z+14);scene.add(head);
+        const head=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.1,.9),new THREE.MeshStandardMaterial({color:0xa43e34,emissive:0x310505}));head.position.set(x+14,6.6,z+14);scene.add(head);world.trafficSignals.push({mesh:head,phase:Math.random()*8,state:'red'});
       }
       // Dense Dhaka-style informal commerce: tea, fuchka, fruit and jhalmuri carts with Bengali signboards.
       const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=128;
@@ -371,7 +371,7 @@ export default function DhakaDrive() {
         const v=makeVehicle(THREE,pick(trafficColors),type);
         v.position.set(horizontal?(Math.random()*3000-1500):road,0,horizontal?road:(Math.random()*3000-1500));
         v.rotation.y=horizontal?(Math.random()<.5?0:Math.PI):(Math.random()<.5?Math.PI/2:-Math.PI/2);
-        scene.add(v);const dir=Math.random()<.5?-1:1;world.cars.push({mesh:v,horizontal,axis:horizontal?'x':'z',road,lane:road,speed:3+Math.random()*9,desiredSpeed:3+Math.random()*9,dir});
+        scene.add(v);const dir=Math.random()<.5?-1:1;const desiredSpeed=3+Math.random()*9;world.cars.push({mesh:v,horizontal,axis:horizontal?'x':'z',road,lane:road,speed:3+Math.random()*9,desiredSpeed,baseDesiredSpeed:desiredSpeed,dir,type});
       }
       for(let i=0;i<90;i++){
         const p=makePedestrian(THREE);p.position.set((Math.random()*3000-1500),0,(Math.random()*3000-1500));scene.add(p);
@@ -424,6 +424,8 @@ export default function DhakaDrive() {
             if(hit){p.speed*=-.18;if(trafficHit&&world.frame-world.lastCrimeFrame>90){world.lastCrimeFrame=world.frame;world.wantedLevel=Math.min(5,world.wantedLevel+1);setNotice('Traffic incident reported! Police wanted level: '+world.wantedLevel+'/5.');}else if(world.frame%30===0)setNotice(buildingHit?'Building collision! Steer back onto the road.':'Traffic collision! Slow down and steer carefully.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
           }
           p.x=clamp(p.x,-1650,1650);p.z=clamp(p.z,-1650,1650);
+          for(const signal of world.trafficSignals){const phase=(clock.elapsedTime+signal.phase)%8;signal.state=phase<3?'red':phase<4?'amber':phase<7?'green':'amber';const color=signal.state==='red'?0xe33b31:signal.state==='amber'?0xf2c14e:0x31d17c;signal.mesh.material.color.setHex(color);signal.mesh.material.emissive.setHex(signal.state==='red'?0x5b0805:signal.state==='amber'?0x59420a:0x064c20);}
+          for(const car of world.cars){car.desiredSpeed=car.baseDesiredSpeed??car.desiredSpeed;for(const signal of world.trafficSignals){if(signal.state==='red'&&Math.hypot(signal.mesh.position.x-car.mesh.position.x,signal.mesh.position.z-car.mesh.position.z)<20){car.desiredSpeed=Math.min(car.desiredSpeed,2.7);break;}}}
           trafficAI.speedMultiplier=world.weather?.type==='monsoon'?0.55:world.weather?.type==='rain'?0.72:world.weather?.type==='fog'?0.82:1;pedestrianAI.walkSpeed=world.weather?.type==='monsoon'?0.75:world.weather?.type==='rain'?0.9:1.1;trafficAI.update(world.cars,p,dt,world.peds.map(ped=>ped.mesh.position));for(const v of world.cars){const m=v.mesh;if(v.horizontal){if(m.position.x>1700)m.position.x=-1700;if(m.position.x< -1700)m.position.x=1700;}else{if(m.position.z>1700)m.position.z=-1700;if(m.position.z< -1700)m.position.z=1700;}}
           // Police pursuit: collisions with traffic raise the wanted level; patrol cars actively chase the player.
           const wantedCars=Math.min(world.wantedLevel,3);
