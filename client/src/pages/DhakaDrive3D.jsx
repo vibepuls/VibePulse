@@ -36,17 +36,17 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
   const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.38, metalness: 0.25 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x202833, roughness: 0.5 });
   const glass = new THREE.MeshStandardMaterial({ color: 0x8cb7c8, metalness: 0.2, roughness: 0.18 });
-  const bodyLength = type === 'bus' ? 7.5 : type === 'truck' ? 7.2 : type === 'rickshaw' ? 2.5 : type === 'cng' ? 2.8 : type === 'motorcycle' ? 2.1 : 4.4;
-  const bodyWidth = type === 'bus' ? 2.3 : type === 'truck' ? 2.35 : type === 'rickshaw' ? 1.65 : type === 'cng' ? 1.55 : type === 'motorcycle' ? 0.85 : 1.9;
-  const bodyHeight = type === 'bus' ? 2.7 : type === 'truck' ? 2.25 : type === 'rickshaw' ? 1.5 : type === 'cng' ? 1.6 : type === 'motorcycle' ? 0.9 : 1.05;
+  const bodyLength = type === 'bus' ? 7.5 : type === 'minibus' ? 5.8 : type === 'truck' ? 7.2 : type === 'pickup' ? 5.4 : type === 'van' ? 5.1 : type === 'ambulance' ? 5.3 : type === 'suv' ? 4.9 : type === 'rickshaw' ? 2.5 : type === 'cng' ? 2.8 : type === 'motorcycle' || type === 'scooter' ? 2.1 : type === 'bicycle' ? 1.8 : 4.4;
+  const bodyWidth = type === 'bus' || type === 'minibus' ? 2.3 : type === 'truck' || type === 'pickup' ? 2.35 : type === 'van' || type === 'ambulance' || type === 'suv' ? 2.05 : type === 'rickshaw' ? 1.65 : type === 'cng' ? 1.55 : type === 'motorcycle' || type === 'scooter' ? 0.85 : type === 'bicycle' ? 0.65 : 1.9;
+  const bodyHeight = type === 'bus' ? 2.7 : type === 'minibus' ? 2.25 : type === 'truck' || type === 'pickup' ? 2.25 : type === 'van' || type === 'ambulance' ? 2.1 : type === 'suv' ? 1.6 : type === 'rickshaw' ? 1.5 : type === 'cng' ? 1.6 : type === 'motorcycle' || type === 'scooter' ? 0.9 : type === 'bicycle' ? 0.8 : 1.05;
   const body = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyLength), bodyMat);
   body.position.y = type === 'rickshaw' ? 0.85 : type === 'bus' ? 1.75 : 0.9;
   body.castShadow = true; body.receiveShadow = true; group.add(body);
-  if (type === 'bus') {
+  if (type === 'bus' || type === 'minibus') {
     const cabin = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth * 0.88, 1.05, bodyLength * 0.88), glass);
     cabin.position.set(0, 2.55, -0.15); cabin.castShadow = true; group.add(cabin);
     for (let z = -2.6; z <= 2.7; z += 1.05) for (const x of [-1.17, 1.17]) { const win = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.68, 0.72), glass); win.position.set(x, 2.05, z); group.add(win); }
-  } else if (type === 'truck') {
+  } else if (type === 'truck' || type === 'pickup') {
     const cab = new THREE.Mesh(new THREE.BoxGeometry(2.05, 1.65, 2.1), bodyMat); cab.position.set(0, 1.8, -2.0); group.add(cab);
     const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.72, 0.06), glass); windshield.position.set(0, 2.05, -3.07); group.add(windshield);
     const cargo = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.75, 4.0), new THREE.MeshStandardMaterial({color:pick([0x9eaaad,0xb7a17b,0x3d7e74,0x9d493b]),roughness:.8})); cargo.position.set(0, 2.0, 1.15); group.add(cargo);
@@ -54,7 +54,7 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
     const roof = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.12, 1.8), new THREE.MeshStandardMaterial({color:0x18834c,roughness:.65})); roof.position.set(0, 1.8, 0.05); group.add(roof);
     const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.62, 0.06), glass); frontGlass.position.set(0, 1.35, -1.25); group.add(frontGlass);
     const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.9), glass); for(const x of [-0.79,0.79]){const win=sideGlass.clone();win.position.set(x,1.35,0.05);group.add(win);}
-  } else if (type === 'motorcycle') {
+  } else if (type === 'motorcycle' || type === 'scooter' || type === 'bicycle') {
     const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.16, 0.85), dark); seat.position.set(0, 1.0, 0.12); group.add(seat);
     const tank = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), bodyMat); tank.scale.set(0.8,0.7,1.15); tank.position.set(0, 1.0, -0.25); group.add(tank);
     const handle = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.08), dark); handle.position.set(0, 1.2, -0.7); group.add(handle);
@@ -65,7 +65,7 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
     const seat = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.45, 0.75), dark); seat.position.set(0, 1.0, 0.25); group.add(seat);
     const front = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), bodyMat); front.position.set(0, 0.8, -0.85); group.add(front);
   }
-  const wheelRadius = type === 'motorcycle' ? 0.38 : type === 'rickshaw' ? 0.28 : type === 'cng' ? 0.31 : 0.38;
+  const wheelRadius = type === 'motorcycle' || type === 'scooter' || type === 'bicycle' ? 0.38 : type === 'rickshaw' ? 0.28 : type === 'cng' ? 0.31 : 0.38;
   const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.22, 12);
   if (type === 'motorcycle') {
     for (const z of [-0.72, 0.72]) { const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI/2; wheel.position.set(0, 0.4, z); group.add(wheel); }
@@ -103,7 +103,8 @@ export default function DhakaDrive() {
   const mapCanvasRef = useRef(null);
   const audioRef = useRef(null);
   const [running, setRunning] = useState(true);
-  const [weather, setWeather] = useState('clear');
+  const [weather, setWeather] = useState(() => { try { return JSON.parse(localStorage.getItem('vibepulse-dhaka-save') || '{}').weather || 'clear'; } catch { return 'clear'; } });
+  const [vehicleType, setVehicleType] = useState(() => { try { return JSON.parse(localStorage.getItem('vibepulse-dhaka-save') || '{}').vehicleType || 'car'; } catch { return 'car'; } });
   const [walkMode, setWalkMode] = useState(false);
   const [muted, setMuted] = useState(true);
   const [hud, setHud] = useState(() => {
@@ -150,11 +151,11 @@ export default function DhakaDrive() {
       renderer.toneMappingExposure = 1.08;
       mount.appendChild(renderer.domElement);
       const hemi = new THREE.HemisphereLight(0xddeeff, 0x697353, 2.0); scene.add(hemi);
-      const weatherSystem = new WeatherSystem(THREE); weatherSystem.attach(scene, camera); world.weather = weatherSystem;
+      const weatherSystem = new WeatherSystem(THREE); weatherSystem.attach(scene, camera); weatherSystem.set(weather, scene); world.weather = weatherSystem;
       const sun = new THREE.DirectionalLight(0xffe0b1, 3.1); sun.position.set(-180, 260, -80); sun.castShadow = quality !== 'Low'; sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -180; sun.shadow.camera.right = 180; sun.shadow.camera.top = 180; sun.shadow.camera.bottom = -180; scene.add(sun);
       const groundMat = new THREE.MeshStandardMaterial({ color: 0x738b6c, roughness: 1 });
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(3600, 3600), groundMat); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.12; ground.receiveShadow = true; scene.add(ground);
-      const roadMat = new THREE.MeshStandardMaterial({ color: 0x353b42, roughness: 0.96 });
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x353b42, roughness: 0.96 }); weatherSystem.registerMaterial(roadMat);
       const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xbab5a5, roughness: 1 });
       const lineMat = new THREE.MeshStandardMaterial({ color: 0xe6d7a4, roughness: 1 });
       const block = 110, roadWidth = 18, half = 1700;
@@ -308,12 +309,13 @@ export default function DhakaDrive() {
         const p=makePedestrian(THREE);p.position.set((Math.random()*3000-1500),0,(Math.random()*3000-1500));scene.add(p);
         const px=p.position.x,pz=p.position.z;world.peds.push({mesh:p,phase:Math.random()*6.28,originX:px,originZ:pz,angle:Math.random()*6.28,speed:.7+Math.random()*.6,x:px,z:pz,targetX:px+(Math.random()-.5)*18,targetZ:pz+(Math.random()-.5)*18,state:'walk',waitUntil:0});
       }
-      const playerCar=makeVehicle(THREE,new THREE.Color(carColor).getHex(),'car',true);playerCar.position.set(world.player.x,0,world.player.z);scene.add(playerCar);
+      const playerCar=makeVehicle(THREE,new THREE.Color(carColor).getHex(),vehicleType,true);playerCar.position.set(world.player.x,0,world.player.z);scene.add(playerCar);world.playerCarType=vehicleType;
       const playerPed=makePedestrian(THREE);playerPed.position.set(world.player.x,0,world.player.z);playerPed.visible=false;scene.add(playerPed);
       world.playerCar=playerCar;world.playerPed=playerPed;world.sun=sun;world.hemi=hemi;world.scene=scene;
       const destinationMarker=new THREE.Group();
       const ring=new THREE.Mesh(new THREE.TorusGeometry(5,.4,8,32),new THREE.MeshStandardMaterial({color:0x55f3b2,emissive:0x0d5a3b}));ring.rotation.x=Math.PI/2;ring.position.y=.3;destinationMarker.add(ring);
       const beam=new THREE.Mesh(new THREE.CylinderGeometry(.2,.7,20,10,1,true),new THREE.MeshBasicMaterial({color:0x55f3b2,transparent:true,opacity:.35,side:THREE.DoubleSide}));beam.position.y=10;destinationMarker.add(beam);scene.add(destinationMarker);world.destinationMarker=destinationMarker;
+      const changeVehicleType = (type) => { const allowed=['car','suv','van','pickup','bus','minibus','truck','ambulance','cng','rickshaw','motorcycle','scooter','bicycle']; if(!allowed.includes(type))return; const old=world.playerCar; if(old){scene.remove(old);old.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});} const car=makeVehicle(THREE,new THREE.Color(carColor).getHex(),type,true);car.position.set(world.player.x,0,world.player.z);car.rotation.y=world.player.heading;scene.add(car);world.playerCar=car;world.playerCarType=type;world.player.speed=0;setVehicleType(type);setNotice('Vehicle changed to '+type.toUpperCase()+'.'); };
       const setTarget = (lm) => { world.missionTarget=lm;world.targetIndex=Math.max(0,LANDMARKS.findIndex(item=>item.name===lm.name));destinationMarker.position.set(lm.x,0,lm.z);setHud(old=>({...old,mission:'Reach '+lm.name}));setNotice('New objective: reach '+lm.name+'.'); };
       setTarget(LANDMARKS[savedTargetIndex]);
       const startMission = (id) => { const result = world.missions.start(id, clock.elapsedTime); if (!result.ok) { setNotice(result.reason); return; } const next = LANDMARKS[(world.targetIndex + 1) % LANDMARKS.length]; setTarget(next); setHud(old => ({ ...old, mission: result.mission.title + ': ' + next.name })); setNotice(result.mission.title + ' started — ' + result.mission.description); };
@@ -379,12 +381,12 @@ export default function DhakaDrive() {
           world.lastHud=world.frame;
           const area=AREAS.reduce((best,a)=>Math.hypot(p.x-a.x,p.z-a.z)<Math.hypot(p.x-best.x,p.z-best.z)?a:best,AREAS[0]).name;
           setHud(old=>({...old,speed:Math.round(Math.abs(p.speed)*3.6),area,distance:p.distance.toFixed(1),wantedLevel:world.wantedLevel}));
-          saveManager.save({x:p.x,z:p.z,heading:p.heading,distance:p.distance,money:Math.max(0,Math.floor(Number(world.money)||12500)),targetIndex:world.targetIndex,mission:world.missions.export(),weather:world.weather?.type||'clear',settings:{quality,nightMode,cameraMode}});
+          saveManager.save({x:p.x,z:p.z,heading:p.heading,distance:p.distance,money:Math.max(0,Math.floor(Number(world.money)||12500)),targetIndex:world.targetIndex,vehicleType:world.playerCarType||'car',mission:world.missions.export(),weather:world.weather?.type||'clear',settings:{quality,nightMode,cameraMode}});
           if(Math.hypot(p.x-world.missionTarget.x,p.z-world.missionTarget.z)<35){const completed=world.missionTarget;const result=world.missions.complete();const reward=result.ok?result.reward:500;const nextIndex=(world.targetIndex+1)%LANDMARKS.length;world.targetIndex=nextIndex;world.missionTarget=LANDMARKS[nextIndex];destinationMarker.position.set(world.missionTarget.x,0,world.missionTarget.z);world.money+=reward;world.audio?.missionComplete();world.missions.start('explore',clock.elapsedTime);setHud(old=>({...old,money:world.money,mission:'Reach '+world.missionTarget.name}));setNotice('Mission complete: '+completed.name+'! ৳'+reward+' earned. Next: '+world.missionTarget.name+'.');}
         }
         renderer.render(scene,camera);
       };
-      engine.current={setTarget,startMission,world,renderer,scene,camera};
+      engine.current={setTarget,startMission,changeVehicleType,world,renderer,scene,camera};
       animate();
       return ()=>{disposed=true;cancelAnimationFrame(animationId);window.removeEventListener('keydown',onKeyDown);window.removeEventListener('keyup',onKeyUp);resizeObserver?.disconnect();scene.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});renderer.dispose();if(renderer.domElement.parentNode===mount)mount.removeChild(renderer.domElement);};
     } catch (err) {
@@ -441,7 +443,7 @@ export default function DhakaDrive() {
         <div className="absolute bottom-3 right-3 hidden rounded-xl border border-white/15 bg-black/65 p-3 backdrop-blur-md sm:block"><div className="mb-2 flex items-center gap-2 text-xs font-bold"><Gauge size={15} className="text-red-300"/> GRAPHICS</div><select value={quality} onChange={e=>setQuality(e.target.value)} className="rounded-md border border-white/15 bg-slate-900 px-3 py-1.5 text-sm"><option>High</option><option>Medium</option><option>Low</option></select></div>
         {!running&&<div className="absolute inset-0 z-20 grid place-items-center bg-black/55"><div className="rounded-2xl border border-white/15 bg-black/80 px-8 py-6 text-center"><Pause size={34} className="mx-auto mb-2"/><div className="text-2xl font-black">GAME PAUSED</div><button onClick={()=>setRunning(true)} className="mt-4 rounded-lg bg-red-600 px-5 py-2 font-bold">Continue</button></div></div>}
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-[#101924] p-3"><span className="text-xs font-black tracking-widest text-slate-400">VEHICLE PAINT</span>{[{label:"Red",value:"#c72f2f"},{label:"Blue",value:"#2563eb"},{label:"Black",value:"#20252c"},{label:"White",value:"#e5e7eb"},{label:"Yellow",value:"#eab308"},{label:"Green",value:"#15803d"}].map(c=><button key={c.value} title={c.label} aria-label={c.label+" car paint"} onClick={()=>{setCarColor(c.value);const car=engine.current?.world.playerCar;if(car)car.children.forEach(child=>{if(child.material&&child.material.color&&child.geometry?.type==="BoxGeometry"&&child.position.y>0.4&&child.position.y<1.3)child.material.color.set(c.value);});}} className={"h-7 w-7 rounded-full border-2 "+(carColor===c.value?"border-white ring-2 ring-emerald-400":"border-white/20")} style={{backgroundColor:c.value}}/>)} </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-[#101924] p-3"><span className="text-xs font-black tracking-widest text-slate-400">VEHICLE</span><select value={vehicleType} onChange={e=>engine.current?.changeVehicleType(e.target.value)} className="rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-sm"><option value="car">Sedan</option><option value="suv">SUV</option><option value="van">Microbus / Van</option><option value="pickup">Pickup</option><option value="bus">City Bus</option><option value="minibus">Minibus</option><option value="truck">Truck</option><option value="ambulance">Ambulance</option><option value="cng">CNG Auto-rickshaw</option><option value="rickshaw">Cycle Rickshaw</option><option value="motorcycle">Motorcycle</option><option value="scooter">Scooter</option><option value="bicycle">Bicycle</option></select><span className="ml-2 text-xs font-black tracking-widest text-slate-400">VEHICLE PAINT</span>{[{label:"Red",value:"#c72f2f"},{label:"Blue",value:"#2563eb"},{label:"Black",value:"#20252c"},{label:"White",value:"#e5e7eb"},{label:"Yellow",value:"#eab308"},{label:"Green",value:"#15803d"}].map(c=><button key={c.value} title={c.label} aria-label={c.label+" car paint"} onClick={()=>{setCarColor(c.value);const car=engine.current?.world.playerCar;if(car)car.children.forEach(child=>{if(child.material&&child.material.color&&child.geometry?.type==="BoxGeometry"&&child.position.y>0.4&&child.position.y<1.3)child.material.color.set(c.value);});}} className={"h-7 w-7 rounded-full border-2 "+(carColor===c.value?"border-white ring-2 ring-emerald-400":"border-white/20")} style={{backgroundColor:c.value}}/>)} </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_340px]">
         <section className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 flex items-center gap-2 font-bold"><MapPin size={18} className="text-emerald-300"/> Explore Dhaka districts & landmarks</h2><div className="flex flex-wrap gap-2">{LANDMARKS.map(lm=><button key={lm.name} onClick={()=>chooseLandmark(lm)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-emerald-400 hover:bg-emerald-400/10">{lm.name}</button>)}</div><div className="mt-4 flex flex-wrap items-center gap-2"><span className="text-xs font-black uppercase tracking-widest text-slate-500">Weather</span><select value={weather} onChange={e=>setWeather(e.target.value)} className="rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-sm"><option value="clear">Clear</option><option value="smog">Dhaka Smog</option><option value="rain">Rain</option><option value="monsoon">Monsoon</option><option value="fog">Morning Fog</option></select><span className="text-xs text-slate-500">Rain and fog affect visibility.</span></div><p className="mt-3 text-xs leading-5 text-slate-500">A procedurally built, original 3D city inspired by Dhaka's dense roads, mixed traffic, street markets, river ghats and landmark architecture. The layout is game-fiction, not a survey-accurate city map.</p></section>
         <aside className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 font-bold">Missions & Controls</h2><div className="mb-4 grid grid-cols-2 gap-2">{MissionSystem.Types && Object.values(MissionSystem.Types).filter(m=>m.id!=='explore').map(m=><button key={m.id} onClick={()=>engine.current?.startMission(m.id)} className="rounded-lg border border-cyan-300/15 bg-cyan-300/5 px-2 py-2 text-left text-xs hover:bg-cyan-300/10"><b className="block text-cyan-200">{m.title}</b><span className="mt-1 block text-slate-400">৳{m.reward} reward</span></button>)}</div><h3 className="mb-2 text-sm font-bold text-slate-300">Controls</h3><div className="space-y-2 text-sm text-slate-300"><p><b className="text-white">W / ↑</b> Accelerate / walk forward</p><p><b className="text-white">S / ↓</b> Reverse / walk backward</p><p><b className="text-white">A / D</b> Steer / turn</p><p><b className="text-white">C</b> Switch car / on foot</p><p><b className="text-white">V</b> Cycle Chase / Close / Cinematic / First Person</p><p><b className="text-white">Space</b> Brake</p><p><b className="text-white">H</b> Horn</p><p><b className="text-white">B</b> Rickshaw bell</p><p><b className="text-white">Esc</b> Pause / resume</p><p><b className="text-white">R</b> Reset car position</p></div><div className="mt-4 grid grid-cols-2 gap-2">{LANDMARKS.slice(0,4).map(lm=><button key={lm.name} onClick={()=>{setHud(old=>({...old,mission:'Reach '+lm.name}));chooseLandmark(lm);}} className="rounded-lg bg-emerald-700/80 px-2 py-2 text-xs font-bold hover:bg-emerald-600">Go: {lm.name}</button>)}</div><p className="mt-3 text-xs text-slate-500">3D prototype with a procedural environment, traffic, walk/drive modes and landmark objectives. Continued work can expand missions, interiors, animations and assets.</p></aside>
