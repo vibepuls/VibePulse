@@ -445,7 +445,7 @@ export default function DhakaDrive() {
                   api.get('/dhaka-game/leaderboard').then(({data:rows})=>setOnlineLeaderboard(Array.isArray(rows)?rows:[])).catch(()=>{});
                   api.post('/dhaka-game/sessions/'+sessionId+'/missions/explore/start',{targetIndex:world.targetIndex}).catch(()=>{});
                 }).catch(error=>{
-                  api.post('/dhaka-game/sessions/'+sessionId+'/missions/explore/start').catch(()=>{});
+                  api.post('/dhaka-game/sessions/'+sessionId+'/missions/explore/start',{targetIndex:world.targetIndex}).catch(()=>{});
                   if(error.response?.status!==409)setNotice(error.response?.data?.error||'Game progress is saved locally; online sync will retry next session.');
                 });
               }
