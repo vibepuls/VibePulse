@@ -23,4 +23,5 @@ private:
     UPROPERTY(Transient) TArray<TObjectPtr<class UProceduralMeshComponent>> GeneratedMeshes;
     void ClearGenerated();
     void AddBoxMesh(const FVector& Center, const FVector& Size, const FLinearColor& Color, bool bCollision);
+    void AddBuildingMesh(float X, float Y, float Width, float Depth, float Height, const FLinearColor& Color, FRandomStream& Random);
 };
