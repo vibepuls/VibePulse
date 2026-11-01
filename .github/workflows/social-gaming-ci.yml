@@ -31,5 +31,7 @@ jobs:
         run: npm run db:generate
       - name: Build API
         run: npm --prefix server run build
+      - name: Test Dhaka game systems
+        run: npm --prefix client run test:game
       - name: Build frontend
         run: npm --prefix client run build
