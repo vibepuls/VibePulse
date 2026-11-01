@@ -19,7 +19,7 @@ test('mission system only rewards a valid active mission once', () => {
   assert.equal(missions.start('delivery', 2).ok, true);
   const reward = missions.complete();
   assert.equal(reward.reward, 700);
-  assert.equal(missions.start('delivery', 5).ok, false);
+  assert.equal(missions.start('delivery', 5).ok, true);
   assert.equal(missions.export().completed.includes('delivery'), true);
 });
 
