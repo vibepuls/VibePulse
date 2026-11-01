@@ -2,6 +2,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -15,13 +16,14 @@
 ADhakaVehiclePawn::ADhakaVehiclePawn()
 {
     PrimaryActorTick.bCanEverTick=true;
-    Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VehicleBody")); SetRootComponent(Body);
-    Body->SetSimulatePhysics(true); Body->SetLinearDamping(0.18f); Body->SetAngularDamping(1.8f);
+    PhysicsBody=CreateDefaultSubobject<UBoxComponent>(TEXT("VehiclePhysicsBody"));SetRootComponent(PhysicsBody);
+    PhysicsBody->SetBoxExtent(FVector(220.f,100.f,45.f));PhysicsBody->SetSimulatePhysics(true);PhysicsBody->SetLinearDamping(0.18f);PhysicsBody->SetAngularDamping(1.8f);
+    PhysicsBody->SetMassOverrideInKg(NAME_None,1250.f,true);PhysicsBody->SetCollisionProfileName(TEXT("PhysicsActor"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VehicleBody"));Body->SetupAttachment(PhysicsBody);
     if(Cube.Succeeded()) Body->SetStaticMesh(Cube.Object);
-    Body->SetRelativeScale3D(FVector(4.4f,2.0f,0.9f)); Body->SetMassOverrideInKg(NAME_None,1250.f,true);
-    Body->SetCollisionProfileName(TEXT("PhysicsActor"));
+    Body->SetRelativeScale3D(FVector(4.4f,2.0f,0.9f));Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     UMaterialInterface* BaseMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
     BodyMaterial=BaseMaterial?UMaterialInstanceDynamic::Create(BaseMaterial,this):nullptr;
     UMaterialInstanceDynamic* GlassMaterial=BaseMaterial?UMaterialInstanceDynamic::Create(BaseMaterial,this):nullptr;
@@ -37,7 +39,7 @@ ADhakaVehiclePawn::ADhakaVehiclePawn()
     if(ChromeMaterial)ChromeMaterial->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(.45f,.48f,.5f,1.f));
     if(BodyMaterial)Body->SetMaterial(0,BodyMaterial);
     auto MakePart=[this,GlassMaterial,DarkMaterial,LightMaterial,TailMaterial,ChromeMaterial](const TCHAR* Name,UStaticMesh* Mesh,FVector Scale,FVector Location,FRotator Rotation=FRotator::ZeroRotator){
-        UStaticMeshComponent* Part=CreateDefaultSubobject<UStaticMeshComponent>(Name);Part->SetupAttachment(Body);Part->SetStaticMesh(Mesh);Part->SetRelativeScale3D(Scale);Part->SetRelativeLocation(Location);Part->SetRelativeRotation(Rotation);Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        UStaticMeshComponent* Part=CreateDefaultSubobject<UStaticMeshComponent>(Name);Part->SetupAttachment(PhysicsBody);Part->SetStaticMesh(Mesh);Part->SetRelativeScale3D(Scale);Part->SetRelativeLocation(Location);Part->SetRelativeRotation(Rotation);Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         const FString N(Name);UMaterialInterface* Mat=this->BodyMaterial;
         if(N.Contains(TEXT("Window")))Mat=GlassMaterial;
         else if(N.Contains(TEXT("Headlight")))Mat=LightMaterial;
@@ -82,7 +84,7 @@ ADhakaVehiclePawn::ADhakaVehiclePawn()
     MakePart(TEXT("GearSelector"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.08f,.08f,.18f),FVector(30,0,49));
     MakePart(TEXT("InteriorMirror"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.16f,.035f,.045f),FVector(63,0,91));
     MakePart(TEXT("InteriorLight"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.12f,.12f,.035f),FVector(-12,0,96));
-    SpringArm=CreateDefaultSubobject<USpringArmComponent>(TEXT("ChaseArm")); SpringArm->SetupAttachment(Body); SpringArm->TargetArmLength=650.f; SpringArm->SetRelativeLocation(FVector(-20,0,190)); SpringArm->bEnableCameraLag=true;
+    SpringArm=CreateDefaultSubobject<USpringArmComponent>(TEXT("ChaseArm")); SpringArm->SetupAttachment(PhysicsBody); SpringArm->TargetArmLength=650.f; SpringArm->SetRelativeLocation(FVector(-20,0,190)); SpringArm->bEnableCameraLag=true;
     Camera=CreateDefaultSubobject<UCameraComponent>(TEXT("ChaseCamera")); Camera->SetupAttachment(SpringArm);
     AutoPossessPlayer=EAutoReceiveInput::Player0;
 }
@@ -103,9 +105,9 @@ void ADhakaVehiclePawn::InputBrake(float V){BrakeInput=FMath::Clamp(V,0.f,1.f);}
 void ADhakaVehiclePawn::SetPaintColor(FLinearColor NewColor){PaintColor=NewColor;if(BodyMaterial)BodyMaterial->SetVectorParameterValue(TEXT("BaseColor"),PaintColor);}
 void ADhakaVehiclePawn::Tick(float Dt)
 {
-    Super::Tick(Dt); if(!Body || Dt<=0.f) return;
+    Super::Tick(Dt); if(!PhysicsBody || Dt<=0.f) return;
     const FVector Forward=GetActorForwardVector();
-    Speed=FVector::DotProduct(Body->GetPhysicsLinearVelocity(),Forward);
+    Speed=FVector::DotProduct(PhysicsBody->GetPhysicsLinearVelocity(),Forward);
     TravelDistanceKm+=Body->GetPhysicsLinearVelocity().Size()*Dt/100000.f;
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
         if(Missions->Missions.IsValidIndex(Missions->ActiveMissionIndex)){
@@ -113,11 +115,11 @@ void ADhakaVehiclePawn::Tick(float Dt)
             if(FVector::Dist2D(GetActorLocation(),Mission.Target)<1800.f)Missions->CompleteActiveMission();
         }
     }
-    Body->AddForce(Forward*ThrottleInput*Acceleration*Body->GetMass());
+    PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*PhysicsBody->GetMass());
     if(BrakeInput>0.f) Body->AddForce(-Body->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*Body->GetMass()*BrakeInput);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
-    Body->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*Body->GetMass()*4.f));
-    if(Body->GetPhysicsLinearVelocity().Size()>MaxSpeed) Body->SetPhysicsLinearVelocity(Body->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
+    PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*Body->GetMass()*4.f));
+    if(Body->GetPhysicsLinearVelocity().Size()>MaxSpeed) PhysicsBody->SetPhysicsLinearVelocity(Body->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
 }
 
 void ADhakaVehiclePawn::SaveProgress()
