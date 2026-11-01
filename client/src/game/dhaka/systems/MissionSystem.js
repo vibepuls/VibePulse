@@ -22,7 +22,6 @@ export class MissionSystem {
   get all() { return Object.values(MISSION_TYPES).map(m => ({ ...m, completed: this.completed.has(m.id), active: m.id === this.active })); }
   start(id, nowSeconds = 0) {
     if (!MISSION_TYPES[id]) return { ok: false, reason: 'Unknown mission.' };
-    if (this.completed.has(id)) return { ok: false, reason: 'This mission is already completed. Choose another challenge.' };
     this.active = id; this.startedAt = nowSeconds; this.progress = 0; this.sequence += 1;
     return { ok: true, mission: this.definition };
   }
