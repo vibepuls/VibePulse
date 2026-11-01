@@ -256,8 +256,10 @@ export default function DhakaDrive() {
             p.heading+=turn*dt*2.2;p.x+=Math.sin(p.heading)*move*9*dt;p.z+=Math.cos(p.heading)*move*9*dt;
           }
           if(!p.walking){const nx=p.x+Math.sin(p.heading)*p.speed*dt,nz=p.z+Math.cos(p.heading)*p.speed*dt;
-            const hit=world.colliders.some(b=>Math.abs(nx-b.x)<b.w/2+1.5&&Math.abs(nz-b.z)<b.d/2+2.4);
-            if(hit){p.speed*=-.18;setNotice('Collision! Steer back onto the road.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
+            const buildingHit=world.colliders.some(b=>Math.abs(nx-b.x)<b.w/2+1.5&&Math.abs(nz-b.z)<b.d/2+2.4);
+            const trafficHit=world.cars.some(v=>Math.abs(nx-v.mesh.position.x)<(v.mesh.userData.length||4.4)*0.48+1.8&&Math.abs(nz-v.mesh.position.z)<3.0);
+            const hit=buildingHit||trafficHit;
+            if(hit){p.speed*=-.18;if(world.frame%30===0)setNotice(trafficHit?'Traffic collision! Slow down and steer carefully.':'Building collision! Steer back onto the road.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
           }
           p.x=clamp(p.x,-1650,1650);p.z=clamp(p.z,-1650,1650);
           for(const v of world.cars){const m=v.mesh;if(v.horizontal){m.position.x+=v.dir*v.speed*dt;if(m.position.x>1700)m.position.x=-1700;if(m.position.x< -1700)m.position.x=1700;}else{m.position.z+=v.dir*v.speed*dt;if(m.position.z>1700)m.position.z=-1700;if(m.position.z< -1700)m.position.z=1700;}}
@@ -302,6 +304,15 @@ export default function DhakaDrive() {
         <div className="pointer-events-none absolute left-4 top-4 max-w-[75%] rounded-xl border border-white/10 bg-black/55 px-4 py-3 backdrop-blur-md"><div className="text-xs font-black tracking-[.2em] text-emerald-300">OPEN WORLD • DHAKA, BANGLADESH</div><div className="mt-1 text-sm font-semibold">{notice}</div><div className="mt-1 text-[11px] text-slate-300">Objective: {hud.mission}</div></div>
         <div className="absolute bottom-4 right-4 rounded-xl border border-white/15 bg-black/60 p-3 backdrop-blur-md"><div className="mb-2 flex items-center gap-2 text-xs font-bold"><Gauge size={15} className="text-red-300"/> GRAPHICS</div><select value={quality} onChange={e=>setQuality(e.target.value)} className="rounded-md border border-white/15 bg-slate-900 px-3 py-1.5 text-sm"><option>High</option><option>Medium</option><option>Low</option></select></div>
         {!running&&<div className="absolute inset-0 grid place-items-center bg-black/45"><div className="rounded-2xl border border-white/15 bg-black/70 px-8 py-6 text-center"><Pause size={34} className="mx-auto mb-2"/><div className="text-2xl font-black">GAME PAUSED</div><button onClick={()=>setRunning(true)} className="mt-4 rounded-lg bg-red-600 px-5 py-2 font-bold">Continue</button></div></div>}
+      </div>
+      <div className="mt-3 grid grid-cols-4 gap-2 md:hidden">
+        {[
+          ['◀','a'],['▲','w'],['▼','s'],['▶','d']
+        ].map(([label,key])=><button key={key} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);if(engine.current)engine.current.world.keys[key]=true;}} onPointerUp={()=>{if(engine.current)engine.current.world.keys[key]=false;}} onPointerCancel={()=>{if(engine.current)engine.current.world.keys[key]=false;}} onPointerLeave={()=>{if(engine.current)engine.current.world.keys[key]=false;}} className="rounded-xl border border-white/15 bg-[#172332] py-4 text-xl font-black active:bg-red-600">{label}</button>)}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 md:hidden">
+        <button onClick={()=>{if(engine.current){engine.current.world.player.walking=!engine.current.world.player.walking;setWalkMode(engine.current.world.player.walking);engine.current.world.player.speed=0;}}} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-[#172332] px-3 py-3 text-sm font-bold"><Footprints size={16}/>{walkMode?'Enter car':'Walk mode'}</button>
+        <button onPointerDown={()=>{if(engine.current)engine.current.world.keys[' ']=true;}} onPointerUp={()=>{if(engine.current)engine.current.world.keys[' ']=false;}} className="flex-1 rounded-lg border border-white/15 bg-[#172332] px-3 py-3 text-sm font-bold">Brake</button>
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_340px]">
         <section className="rounded-xl border border-white/10 bg-[#101924] p-4"><h2 className="mb-3 flex items-center gap-2 font-bold"><MapPin size={18} className="text-emerald-300"/> Explore Dhaka districts & landmarks</h2><div className="flex flex-wrap gap-2">{LANDMARKS.map(lm=><button key={lm.name} onClick={()=>chooseLandmark(lm)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-emerald-400 hover:bg-emerald-400/10">{lm.name}</button>)}</div><p className="mt-3 text-xs leading-5 text-slate-500">A procedurally built, original 3D city inspired by Dhaka's dense roads, mixed traffic, street markets, river ghats and landmark architecture. The layout is game-fiction, not a survey-accurate city map.</p></section>
