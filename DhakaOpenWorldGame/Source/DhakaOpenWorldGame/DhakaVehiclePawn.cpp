@@ -59,6 +59,12 @@ void ADhakaVehiclePawn::Tick(float Dt)
     const FVector Forward=GetActorForwardVector();
     Speed=FVector::DotProduct(Body->GetPhysicsLinearVelocity(),Forward);
     TravelDistanceKm+=Body->GetPhysicsLinearVelocity().Size()*Dt/100000.f;
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
+        if(Missions->Missions.IsValidIndex(Missions->ActiveMissionIndex)){
+            const FDhakaMission& Mission=Missions->Missions[Missions->ActiveMissionIndex];
+            if(FVector::Dist2D(GetActorLocation(),Mission.Target)<1800.f)Missions->CompleteActiveMission();
+        }
+    }
     Body->AddForce(Forward*ThrottleInput*Acceleration*Body->GetMass());
     if(BrakeInput>0.f) Body->AddForce(-Body->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*Body->GetMass()*BrakeInput);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
@@ -85,6 +91,6 @@ void ADhakaVehiclePawn::LoadProgress()
     if(Body)Body->SetPhysicsLinearVelocity(FVector::ZeroVector);
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
         Missions->Wallet=FMath::Max<int64>(0,Save->Wallet);
-        for(FDhakaMission& Mission:Missions->Missions)Mission.bCompleted=Save->CompletedMissionIds.Contains(Mission.Id);
+        Missions->ActiveMissionIndex=INDEX_NONE;for(int32 I=0;I<Missions->Missions.Num();++I){Missions->Missions[I].bCompleted=Save->CompletedMissionIds.Contains(Missions->Missions[I].Id);if(Missions->ActiveMissionIndex==INDEX_NONE&&!Missions->Missions[I].bCompleted)Missions->ActiveMissionIndex=I;}
     }
 }
