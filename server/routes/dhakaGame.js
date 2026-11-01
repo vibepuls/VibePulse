@@ -90,6 +90,35 @@ router.post('/sessions/:sessionId/missions/:missionId/complete', wrap(async (req
   } finally { client.release(); }
 }));
 
+
+router.post('/sessions/:sessionId/heartbeat', wrap(async (req, res) => {
+  const x = Number(req.body.x), z = Number(req.body.z), heading = Number(req.body.heading || 0);
+  const allowed = new Set(['car','suv','van','pickup','bus','minibus','truck','ambulance','cng','rickshaw','motorcycle','scooter','bicycle']);
+  const vehicleType = allowed.has(req.body.vehicleType) ? req.body.vehicleType : 'car';
+  if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(heading) || Math.abs(x)>1650 || Math.abs(z)>1650) {
+    return res.status(400).json({ error: 'Invalid player position.' });
+  }
+  const result = await query(`UPDATE dhaka_game_sessions SET player_x=$3,player_z=$4,player_heading=$5,
+    vehicle_type=$6,last_seen_at=NOW()
+    WHERE id=$1 AND user_id=$2 AND status='active' AND started_at > NOW()-INTERVAL '8 hours'`,
+    [req.params.sessionId,req.user.id,x,z,heading,vehicleType]);
+  if (!result.rowCount) return res.status(404).json({ error: 'Active game session not found.' });
+  res.status(204).end();
+}));
+
+router.get('/sessions/nearby', wrap(async (req, res) => {
+  const x = Number(req.query.x), z = Number(req.query.z);
+  if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x)>1650 || Math.abs(z)>1650) {
+    return res.status(400).json({ error: 'Valid player coordinates are required.' });
+  }
+  const result = await query(`SELECT s.id,u.id AS user_id,u.username,s.player_x,s.player_z,s.player_heading,s.vehicle_type
+    FROM dhaka_game_sessions s JOIN users u ON u.id=s.user_id
+    WHERE s.user_id<>$1 AND s.status='active' AND s.last_seen_at>NOW()-INTERVAL '20 seconds'
+      AND s.player_x BETWEEN $2-500 AND $2+500 AND s.player_z BETWEEN $3-500 AND $3+500
+    ORDER BY s.last_seen_at DESC LIMIT 24`, [req.user.id,x,z]);
+  res.json(result.rows);
+}));
+
 router.post('/sessions/:sessionId/finish', wrap(async (req, res) => {
   const client = await pool.connect();
   try {
