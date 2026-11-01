@@ -37,6 +37,7 @@ app.use('/api/shorts', require('./routes/shorts'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/point-wars', require('./routes/pointWars'));
+app.use('/api/dhaka-game', require('./routes/dhakaGame'));
 
 app.use(errorHandler);
 
