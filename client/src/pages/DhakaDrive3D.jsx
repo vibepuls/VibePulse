@@ -97,7 +97,10 @@ export default function DhakaDrive() {
   const [running, setRunning] = useState(true);
   const [walkMode, setWalkMode] = useState(false);
   const [muted, setMuted] = useState(true);
-  const [hud, setHud] = useState({ speed: 0, area: 'Gulshan', money: 12500, mission: 'Explore Dhaka', distance: 0 });
+  const [hud, setHud] = useState(() => {
+    try { const saved = JSON.parse(localStorage.getItem('vibepulse-dhaka-save') || '{}'); return { speed: 0, area: 'Gulshan', money: Number.isFinite(saved.money) ? saved.money : 12500, mission: 'Explore Dhaka', distance: Number.isFinite(saved.distance) ? saved.distance : 0 }; }
+    catch { return { speed: 0, area: 'Gulshan', money: 12500, mission: 'Explore Dhaka', distance: 0 }; }
+  });
   const [notice, setNotice] = useState('Welcome to Dhaka. Drive safely and explore the city.');
   const [quality, setQuality] = useState('High');
   const [nightMode, setNightMode] = useState(false);
@@ -110,10 +113,13 @@ export default function DhakaDrive() {
     let renderer, scene, camera, animationId, resizeObserver;
     let disposed = false;
     const keys = {};
+    let savedGame = {};
+    try { savedGame = JSON.parse(localStorage.getItem('vibepulse-dhaka-save') || '{}'); } catch { savedGame = {}; }
+    const savedTargetIndex = Number.isInteger(savedGame.targetIndex) ? clamp(savedGame.targetIndex, 0, LANDMARKS.length - 1) : 0;
     const world = {
-      player: { x: -520, z: -520, heading: 0, speed: 0, walking: false, distance: 0 },
+      player: { x: Number.isFinite(savedGame.x) ? clamp(savedGame.x, -1650, 1650) : -520, z: Number.isFinite(savedGame.z) ? clamp(savedGame.z, -1650, 1650) : -520, heading: Number.isFinite(savedGame.heading) ? savedGame.heading : 0, speed: 0, walking: false, distance: Number.isFinite(savedGame.distance) ? savedGame.distance : 0 },
       cars: [], peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
-      missionTarget: LANDMARKS[0], running: true, keys, cameraMode: 'Chase'
+      missionTarget: LANDMARKS[savedTargetIndex], targetIndex: savedTargetIndex, running: true, keys, cameraMode: 'Chase'
     };
     try {
       scene = new THREE.Scene();
@@ -261,7 +267,7 @@ export default function DhakaDrive() {
       const destinationMarker=new THREE.Group();
       const ring=new THREE.Mesh(new THREE.TorusGeometry(5,.4,8,32),new THREE.MeshStandardMaterial({color:0x55f3b2,emissive:0x0d5a3b}));ring.rotation.x=Math.PI/2;ring.position.y=.3;destinationMarker.add(ring);
       const beam=new THREE.Mesh(new THREE.CylinderGeometry(.2,.7,20,10,1,true),new THREE.MeshBasicMaterial({color:0x55f3b2,transparent:true,opacity:.35,side:THREE.DoubleSide}));beam.position.y=10;destinationMarker.add(beam);scene.add(destinationMarker);world.destinationMarker=destinationMarker;
-      const setTarget = (lm) => { world.missionTarget=lm;destinationMarker.position.set(lm.x,0,lm.z);setHud(old=>({...old,mission:'Reach '+lm.name}));setNotice('New objective: reach '+lm.name+'.'); };
+      const setTarget = (lm) => { world.missionTarget=lm;world.targetIndex=Math.max(0,LANDMARKS.findIndex(item=>item.name===lm.name));destinationMarker.position.set(lm.x,0,lm.z);setHud(old=>({...old,mission:'Reach '+lm.name}));setNotice('New objective: reach '+lm.name+'.'); };
       setTarget(LANDMARKS[0]);
       const onKeyDown=(e)=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='c'){world.player.walking=!world.player.walking;setWalkMode(world.player.walking);world.player.speed=0;setNotice(world.player.walking?'On foot — explore the streets.':'You are back in the car.');}if(k==='v'){world.cameraMode=world.cameraMode==='Chase'?'Close':world.cameraMode==='Close'?'Cinematic':'Chase';setCameraMode(world.cameraMode);}if(k==='escape')setRunning(v=>!v);if(k==='r'){world.player.x=-520;world.player.z=-520;world.player.heading=0;world.player.speed=0;}};
       const onKeyUp=(e)=>{keys[e.key.toLowerCase()]=false;};
@@ -309,7 +315,8 @@ export default function DhakaDrive() {
           world.lastHud=world.frame;
           const area=AREAS.reduce((best,a)=>Math.hypot(p.x-a.x,p.z-a.z)<Math.hypot(p.x-best.x,p.z-best.z)?a:best,AREAS[0]).name;
           setHud(old=>({...old,speed:Math.round(Math.abs(p.speed)*3.6),area,distance:p.distance.toFixed(1)}));
-          if(Math.hypot(p.x-world.missionTarget.x,p.z-world.missionTarget.z)<35){setHud(old=>({...old,money:old.money+500,mission:'Mission complete!'}));setNotice('Mission complete! ৳500 earned. Choose another landmark.');world.missionTarget={...world.missionTarget,x:99999,z:99999};}
+          try { localStorage.setItem('vibepulse-dhaka-save', JSON.stringify({x:p.x,z:p.z,heading:p.heading,distance:p.distance,money:Math.max(0,Math.floor(Number(hud.money)||12500)),targetIndex:world.targetIndex,updatedAt:Date.now()})); } catch { /* storage may be disabled */ }
+          if(Math.hypot(p.x-world.missionTarget.x,p.z-world.missionTarget.z)<35){const completed=world.missionTarget;const nextIndex=(world.targetIndex+1)%LANDMARKS.length;world.targetIndex=nextIndex;world.missionTarget=LANDMARKS[nextIndex];destinationMarker.position.set(world.missionTarget.x,0,world.missionTarget.z);setHud(old=>({...old,money:old.money+500,mission:'Reach '+world.missionTarget.name}));setNotice('Mission complete: '+completed.name+'! ৳500 earned. Next: '+world.missionTarget.name+'.');}
         }
         renderer.render(scene,camera);
       };
