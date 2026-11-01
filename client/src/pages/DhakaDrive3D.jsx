@@ -167,7 +167,7 @@ export default function DhakaDrive() {
       autoDayCycle, timeOfDay: 14,
       cars: [], police: [], wantedLevel: 0, lastCrimeFrame: -9999, peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
       missionTarget: LANDMARKS[savedTargetIndex], targetIndex: savedTargetIndex, money: Number.isFinite(savedGame.money) ? savedGame.money : 12500, running: true, keys, cameraMode: 'Chase', saveManager,
-      missions: new MissionSystem({ landmarks: LANDMARKS, saved: savedGame.mission }), weather: null, audio: audioRef.current, remotePlayers: new Map()
+      missions: new MissionSystem({ landmarks: LANDMARKS, saved: { ...(savedGame.mission || {}), startTargetIndex: savedTargetIndex } }), weather: null, audio: audioRef.current, remotePlayers: new Map()
     };
     try {
       scene = new THREE.Scene();
@@ -352,7 +352,7 @@ export default function DhakaDrive() {
       const syncRemotePlayers = (players = []) => { if(!Array.isArray(players))return; const seen=new Set(); for(const remote of players){if(!remote?.user_id||!Number.isFinite(Number(remote.player_x))||!Number.isFinite(Number(remote.player_z)))continue;const id=remote.user_id;seen.add(id);let mesh=world.remotePlayers.get(id);if(!mesh){const type=['car','hatchback','suv','luxury','van','microbus','deliveryVan','pickup','bus','minibus','schoolBus','coach','truck','firetruck','ambulance','police','cng','rickshaw','batteryRickshaw','handcart','motorcycle','scooter','bicycle','boat','riverLaunch'].includes(remote.vehicle_type)?remote.vehicle_type:'car';mesh=makeVehicle(THREE,0x35d399,type,false);mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{m.transparent=true;m.opacity=.68;});}o.castShadow=false;});scene.add(mesh);world.remotePlayers.set(id,mesh);}mesh.position.set(Number(remote.player_x),0,Number(remote.player_z));mesh.rotation.y=Number(remote.player_heading)||0;}for(const [id,mesh] of world.remotePlayers){if(!seen.has(id)){scene.remove(mesh);mesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});world.remotePlayers.delete(id);}}};
       const setTarget = (lm) => { world.missionTarget=lm;world.targetIndex=Math.max(0,LANDMARKS.findIndex(item=>item.name===lm.name));destinationMarker.position.set(lm.x,0,lm.z);setHud(old=>({...old,mission:'Reach '+lm.name}));setNotice('New objective: reach '+lm.name+'.'); };
       setTarget(LANDMARKS[savedTargetIndex]);
-      const startMission = (id) => { const result = world.missions.start(id, clock.elapsedTime); if (!result.ok) { setNotice(result.reason); return; } const sessionId = serverSessionRef.current; if(sessionId) api.post('/dhaka-game/sessions/' + sessionId + '/missions/' + id + '/start').catch(() => {}); const next = LANDMARKS[(world.targetIndex + 1) % LANDMARKS.length]; setTarget(next); setHud(old => ({ ...old, mission: result.mission.title + ': ' + next.name })); setNotice(result.mission.title + ' started — ' + result.mission.description); };
+      const startMission = (id, targetIndex = (world.targetIndex + 1) % LANDMARKS.length) => { const result = world.missions.start(id, clock.elapsedTime, targetIndex); if (!result.ok) { setNotice(result.reason); return; } const sessionId = serverSessionRef.current; if(sessionId) api.post('/dhaka-game/sessions/' + sessionId + '/missions/' + id + '/start').catch(() => {}); const next = result.target || LANDMARKS[targetIndex]; setTarget(next); setHud(old => ({ ...old, mission: result.mission.title + ': ' + next.name })); setNotice(result.mission.title + ' started — ' + result.mission.description + (result.waypointCount>1?' · '+result.waypointCount+' checkpoints':'')); };
       const onKeyDown=(e)=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='h'){world.audio?.horn();setNotice('Horn sounded.');}if(k==='b'){world.audio?.rickshawBell();}if(k===' '&&world.player.walking&&world.player.jumpY<=0){world.player.jumpVelocity=7.5;}if(k==='c'){ world.player.walking=!world.player.walking;setWalkMode(world.player.walking);world.player.speed=0;setNotice(world.player.walking?'On foot — explore the streets.':'You are back in the car.');}if(k==='v'){world.cameraMode=world.cameraMode==='Chase'?'Close':world.cameraMode==='Close'?'Cinematic':'Chase';setCameraMode(world.cameraMode);}if(k==='escape')setRunning(v=>!v);if(k==='r'){world.player.x=-520;world.player.z=-520;world.player.heading=0;world.player.speed=0;}};
       const onKeyUp=(e)=>{keys[e.key.toLowerCase()]=false;};
       window.addEventListener('keydown',onKeyDown);window.addEventListener('keyup',onKeyUp);
@@ -419,7 +419,36 @@ export default function DhakaDrive() {
           const area=AREAS.reduce((best,a)=>Math.hypot(p.x-a.x,p.z-a.z)<Math.hypot(p.x-best.x,p.z-best.z)?a:best,AREAS[0]).name;
           setHud(old=>({...old,speed:Math.round(Math.abs(p.speed)*3.6),area,distance:p.distance.toFixed(1),wantedLevel:world.wantedLevel,missionTime:world.missions.remaining(clock.elapsedTime),missionTitle:world.missions.definition.title}));
           saveManager.save({x:p.x,z:p.z,heading:p.heading,distance:p.distance,money:Math.max(0,Math.floor(Number(world.money)||12500)),targetIndex:world.targetIndex,vehicleType:world.playerCarType||'car',mission:world.missions.export(),weather:world.weather?.type||'clear',settings:{quality,nightMode,cameraMode}});
-          if(Math.hypot(p.x-world.missionTarget.x,p.z-world.missionTarget.z)<35){const completed=world.missionTarget;const completedMissionId=world.missions.active;const result=world.missions.complete();const reward=result.ok?result.reward:500;const sessionId=serverSessionRef.current;if(sessionId){api.post('/dhaka-game/sessions/'+sessionId+'/missions/'+completedMissionId+'/complete').then(({data})=>{setOnlineProfile(data.profile||null);api.get('/dhaka-game/leaderboard').then(({data:rows})=>setOnlineLeaderboard(Array.isArray(rows)?rows:[])).catch(()=>{});api.post('/dhaka-game/sessions/'+sessionId+'/missions/explore/start').catch(()=>{});}).catch(error=>{api.post('/dhaka-game/sessions/'+sessionId+'/missions/explore/start').catch(()=>{});if(error.response?.status!==409)setNotice(error.response?.data?.error||'Game progress is saved locally; online sync will retry next session.');});}const nextIndex=(world.targetIndex+1)%LANDMARKS.length;world.targetIndex=nextIndex;world.missionTarget=LANDMARKS[nextIndex];destinationMarker.position.set(world.missionTarget.x,0,world.missionTarget.z);world.money+=reward;world.audio?.missionComplete();world.missions.start('explore',clock.elapsedTime);setHud(old=>({...old,money:world.money,mission:'Reach '+world.missionTarget.name}));setNotice('Mission complete: '+completed.name+'! ৳'+reward+' earned. Next: '+world.missionTarget.name+'.');}
+          if(Math.hypot(p.x-world.missionTarget.x,p.z-world.missionTarget.z)<35){
+            const reached=world.missionTarget;
+            const step=world.missions.advance();
+            if(!step.complete){
+              setTarget(step.target);
+              setHud(old=>({...old,mission:world.missions.definition.title+': Checkpoint '+step.step+'/'+step.total}));
+              setNotice(world.missions.definition.title+' — checkpoint '+step.step+'/'+step.total+' reached. Next: '+step.target.name+'.');
+            } else {
+              const completedMissionId=world.missions.active;
+              const result=world.missions.complete();
+              const reward=result.ok?result.reward:500;
+              const sessionId=serverSessionRef.current;
+              if(sessionId){
+                api.post('/dhaka-game/sessions/'+sessionId+'/missions/'+completedMissionId+'/complete').then(({data})=>{
+                  setOnlineProfile(data.profile||null);
+                  api.get('/dhaka-game/leaderboard').then(({data:rows})=>setOnlineLeaderboard(Array.isArray(rows)?rows:[])).catch(()=>{});
+                  api.post('/dhaka-game/sessions/'+sessionId+'/missions/explore/start').catch(()=>{});
+                }).catch(error=>{
+                  api.post('/dhaka-game/sessions/'+sessionId+'/missions/explore/start').catch(()=>{});
+                  if(error.response?.status!==409)setNotice(error.response?.data?.error||'Game progress is saved locally; online sync will retry next session.');
+                });
+              }
+              const nextIndex=(world.targetIndex+1)%LANDMARKS.length;
+              world.money+=reward;world.audio?.missionComplete();
+              world.missions.start('explore',clock.elapsedTime,nextIndex);
+              setTarget(world.missions.target||LANDMARKS[nextIndex]);
+              setHud(old=>({...old,money:world.money,mission:'Reach '+world.missionTarget.name}));
+              setNotice('Mission complete: '+reached.name+'! ৳'+reward+' earned. Next: '+world.missionTarget.name+'.');
+            }
+          }
         }
         renderer.render(scene,camera);
       };
@@ -452,7 +481,7 @@ export default function DhakaDrive() {
   },[]);
   useEffect(()=>{if(engine.current)engine.current.world.running=running;},[running]);
   useEffect(()=>{if(!engine.current)return;const w=engine.current.world;w.scene.background.set(nightMode?0x101c35:0x9ab9ca);w.scene.fog.color.set(nightMode?0x101c35:0x9ab9ca);w.sun.intensity=nightMode?0.45:3.1;w.sun.color.set(nightMode?0x9bbcff:0xffe0b1);w.hemi.intensity=nightMode?0.55:2.0;w.hemi.color.set(nightMode?0x526e9c:0xddeeff);w.hemi.groundColor.set(nightMode?0x151b2c:0x697353);},[nightMode]);
-  const chooseLandmark=(lm)=>{if(!engine.current)return;engine.current.setTarget(lm);};
+  const chooseLandmark=(lm)=>{if(!engine.current)return;engine.current.startMission('explore',Math.max(0,LANDMARKS.findIndex(item=>item.name===lm.name)));};
   const reset=()=>{const p=engine.current?.world.player;if(p){p.x=-520;p.z=-520;p.heading=0;p.speed=0;p.walking=false;setWalkMode(false);setNotice('Back at Gulshan Circle 2.');}};
   return <div className="min-h-screen bg-[#070b10] text-white">
     <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0b121b]/95 px-4 py-3 backdrop-blur-xl md:px-6">
