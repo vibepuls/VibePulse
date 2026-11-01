@@ -12,7 +12,7 @@ import TemplatesPage from './pages/TemplatesPage';
 import TemplateVideoMaker from './pages/TemplateVideoMaker';
 import DocumentaryStudio from './pages/DocumentaryStudio';
 import AnimationStudio from './pages/AnimationStudio';
-import DhakaDrive from './pages/DhakaDrive';
+import DhakaDrive from './pages/DhakaDrive3D';
 
 export default function App() {
   const { user, isAuthenticated, loading } = useAuth();
