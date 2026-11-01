@@ -69,6 +69,7 @@ function makePedestrian(THREE) {
 export default function DhakaDrive() {
   const mountRef = useRef(null);
   const engine = useRef(null);
+  const mapCanvasRef = useRef(null);
   const [running, setRunning] = useState(true);
   const [walkMode, setWalkMode] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -290,6 +291,24 @@ export default function DhakaDrive() {
     }
   }, [quality]);
 
+  useEffect(()=>{
+    const canvas=mapCanvasRef.current;if(!canvas)return;
+    const ctx=canvas.getContext('2d');let timer;
+    const draw=()=>{
+      const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,scale=0.075;
+      ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(5,12,19,.94)';ctx.fillRect(0,0,w,h);
+      // Street grid and river, centered on the player so the map stays useful while driving.
+      ctx.save();ctx.translate(cx,cy);
+      ctx.fillStyle='#205b70';ctx.fillRect((1760-(engine.current?.world.player.x||0))*scale,-h*2,850*scale,h*4);
+      ctx.strokeStyle='#4c5963';ctx.lineWidth=2;
+      for(let p=-1700;p<=1700;p+=110){const dx=(p-(engine.current?.world.player.x||0))*scale;const dz=(p-(engine.current?.world.player.z||0))*scale;ctx.beginPath();ctx.moveTo(dx,-h*2);ctx.lineTo(dx,h*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-w*2,dz);ctx.lineTo(w*2,dz);ctx.stroke();}
+      for(const lm of LANDMARKS){const x=(lm.x-(engine.current?.world.player.x||0))*scale,y=(lm.z-(engine.current?.world.player.z||0))*scale;if(Math.abs(x)<w/2&&Math.abs(y)<h/2){ctx.fillStyle='#f6c453';ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();}}
+      const target=engine.current?.world.missionTarget;if(target&&Math.abs((target.x-(engine.current?.world.player.x||0))*scale)<w/2&&Math.abs((target.z-(engine.current?.world.player.z||0))*scale)<h/2){ctx.strokeStyle='#fb7185';ctx.lineWidth=2;ctx.beginPath();ctx.arc((target.x-engine.current.world.player.x)*scale,(target.z-engine.current.world.player.z)*scale,7,0,Math.PI*2);ctx.stroke();}
+      ctx.rotate(-(engine.current?.world.player.heading||0));ctx.fillStyle='#34d399';ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(5,6);ctx.lineTo(0,3);ctx.lineTo(-5,6);ctx.closePath();ctx.fill();ctx.restore();
+      ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=2;ctx.strokeRect(1,1,w-2,h-2);
+      timer=requestAnimationFrame(draw);
+    };draw();return()=>cancelAnimationFrame(timer);
+  },[]);
   useEffect(()=>{if(engine.current)engine.current.world.running=running;},[running]);
   useEffect(()=>{if(!engine.current)return;const w=engine.current.world;w.scene.background.set(nightMode?0x101c35:0x9ab9ca);w.scene.fog.color.set(nightMode?0x101c35:0x9ab9ca);w.sun.intensity=nightMode?0.45:3.1;w.sun.color.set(nightMode?0x9bbcff:0xffe0b1);w.hemi.intensity=nightMode?0.55:2.0;w.hemi.color.set(nightMode?0x526e9c:0xddeeff);w.hemi.groundColor.set(nightMode?0x151b2c:0x697353);},[nightMode]);
   const chooseLandmark=(lm)=>{if(!engine.current)return;engine.current.setTarget(lm);};
@@ -304,6 +323,7 @@ export default function DhakaDrive() {
       <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#1c292d] shadow-2xl shadow-black/50">
         <div ref={mountRef} className="h-[58vh] min-h-[420px] w-full md:h-[70vh]" />
         <div className="pointer-events-none absolute left-4 top-4 max-w-[75%] rounded-xl border border-white/10 bg-black/55 px-4 py-3 backdrop-blur-md"><div className="text-xs font-black tracking-[.2em] text-emerald-300">OPEN WORLD • DHAKA, BANGLADESH</div><div className="mt-1 text-sm font-semibold">{notice}</div><div className="mt-1 text-[11px] text-slate-300">Objective: {hud.mission}</div></div>
+        <div className="absolute left-4 bottom-4 w-[132px] overflow-hidden rounded-xl border border-white/20 bg-black/60 shadow-xl"><div className="border-b border-white/10 px-2 py-1 text-[9px] font-black tracking-[.18em] text-emerald-300">MINI MAP</div><canvas ref={mapCanvasRef} width="132" height="132" className="block h-[132px] w-[132px]"/></div>
         <div className="absolute bottom-4 right-4 rounded-xl border border-white/15 bg-black/60 p-3 backdrop-blur-md"><div className="mb-2 flex items-center gap-2 text-xs font-bold"><Gauge size={15} className="text-red-300"/> GRAPHICS</div><select value={quality} onChange={e=>setQuality(e.target.value)} className="rounded-md border border-white/15 bg-slate-900 px-3 py-1.5 text-sm"><option>High</option><option>Medium</option><option>Low</option></select></div>
         {!running&&<div className="absolute inset-0 grid place-items-center bg-black/45"><div className="rounded-2xl border border-white/15 bg-black/70 px-8 py-6 text-center"><Pause size={34} className="mx-auto mb-2"/><div className="text-2xl font-black">GAME PAUSED</div><button onClick={()=>setRunning(true)} className="mt-4 rounded-lg bg-red-600 px-5 py-2 font-bold">Continue</button></div></div>}
       </div>
