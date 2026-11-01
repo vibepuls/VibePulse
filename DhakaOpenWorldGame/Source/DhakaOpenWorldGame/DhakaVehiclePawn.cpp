@@ -8,6 +8,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "DhakaSaveGame.h"
 #include "DhakaMissionSubsystem.h"
+#include "DhakaWeatherController.h"
+#include "EngineUtils.h"
 #include "DhakaPlayerCharacter.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Controller.h"
@@ -131,6 +133,7 @@ void ADhakaVehiclePawn::SaveProgress()
         Save->Wallet=Missions->Wallet;
         for(const FDhakaMission& Mission:Missions->Missions)if(Mission.bCompleted)Save->CompletedMissionIds.Add(Mission.Id);
     }
+    if(GetWorld())for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){Save->Weather=FString::FromInt(static_cast<int32>(It->Weather));Save->DayTimeHours=It->TimeOfDayHours;break;}
     UGameplayStatics::SaveGameToSlot(Save,TEXT("DhakaOpenWorldSave"),0);
 }
 void ADhakaVehiclePawn::LoadProgress()
