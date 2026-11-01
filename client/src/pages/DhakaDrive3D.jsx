@@ -118,7 +118,7 @@ export default function DhakaDrive() {
     const savedTargetIndex = Number.isInteger(savedGame.targetIndex) ? clamp(savedGame.targetIndex, 0, LANDMARKS.length - 1) : 0;
     const world = {
       player: { x: Number.isFinite(savedGame.x) ? clamp(savedGame.x, -1650, 1650) : -520, z: Number.isFinite(savedGame.z) ? clamp(savedGame.z, -1650, 1650) : -520, heading: Number.isFinite(savedGame.heading) ? savedGame.heading : 0, speed: 0, walking: false, distance: Number.isFinite(savedGame.distance) ? savedGame.distance : 0 },
-      cars: [], peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
+      cars: [], police: [], wantedLevel: 0, lastCrimeFrame: -9999, peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
       missionTarget: LANDMARKS[savedTargetIndex], targetIndex: savedTargetIndex, money: Number.isFinite(savedGame.money) ? savedGame.money : 12500, running: true, keys, cameraMode: 'Chase'
     };
     try {
@@ -297,10 +297,20 @@ export default function DhakaDrive() {
             const buildingHit=world.colliders.some(b=>Math.abs(nx-b.x)<b.w/2+1.5&&Math.abs(nz-b.z)<b.d/2+2.4);
             const trafficHit=world.cars.some(v=>Math.abs(nx-v.mesh.position.x)<(v.mesh.userData.length||4.4)*0.48+1.8&&Math.abs(nz-v.mesh.position.z)<(v.mesh.userData.length||4.4)*0.35+1.0);
             const hit=buildingHit||trafficHit;
-            if(hit){p.speed*=-.18;if(world.frame%30===0)setNotice(trafficHit?'Traffic collision! Slow down and steer carefully.':'Building collision! Steer back onto the road.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
+            if(hit){p.speed*=-.18;if(trafficHit&&world.frame-world.lastCrimeFrame>90){world.lastCrimeFrame=world.frame;world.wantedLevel=Math.min(5,world.wantedLevel+1);setNotice('Traffic incident reported! Police wanted level: '+world.wantedLevel+'/5.');}else if(world.frame%30===0)setNotice(buildingHit?'Building collision! Steer back onto the road.':'Traffic collision! Slow down and steer carefully.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
           }
           p.x=clamp(p.x,-1650,1650);p.z=clamp(p.z,-1650,1650);
           trafficAI.update(world.cars,p,dt,world.peds.map(ped=>ped.mesh.position));for(const v of world.cars){const m=v.mesh;if(v.horizontal){if(m.position.x>1700)m.position.x=-1700;if(m.position.x< -1700)m.position.x=1700;}else{if(m.position.z>1700)m.position.z=-1700;if(m.position.z< -1700)m.position.z=1700;}}
+          // Police pursuit: collisions with traffic raise the wanted level; patrol cars actively chase the player.
+          const wantedCars=Math.min(world.wantedLevel,3);
+          while(world.police.length<wantedCars){const patrol=makeVehicle(THREE,0xf1f5f9,'car');patrol.position.set(p.x+(Math.random()-.5)*90,0,p.z+(Math.random()-.5)*90);patrol.userData.length=4.4;scene.add(patrol);world.police.push({mesh:patrol,speed:0,flash:Math.random()*Math.PI*2});}
+          for(let i=0;i<world.police.length;i++){const cop=world.police[i],m=cop.mesh;const dx=p.x-m.position.x,dz=p.z-m.position.z,dist=Math.hypot(dx,dz)||1;cop.speed=Math.min(24,cop.speed+dt*8);const desired=Math.atan2(-dx,-dz);let delta=((desired-m.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;m.rotation.y+=clamp(delta,-dt*1.6,dt*1.6);m.position.x+=(-Math.sin(m.rotation.y))*cop.speed*dt;m.position.z+=(-Math.cos(m.rotation.y))*cop.speed*dt;m.position.y=0;
+            if(dist<8&&world.frame%120===0){p.speed*=.55;setNotice('Police pursuit! Lose the patrol by creating distance.');}
+            // Alternating emergency lights on the roof.
+            if(!cop.lights){const red=new THREE.Mesh(new THREE.BoxGeometry(.42,.16,.25),new THREE.MeshStandardMaterial({color:0xff2020,emissive:0x8a0000}));const blue=new THREE.Mesh(new THREE.BoxGeometry(.42,.16,.25),new THREE.MeshStandardMaterial({color:0x258bff,emissive:0x002b8a}));red.position.set(-.28,1.55,-.1);blue.position.set(.28,1.55,-.1);m.add(red,blue);cop.lights=[red,blue];}
+            cop.flash+=dt*8;cop.lights[0].visible=Math.sin(cop.flash)>0;cop.lights[1].visible=Math.sin(cop.flash)<=0;
+          }
+          if(world.wantedLevel>0&&world.police.length&&world.police.every(cop=>Math.hypot(cop.mesh.position.x-p.x,cop.mesh.position.z-p.z)>220)){world.wantedLevel=Math.max(0,world.wantedLevel-1);if(world.wantedLevel===0){for(const cop of world.police){scene.remove(cop.mesh);}world.police=[];setNotice('You escaped the police. Wanted level cleared.');}}
           for(const ped of world.peds){if(ped.state==='idle'){ped.targetX=clamp(ped.originX+(Math.random()-.5)*24,-1600,1600);ped.targetZ=clamp(ped.originZ+(Math.random()-.5)*24,-1600,1600);ped.state='walk';} }pedestrianAI.update(world.peds,dt,clock.elapsedTime,agent=>!world.cars.some(v=>Math.hypot(v.mesh.position.x-agent.x,v.mesh.position.z-agent.z)<5));
         }
         const active= p.walking?world.playerPed:world.playerCar;active.visible=true; (p.walking?world.playerCar:world.playerPed).visible=false;
@@ -314,7 +324,7 @@ export default function DhakaDrive() {
         if(world.frame-world.lastHud>12){
           world.lastHud=world.frame;
           const area=AREAS.reduce((best,a)=>Math.hypot(p.x-a.x,p.z-a.z)<Math.hypot(p.x-best.x,p.z-best.z)?a:best,AREAS[0]).name;
-          setHud(old=>({...old,speed:Math.round(Math.abs(p.speed)*3.6),area,distance:p.distance.toFixed(1)}));
+          setHud(old=>({...old,speed:Math.round(Math.abs(p.speed)*3.6),area,distance:p.distance.toFixed(1),wantedLevel:world.wantedLevel}));
           try { localStorage.setItem('vibepulse-dhaka-save', JSON.stringify({x:p.x,z:p.z,heading:p.heading,distance:p.distance,money:Math.max(0,Math.floor(Number(world.money)||12500)),targetIndex:world.targetIndex,updatedAt:Date.now()})); } catch { /* storage may be disabled */ }
           if(Math.hypot(p.x-world.missionTarget.x,p.z-world.missionTarget.z)<35){const completed=world.missionTarget;const nextIndex=(world.targetIndex+1)%LANDMARKS.length;world.targetIndex=nextIndex;world.missionTarget=LANDMARKS[nextIndex];destinationMarker.position.set(world.missionTarget.x,0,world.missionTarget.z);world.money+=500;setHud(old=>({...old,money:world.money,mission:'Reach '+world.missionTarget.name}));setNotice('Mission complete: '+completed.name+'! ৳500 earned. Next: '+world.missionTarget.name+'.');}
         }
