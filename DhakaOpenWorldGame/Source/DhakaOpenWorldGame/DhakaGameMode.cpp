@@ -27,7 +27,7 @@ void ADhakaGameMode::BeginPlay()
     // Bounded ambient traffic pool; directions follow the procedural street grid.
     for(int32 I=0;I<42;++I){
         const bool bHorizontal=(I%2)==0;
-        const float Road=FMath::RoundToFloat(FMath::FRandRange(-160000.f,160000.f)/17777.f)*17777.f;
+        const float Road=-160000.f+FMath::RoundToFloat(FMath::FRandRange(0.f,18.f))*17777.f;
         const float Along=FMath::FRandRange(-145000.f,145000.f);
         const FVector Location=bHorizontal?FVector(Along,Road,105.f):FVector(Road,Along,105.f);
         const FVector Direction=bHorizontal?FVector(I%4<2?1.f:-1.f,0,0):FVector(0,I%4<2?1.f:-1.f,0);
