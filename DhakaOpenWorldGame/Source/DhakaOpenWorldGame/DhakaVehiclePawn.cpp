@@ -36,9 +36,9 @@ ADhakaVehiclePawn::ADhakaVehiclePawn()
     if(TailMaterial)TailMaterial->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(.75f,.025f,.018f,1.f));
     if(ChromeMaterial)ChromeMaterial->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(.45f,.48f,.5f,1.f));
     if(BodyMaterial)Body->SetMaterial(0,BodyMaterial);
-    auto MakePart=[this,BodyMaterial,GlassMaterial,DarkMaterial,LightMaterial,TailMaterial,ChromeMaterial](const TCHAR* Name,UStaticMesh* Mesh,FVector Scale,FVector Location,FRotator Rotation=FRotator::ZeroRotator){
+    auto MakePart=[this,GlassMaterial,DarkMaterial,LightMaterial,TailMaterial,ChromeMaterial](const TCHAR* Name,UStaticMesh* Mesh,FVector Scale,FVector Location,FRotator Rotation=FRotator::ZeroRotator){
         UStaticMeshComponent* Part=CreateDefaultSubobject<UStaticMeshComponent>(Name);Part->SetupAttachment(Body);Part->SetStaticMesh(Mesh);Part->SetRelativeScale3D(Scale);Part->SetRelativeLocation(Location);Part->SetRelativeRotation(Rotation);Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        const FString N(Name);UMaterialInterface* Mat=BodyMaterial;
+        const FString N(Name);UMaterialInterface* Mat=this->BodyMaterial;
         if(N.Contains(TEXT("Window")))Mat=GlassMaterial;
         else if(N.Contains(TEXT("Headlight")))Mat=LightMaterial;
         else if(N.Contains(TEXT("Taillight")))Mat=TailMaterial;
