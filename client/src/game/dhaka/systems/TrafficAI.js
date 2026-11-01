@@ -9,7 +9,7 @@ const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 export class TrafficAI {
   constructor({ minSpeed = 4, maxSpeed = 15, followingDistance = 8, yieldDistance = 12, cellSize = 28, laneChangeCooldown = 3.5 } = {}) {
     this.minSpeed = minSpeed; this.maxSpeed = maxSpeed; this.followingDistance = followingDistance;
-    this.yieldDistance = yieldDistance; this.cellSize = cellSize; this.laneChangeCooldown = laneChangeCooldown; this.tick = 0;
+    this.yieldDistance = yieldDistance; this.cellSize = cellSize; this.laneChangeCooldown = laneChangeCooldown; this.speedMultiplier = 1; this.tick = 0;
   }
   cellKey(x, z) { return Math.floor(x / this.cellSize) + ':' + Math.floor(z / this.cellSize); }
   buildGrid(items, positionOf) {
@@ -36,7 +36,7 @@ export class TrafficAI {
     for (const vehicle of vehicles) {
       if (!vehicle?.mesh) continue;
       const axis = vehicle.axis === 'x' ? 'x' : 'z', other = axis === 'x' ? 'z' : 'x', pos = vehicle.mesh.position;
-      let targetSpeed = clamp(vehicle.desiredSpeed ?? vehicle.speed ?? 8, this.minSpeed, this.maxSpeed);
+      let targetSpeed = clamp(vehicle.desiredSpeed ?? vehicle.speed ?? 8, this.minSpeed, this.maxSpeed) * clamp(this.speedMultiplier, 0.25, 1.25);
       let blocked = false;
       const neighbors = this.nearby(trafficGrid, pos.x, pos.z);
       for (const ahead of neighbors) {
