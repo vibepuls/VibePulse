@@ -119,7 +119,7 @@ export default function DhakaDrive() {
 
   useEffect(() => { audioRef.current = new AudioManager(); return () => audioRef.current?.dispose(); }, []);
   useEffect(() => { audioRef.current?.setMuted(muted); }, [muted]);
-  useEffect(() => { engine.current?.world.weather?.set(weather, engine.current.scene); }, [weather]);
+  useEffect(() => { engine.current?.world.weather?.set(weather, engine.current.scene); audioRef.current?.setWeather(weather); }, [weather]);
 
   useEffect(() => {
     const mount = mountRef.current;
