@@ -17,6 +17,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City") bool bGenerateBuildings = true;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City") bool bGenerateStreetProps = true;
 private:
+    UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> SceneRoot;
     UPROPERTY(Transient) TArray<TObjectPtr<class UProceduralMeshComponent>> GeneratedMeshes;
     void ClearGenerated();
     void AddBoxMesh(const FVector& Center, const FVector& Size, const FLinearColor& Color, bool bCollision);
