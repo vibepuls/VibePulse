@@ -12,10 +12,10 @@ ADhakaPedestrian::ADhakaPedestrian()
     auto MakePart=[this](const TCHAR* Name,UStaticMesh* Mesh,FVector Scale,FVector Location){
         UStaticMeshComponent* Part=CreateDefaultSubobject<UStaticMeshComponent>(Name);Part->SetupAttachment(Root);Part->SetRelativeScale3D(Scale);Part->SetRelativeLocation(Location);Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);if(Mesh)Part->SetStaticMesh(Mesh);return Part;
     };
-    Torso=MakePart(TEXT("Torso"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.42f,.24f,.72f),FVector(0,0,112.f));
-    Head=MakePart(TEXT("Head"),Sphere.Succeeded()?Sphere.Object:nullptr,FVector(.22f,.22f,.22f),FVector(0,0,174.f));
-    LeftLeg=MakePart(TEXT("LeftLeg"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.13f,.14f,.42f),FVector(-12,0,42.f));
-    RightLeg=MakePart(TEXT("RightLeg"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.13f,.14f,.42f),FVector(12,0,42.f));
+    Torso=MakePart(TEXT("Torso"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.42f,.24f,.65f),FVector(0,0,100.f));
+    Head=MakePart(TEXT("Head"),Sphere.Succeeded()?Sphere.Object:nullptr,FVector(.28f,.28f,.28f),FVector(0,0,151.f));
+    LeftLeg=MakePart(TEXT("LeftLeg"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.13f,.14f,.42f),FVector(-12,0,21.f));
+    RightLeg=MakePart(TEXT("RightLeg"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.13f,.14f,.42f),FVector(12,0,21.f));
 }
 void ADhakaPedestrian::Tick(float Dt)
 {
