@@ -16,10 +16,6 @@ const MISSIONS = Object.freeze({
 const LANDMARK_TARGETS = [
   [-880,1030], [180,1300], [400,1450], [-350,-100], [-520,-520], [550,320], [1200,-930],
 ];
-const UNUSED_MISSION_CONFIG = Object.freeze({}); 
-
-});
-
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 router.get('/profile', wrap(async (req, res) => {
