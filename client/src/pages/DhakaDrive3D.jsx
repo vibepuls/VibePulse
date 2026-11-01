@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { VehicleController } from '../game/dhaka/systems/VehicleController';
 import { CarFront, MapPin, Pause, Play, RotateCcw, Volume2, VolumeX, Gauge, Footprints } from 'lucide-react';
 
 const AREAS = [
@@ -267,21 +268,22 @@ export default function DhakaDrive() {
       resizeObserver=new ResizeObserver(onResize);resizeObserver.observe(mount);
       const clock=new THREE.Clock();
       const tempTarget=new THREE.Vector3();
+      const vehicleController=new VehicleController();
       const animate=()=>{
         if(disposed)return;animationId=requestAnimationFrame(animate);
         const dt=Math.min(clock.getDelta(),.04);world.frame++;
         const p=world.player;
         if(world.running){
+          let vehicleStep=null;
           if(!p.walking){
-            if(keys.w||keys.arrowup)p.speed=Math.min(42,p.speed+22*dt);else if(keys.s||keys.arrowdown)p.speed=Math.max(-13,p.speed-28*dt);else p.speed*=Math.pow(.965,dt*60);
-            if(keys[' '])p.speed*=Math.pow(.72,dt*60);
+            const throttle=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
             const steer=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0);
-            p.heading-=steer*dt*(0.65+Math.min(Math.abs(p.speed)/17,1.5))*(p.speed<0?-1:1);
+            vehicleStep=vehicleController.update(p,{throttle,steer,brake:keys[' ']?1:0},dt);
           }else{
             p.speed=0;const move=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0),turn=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0);
             p.heading-=turn*dt*2.2;p.x-=Math.sin(p.heading)*move*9*dt;p.z-=Math.cos(p.heading)*move*9*dt;
           }
-          if(!p.walking){const nx=p.x-Math.sin(p.heading)*p.speed*dt,nz=p.z-Math.cos(p.heading)*p.speed*dt;
+          if(!p.walking){const nx=vehicleStep?.nextX??p.x,nz=vehicleStep?.nextZ??p.z;
             const buildingHit=world.colliders.some(b=>Math.abs(nx-b.x)<b.w/2+1.5&&Math.abs(nz-b.z)<b.d/2+2.4);
             const trafficHit=world.cars.some(v=>Math.abs(nx-v.mesh.position.x)<(v.mesh.userData.length||4.4)*0.48+1.8&&Math.abs(nz-v.mesh.position.z)<(v.mesh.userData.length||4.4)*0.35+1.0);
             const hit=buildingHit||trafficHit;
