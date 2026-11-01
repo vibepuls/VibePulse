@@ -73,7 +73,7 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
     const tank = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), bodyMat); tank.scale.set(0.8,0.7,1.15); tank.position.set(0, 1.0, -0.25); group.add(tank);
     const handle = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.08), dark); handle.position.set(0, 1.2, -0.7); group.add(handle);
     const rider = new THREE.Mesh(new THREE.CapsuleGeometry(0.2,0.42,3,6), new THREE.MeshStandardMaterial({color:0x34465d})); rider.position.set(0,1.35,0.18); rider.rotation.x=-0.2; group.add(rider);
-  } else if (type === 'rickshaw') {
+  } else if (type === 'rickshaw' || type === 'batteryRickshaw' || type === 'handcart') {
     const canopy = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.13, 1.65), new THREE.MeshStandardMaterial({ color: 0xe4bd44, roughness: 0.8 }));
     canopy.position.set(0, 1.72, -0.15); group.add(canopy);
     const seat = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.45, 0.75), dark); seat.position.set(0, 1.0, 0.25); group.add(seat);
