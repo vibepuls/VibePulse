@@ -151,11 +151,11 @@ export default function DhakaDrive() {
             tank.position.set(w * 0.18, h + 2.5, d * 0.12); building.add(tank);
           }
           // Repeated window bands on all four sides.
-          const rows = Math.min(floors, 10), cols = Math.max(2, Math.floor(w / 4.8));
+          const rows = Math.min(floors, 4), cols = Math.min(4, Math.max(2, Math.floor(w / 7)));
           for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
             const win = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.0, 0.08), glassMat);
             win.position.set(-w / 2 + (col + 0.7) * w / (cols + 0.5), 1.7 + row * 2.45, d / 2 + 0.045); building.add(win);
-            const win2 = win.clone(); win2.position.z = -d / 2 - 0.045; building.add(win2);
+            
           }
           building.position.set(x + (Math.random() - .5) * 16, 0, z + (Math.random() - .5) * 16);
           scene.add(building);
@@ -245,7 +245,7 @@ export default function DhakaDrive() {
         if(disposed)return;animationId=requestAnimationFrame(animate);
         const dt=Math.min(clock.getDelta(),.04);world.frame++;
         const p=world.player;
-        if(running){
+        if(world.running){
           if(!p.walking){
             if(keys.w||keys.arrowup)p.speed=Math.min(42,p.speed+22*dt);else if(keys.s||keys.arrowdown)p.speed=Math.max(-13,p.speed-28*dt);else p.speed*=Math.pow(.965,dt*60);
             if(keys[' '])p.speed*=Math.pow(.72,dt*60);
