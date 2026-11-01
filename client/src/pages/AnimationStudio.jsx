@@ -48,7 +48,8 @@ export default function AnimationStudio() {
   const canvasRef=useRef(null), stageWrapRef=useRef(null), imagesRef=useRef({}), rafRef=useRef(0), mediaRecorderRef=useRef(null), chunksRef=useRef([]);
   const [layers,setLayers]=useState([]), [selectedId,setSelectedId]=useState(null), [frame,setFrame]=useState(0), [playing,setPlaying]=useState(false), [tool,setTool]=useState('select');
   const [projectName,setProjectName]=useState('Untitled Cartoon'), [zoom,setZoom]=useState(0.72), [assets,setAssets]=useState([]), [status,setStatus]=useState('Ready');
-  const [history,setHistory]=useState([]), [future,setFuture]=useState([]), [showExport,setShowExport]=useState(false);\n  const [speechText,setSpeechText]=useState('Hello! Welcome to my cartoon world.'); const [voiceRate,setVoiceRate]=useState(0.92); const [mouthOpen,setMouthOpen]=useState(false); const [mouthOffsetX,setMouthOffsetX]=useState(0); const [mouthOffsetY,setMouthOffsetY]=useState(0); const [rigEnabled,setRigEnabled]=useState(true); const speechTimer=useRef(null);
+  const [history,setHistory]=useState([]), [future,setFuture]=useState([]), [showExport,setShowExport]=useState(false);
+  const [speechText,setSpeechText]=useState('Hello! Welcome to my cartoon world.'); const [voiceRate,setVoiceRate]=useState(0.92); const [mouthOpen,setMouthOpen]=useState(false); const [mouthOffsetX,setMouthOffsetX]=useState(0); const [mouthOffsetY,setMouthOffsetY]=useState(0); const [rigEnabled,setRigEnabled]=useState(true); const speechTimer=useRef(null);
   const selected=layers.find(l=>l.id===selectedId)||null;
   const duration=TOTAL_FRAMES/FPS;
 
