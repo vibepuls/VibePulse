@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import './AnimationStudio.css';
 import { ArrowLeft, Save, FolderOpen, ImagePlus, Play, Pause, Square, Plus, Trash2, Copy, RotateCw, Download, Layers3, MousePointer2, Hand, Pencil, Undo2, Redo2, ChevronDown, Film, Settings2, Maximize2 } from 'lucide-react';
 
 const W = 1280, H = 720, FPS = 24, TOTAL_FRAMES = 240;
@@ -29,7 +30,7 @@ function paintScene(ctx, layers, frame, images, includeGrid = false) {
   }
   layers.filter(l=>l.visible).forEach(layer=>{
     const state = interpolate(layer.keys, frame) || layer;
-    const img = images[layer.id];
+    const img = images[layer.assetId || layer.id];
     if (layer.kind === 'image' && img?.complete && img.naturalWidth) {
       const scale = state.scale ?? 1, iw=img.naturalWidth*scale, ih=img.naturalHeight*scale;
       ctx.save(); ctx.globalAlpha=state.opacity ?? 1; ctx.translate(state.x ?? W/2, state.y ?? H/2); ctx.rotate((state.rotation||0)*Math.PI/180);
