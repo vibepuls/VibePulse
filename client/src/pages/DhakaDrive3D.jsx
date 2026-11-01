@@ -74,7 +74,7 @@ export default function DhakaDrive() {
   const [muted, setMuted] = useState(true);
   const [hud, setHud] = useState({ speed: 0, area: 'Gulshan', money: 12500, mission: 'Explore Dhaka', distance: 0 });
   const [notice, setNotice] = useState('Welcome to Dhaka. Drive safely and explore the city.');
-  const [quality, setQuality] = useState('High');
+  const [quality, setQuality] = useState('High');\n  const [nightMode, setNightMode] = useState(false);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -228,7 +228,7 @@ export default function DhakaDrive() {
       }
       const playerCar=makeVehicle(THREE,0xc72f2f,'car',true);playerCar.position.set(world.player.x,0,world.player.z);scene.add(playerCar);
       const playerPed=makePedestrian(THREE);playerPed.position.set(world.player.x,0,world.player.z);playerPed.visible=false;scene.add(playerPed);
-      world.playerCar=playerCar;world.playerPed=playerPed;
+      world.playerCar=playerCar;world.playerPed=playerPed;world.sun=sun;world.hemi=hemi;world.scene=scene;
       const destinationMarker=new THREE.Group();
       const ring=new THREE.Mesh(new THREE.TorusGeometry(5,.4,8,32),new THREE.MeshStandardMaterial({color:0x55f3b2,emissive:0x0d5a3b}));ring.rotation.x=Math.PI/2;ring.position.y=.3;destinationMarker.add(ring);
       const beam=new THREE.Mesh(new THREE.CylinderGeometry(.2,.7,20,10,1,true),new THREE.MeshBasicMaterial({color:0x55f3b2,transparent:true,opacity:.35,side:THREE.DoubleSide}));beam.position.y=10;destinationMarker.add(beam);scene.add(destinationMarker);world.destinationMarker=destinationMarker;
@@ -289,13 +289,13 @@ export default function DhakaDrive() {
     }
   }, [quality]);
 
-  useEffect(()=>{if(engine.current)engine.current.world.running=running;},[running]);
-  const chooseLandmark=(lm)=>{if(!engine.current)return;engine.current.setTarget(lm);const p=engine.current.world.player;p.x=lm.x+40;p.z=lm.z+40;p.speed=0;};
+  useEffect(()=>{if(engine.current)engine.current.world.running=running;},[running]);\n  useEffect(()=>{if(!engine.current)return;const w=engine.current.world;w.scene.background.set(nightMode?0x101c35:0x9ab9ca);w.scene.fog.color.set(nightMode?0x101c35:0x9ab9ca);w.sun.intensity=nightMode?0.45:3.1;w.sun.color.set(nightMode?0x9bbcff:0xffe0b1);w.hemi.intensity=nightMode?0.55:2.0;w.hemi.color.set(nightMode?0x526e9c:0xddeeff);w.hemi.groundColor.set(nightMode?0x151b2c:0x697353);},[nightMode]);
+  const chooseLandmark=(lm)=>{if(!engine.current)return;engine.current.setTarget(lm);};
   const reset=()=>{const p=engine.current?.world.player;if(p){p.x=-520;p.z=-520;p.heading=0;p.speed=0;p.walking=false;setWalkMode(false);setNotice('Back at Gulshan Circle 2.');}};
   return <div className="min-h-screen bg-[#070b10] text-white">
     <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0b121b]/95 px-4 py-3 backdrop-blur-xl md:px-6">
       <div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-red-500 to-orange-600 shadow-lg shadow-red-950/50"><CarFront size={24}/></div><div><div className="text-lg font-black tracking-[.13em]">DHAKA <span className="text-red-400">OPEN WORLD</span></div><div className="text-[11px] text-slate-400">VibePulse • 3D city driving experience</div></div></div>
-      <div className="flex flex-wrap gap-2"><button onClick={()=>setRunning(v=>!v)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-500">{running?<Pause size={15} className="mr-1 inline"/>:<Play size={15} className="mr-1 inline"/>}{running?'Pause':'Resume'}</button><button onClick={()=>setMuted(v=>!v)} title="Audio settings" className="rounded-lg border border-white/15 px-3 py-2">{muted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><button onClick={reset} title="Reset position" className="rounded-lg border border-white/15 px-3 py-2"><RotateCcw size={17}/></button></div>
+      <div className="flex flex-wrap gap-2"><button onClick={()=>setRunning(v=>!v)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold hover:bg-red-500">{running?<Pause size={15} className="mr-1 inline"/>:<Play size={15} className="mr-1 inline"/>}{running?'Pause':'Resume'}</button><button onClick={()=>setMuted(v=>!v)} title="Audio settings" className="rounded-lg border border-white/15 px-3 py-2">{muted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><button onClick={()=>setNightMode(v=>!v)} title="Toggle day/night" className="rounded-lg border border-white/15 px-3 py-2 text-sm font-bold">{nightMode?'Night':'Day'}</button><button onClick={reset} title="Reset position" className="rounded-lg border border-white/15 px-3 py-2"><RotateCcw size={17}/></button></div>
     </header>
     <main className="mx-auto max-w-[1700px] p-3 md:p-5">
       <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">{[['SPEED',hud.speed+' km/h'],['CURRENT DISTRICT',hud.area],['WALLET','৳ '+hud.money.toLocaleString()],['TRAVEL DISTANCE',hud.distance+' km']].map(([a,b])=><div key={a} className="rounded-xl border border-white/10 bg-[#101924] p-3"><div className="text-[10px] font-bold tracking-[.17em] text-slate-500">{a}</div><div className="mt-1 truncate text-base font-bold">{b}</div></div>)}</div>
