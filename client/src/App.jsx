@@ -11,6 +11,7 @@ import ProfessionalVideoEditor from './pages/ProfessionalVideoEditor';
 import TemplatesPage from './pages/TemplatesPage';
 import TemplateVideoMaker from './pages/TemplateVideoMaker';
 import DocumentaryStudio from './pages/DocumentaryStudio';
+import AnimationStudio from './pages/AnimationStudio';
 
 export default function App() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -30,6 +31,7 @@ export default function App() {
       <Route path="/admin" element={isAuthenticated && canAccessAdmin ? <AdminDashboard /> : <Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
       <Route path="/cinematic" element={isAuthenticated ? <ProfessionalVideoEditor /> : <Navigate to="/login" replace />} />
       <Route path="/documentary-studio" element={isAuthenticated ? <DocumentaryStudio /> : <Navigate to="/login" replace />} />
+      <Route path="/animation-studio" element={isAuthenticated ? <AnimationStudio /> : <Navigate to="/login" replace />} />
       <Route path="/templates" element={<TemplatesPage />} />
       <Route path="/template-studio" element={<TemplateVideoMaker />} />
       <Route path="/profile/:username" element={isAuthenticated ? <SocialGamingApp /> : <PublicProfile />} />
