@@ -7,7 +7,7 @@ void UDhakaMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         FDhakaMission M; M.Id=Id; M.Title=FText::FromString(Title); M.Description=FText::FromString(Desc); M.Reward=Reward; M.Target=Target; Missions.Add(M);
     };
     Add("explore_lalbagh", TEXT("Old Dhaka Explorer"), TEXT("Reach Lalbagh Fort and explore the historic district."), 500, FVector(-88000,103000,0));
-    Add("taxi_gulshan", TEXT("CNG Taxi Run"), TEXT("Drive a passenger to Gulshan Circle."), 850, FVector(-52000,-52000,0));
+    Add("taxi_gulshan", TEXT("CNG Taxi Run"), TEXT("Drive a passenger to Gulshan Circle."), 850, FVector(-53333,-53333,0));
     Add("market_delivery", TEXT("Market Delivery"), TEXT("Deliver a package to Old Dhaka market."), 700, FVector(-85000,100000,0));
     Add("bus_route", TEXT("City Bus Route"), TEXT("Complete the marked city bus stop route."), 1000, FVector(100000,70000,0));
     Add("street_sprint", TEXT("Dhaka Street Sprint"), TEXT("Reach the finish point before the timer expires."), 1200, FVector(150000,-10000,0));
