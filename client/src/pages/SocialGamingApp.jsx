@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  Activity, ArrowDownRight, Bell, Camera, Check, ChevronRight, Crown, Gift, Menu, X,
+  Activity, ArrowDownRight, Bell, Camera, Check, ChevronRight, Crown, Gift, Menu, X, MapPin, Play,
   Gamepad2, Heart, ImagePlus, LoaderCircle, LogOut, MessageCircle, Plus,
   RefreshCw, Search, Send, Share2, Shield, Swords, Trophy, Users, Wallet, Zap, Sun, Moon, Languages, MoreHorizontal, Trash2, Settings, Film
 } from 'lucide-react';
