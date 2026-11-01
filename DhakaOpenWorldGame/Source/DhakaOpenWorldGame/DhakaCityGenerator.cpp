@@ -26,7 +26,7 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             }
             AddBoxMesh(FVector(0,P,0),FVector(CityExtent+Step,900.f,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
             AddBoxMesh(FVector(0,P,10.f),FVector(CityExtent+Step,1.5f,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
-            if(bRiverRoad)for(float Side : {-1.f,1.f})AddBoxMesh(FVector(RiverCenterX,P+Side*520.f,125.f),FVector(RiverHalfWidth*2.f,22.f,80.f),FLinearColor(.65f,.68f,.67f),true);
+            if(I%4==0)for(float Side : {-1.f,1.f})AddBoxMesh(FVector(RiverCenterX,P+Side*520.f,125.f),FVector(RiverHalfWidth*2.f,22.f,80.f),FLinearColor(.65f,.68f,.67f),true);
         }
     }
     if(bGenerateBuildings){
