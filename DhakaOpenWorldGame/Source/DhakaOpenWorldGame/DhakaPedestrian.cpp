@@ -18,11 +18,13 @@ ADhakaPedestrian::ADhakaPedestrian()
     UMaterialInstanceDynamic* Pants=Base?UMaterialInstanceDynamic::Create(Base,this):nullptr;
     UMaterialInstanceDynamic* HairMat=Base?UMaterialInstanceDynamic::Create(Base,this):nullptr;
     UMaterialInstanceDynamic* EyeMat=Base?UMaterialInstanceDynamic::Create(Base,this):nullptr;
+    UMaterialInstanceDynamic* ShoeMat=Base?UMaterialInstanceDynamic::Create(Base,this):nullptr;
     if(Shirt)Shirt->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(FMath::FRandRange(.08f,.75f),FMath::FRandRange(.08f,.75f),FMath::FRandRange(.08f,.75f),1.f));
     if(Skin)Skin->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(FMath::FRandRange(.35f,.7f),FMath::FRandRange(.2f,.46f),FMath::FRandRange(.12f,.28f),1.f));
     if(Pants)Pants->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(FMath::FRandRange(.04f,.2f),FMath::FRandRange(.05f,.22f),FMath::FRandRange(.07f,.25f),1.f));
     if(HairMat)HairMat->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(.035f,.028f,.022f,1.f));
     if(EyeMat)EyeMat->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(.015f,.012f,.01f,1.f));
+    if(ShoeMat)ShoeMat->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(.025f,.025f,.025f,1.f));
     auto MakePart=[this](const TCHAR* Name,UStaticMesh* Mesh,FVector Scale,FVector Location){
         UStaticMeshComponent* Part=CreateDefaultSubobject<UStaticMeshComponent>(Name);Part->SetupAttachment(Root);Part->SetStaticMesh(Mesh);Part->SetRelativeScale3D(Scale);Part->SetRelativeLocation(Location);Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);return Part;
     };
@@ -42,7 +44,7 @@ ADhakaPedestrian::ADhakaPedestrian()
     LeftFoot=MakePart(TEXT("LeftFoot"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.24f,.16f,.1f),FVector(14,-12,5.f));
     RightFoot=MakePart(TEXT("RightFoot"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.24f,.16f,.1f),FVector(14,12,5.f));
     auto Apply=[&](UStaticMeshComponent* Part,UMaterialInterface* Material){if(Part&&Material)Part->SetMaterial(0,Material);};
-    Apply(Torso,Shirt);Apply(LeftArm,Shirt);Apply(RightArm,Shirt);Apply(Head,Skin);Apply(LeftLeg,Pants);Apply(RightLeg,Pants);Apply(Hair,HairMat);Apply(LeftEye,EyeMat);Apply(RightEye,EyeMat);Apply(Nose,Skin);Apply(Mouth,EyeMat);Apply(LeftHand,Skin);Apply(RightHand,Skin);Apply(LeftFoot,DarkMat);Apply(RightFoot,DarkMat);
+    Apply(Torso,Shirt);Apply(LeftArm,Shirt);Apply(RightArm,Shirt);Apply(Head,Skin);Apply(LeftLeg,Pants);Apply(RightLeg,Pants);Apply(Hair,HairMat);Apply(LeftEye,EyeMat);Apply(RightEye,EyeMat);Apply(Nose,Skin);Apply(Mouth,EyeMat);Apply(LeftHand,Skin);Apply(RightHand,Skin);Apply(LeftFoot,ShoeMat);Apply(RightFoot,ShoeMat);
 }
 void ADhakaPedestrian::Tick(float Dt)
 {
