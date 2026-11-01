@@ -22,6 +22,8 @@ bool UDhakaMissionSubsystem::StartMission(FName MissionId)
 bool UDhakaMissionSubsystem::CompleteActiveMission()
 {
     if (!Missions.IsValidIndex(ActiveMissionIndex) || Missions[ActiveMissionIndex].bCompleted) return false;
-    Missions[ActiveMissionIndex].bCompleted=true; Wallet += FMath::Max(0,Missions[ActiveMissionIndex].Reward); ActiveMissionIndex=INDEX_NONE; return true;
+    const int32 CompletedIndex=ActiveMissionIndex; Missions[CompletedIndex].bCompleted=true; Wallet += FMath::Max(0,Missions[CompletedIndex].Reward); ActiveMissionIndex=INDEX_NONE;
+    for(int32 Offset=1;Offset<=Missions.Num();++Offset){const int32 Candidate=(CompletedIndex+Offset)%Missions.Num();if(!Missions[Candidate].bCompleted){ActiveMissionIndex=Candidate;break;}}
+    return true;
 }
 void UDhakaMissionSubsystem::AddWallet(int64 Amount) { Wallet=FMath::Max<int64>(0,Wallet+Amount); }
