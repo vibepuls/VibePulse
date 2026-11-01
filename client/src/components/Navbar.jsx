@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, MessageCircle, Bell, Sun, Moon, LogOut, User, Shield, PlaySquare } from 'lucide-react';
+import { Home, MessageCircle, Bell, Sun, Moon, LogOut, User, Shield, PlaySquare, Film } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
@@ -39,6 +39,7 @@ export default function Navbar() {
       <div className="flex items-center gap-3">
         <Link to="/" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Home"><Home size={22}/></Link>
         <Link to="/shorts" className="shorts-nav-link" aria-label="Open Shorts"><PlaySquare size={20}/><span>Shorts</span></Link>
+        <Link to="/animation-studio" className="shorts-nav-link" aria-label="Open Animation Studio" title="Animation Studio"><Film size={20}/><span>Animate</span></Link>
         <Link to="/messages" className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><MessageCircle size={22}/><Badge count={messageCount}/></Link>
         <Link to="/notifications" className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><Bell size={22}/><Badge count={notificationCount}/></Link>
         <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">{theme === 'dark' ? <Sun size={22}/> : <Moon size={22}/>}</button>
