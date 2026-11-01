@@ -14,14 +14,21 @@ public:
     ADhakaPedestrian();
     virtual void Tick(float DeltaSeconds) override;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class USceneComponent> Root;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UCapsuleComponent> CollisionCapsule;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Torso;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Head;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> LeftLeg;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> RightLeg;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> LeftArm;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> RightArm;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Hair;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> LeftEye;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> RightEye;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Crowd") EDhakaPedestrianState State = EDhakaPedestrianState::Walk;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Crowd") float WalkSpeed = 150.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Crowd") FVector Destination = FVector::ZeroVector;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Crowd") float ArrivalRadius = 120.f;
 private:
     float WaitRemaining = 0.f;
+    float WalkPhase = 0.f;
 };
