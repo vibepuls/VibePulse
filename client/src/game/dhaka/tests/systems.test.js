@@ -4,6 +4,7 @@ import { VehicleController } from '../systems/VehicleController.js';
 import { MissionSystem } from '../systems/MissionSystem.js';
 import { SaveManager } from '../systems/SaveManager.js';
 import { CollisionWorld } from '../systems/CollisionWorld.js';
+import { TrafficAI } from '../systems/TrafficAI.js';
 
 test('vehicle controller accelerates and returns finite coordinates', () => {
   const controller = new VehicleController();
@@ -57,4 +58,21 @@ test('multi-stop missions advance through their route before completing', () => 
   assert.equal(pickup.complete, false);
   assert.equal(pickup.target.name, 'Landmark 0');
   assert.equal(missions.advance().complete, true);
+});
+
+test('vehicle profiles change handling by vehicle category', () => {
+  const controller = new VehicleController();
+  controller.setVehicleType('bus');
+  assert.equal(controller.config.maxForwardSpeed, 24);
+  controller.setVehicleType('motorcycle');
+  assert.equal(controller.config.maxForwardSpeed, 44);
+});
+
+test('traffic AI slows behind nearby traffic using its spatial grid', () => {
+  const traffic = new TrafficAI({ minSpeed: 2.5, maxSpeed: 15, followingDistance: 8 });
+  const car = { mesh: { position: { x: 0, y: 0, z: 0 } }, axis: 'x', dir: 1, lane: 0, speed: 8, desiredSpeed: 10 };
+  const lead = { mesh: { position: { x: 5, y: 0, z: 0 } }, axis: 'x', dir: 1, lane: 0, speed: 3, desiredSpeed: 3 };
+  traffic.update([car, lead], { x: 100, z: 100 }, 0.1, []);
+  assert.ok(car.speed < 10);
+  assert.ok(Number.isFinite(car.mesh.position.x));
 });
