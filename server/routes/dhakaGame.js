@@ -48,7 +48,8 @@ router.post('/sessions', wrap(async (req, res) => {
 router.post('/sessions/:sessionId/missions/:missionId/start', wrap(async (req, res) => {
   const mission = MISSIONS[req.params.missionId];
   if (!mission) return res.status(400).json({ error: 'Unknown mission.' });
-  const requestedIndex = Number.isInteger(Number(req.body.targetIndex)) ? Number(req.body.targetIndex) : 0;
+  const body = req.body || {};
+  const requestedIndex = Number.isInteger(Number(body.targetIndex)) ? Number(body.targetIndex) : 0;
   const target = req.params.missionId === 'explore'
     ? LANDMARK_TARGETS[Math.max(0,Math.min(LANDMARK_TARGETS.length-1,requestedIndex))]
     : mission.target;
@@ -104,9 +105,10 @@ router.post('/sessions/:sessionId/missions/:missionId/complete', wrap(async (req
 
 
 router.post('/sessions/:sessionId/heartbeat', wrap(async (req, res) => {
-  const x = Number(req.body.x), z = Number(req.body.z), heading = Number(req.body.heading || 0);
+  const body = req.body || {};
+  const x = Number(body.x), z = Number(body.z), heading = Number(body.heading || 0);
   const allowed = new Set(['car','hatchback','suv','luxury','van','microbus','deliveryVan','pickup','bus','minibus','schoolBus','coach','truck','firetruck','ambulance','police','cng','rickshaw','batteryRickshaw','handcart','motorcycle','scooter','bicycle','boat','riverLaunch']);
-  const vehicleType = allowed.has(req.body.vehicleType) ? req.body.vehicleType : 'car';
+  const vehicleType = allowed.has(body.vehicleType) ? body.vehicleType : 'car';
   if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(heading) || Math.abs(x)>1650 || Math.abs(z)>1650) {
     return res.status(400).json({ error: 'Invalid player position.' });
   }
