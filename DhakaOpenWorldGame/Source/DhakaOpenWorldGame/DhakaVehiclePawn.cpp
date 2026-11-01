@@ -4,6 +4,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Kismet/GameplayStatics.h"
+#include "DhakaSaveGame.h"
+#include "DhakaMissionSubsystem.h"
+#include "Engine/GameInstance.h"
 
 ADhakaVehiclePawn::ADhakaVehiclePawn()
 {
@@ -42,6 +46,8 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAxis("Throttle",this,&ADhakaVehiclePawn::InputThrottle);
     Input->BindAxis("Steer",this,&ADhakaVehiclePawn::InputSteer);
     Input->BindAxis("Brake",this,&ADhakaVehiclePawn::InputBrake);
+    Input->BindAction("SaveGame",IE_Pressed,this,&ADhakaVehiclePawn::SaveProgress);
+    Input->BindAction("LoadGame",IE_Pressed,this,&ADhakaVehiclePawn::LoadProgress);
 }
 void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
@@ -52,9 +58,33 @@ void ADhakaVehiclePawn::Tick(float Dt)
     Super::Tick(Dt); if(!Body || Dt<=0.f) return;
     const FVector Forward=GetActorForwardVector();
     Speed=FVector::DotProduct(Body->GetPhysicsLinearVelocity(),Forward);
+    TravelDistanceKm+=Body->GetPhysicsLinearVelocity().Size()*Dt/100000.f;
     Body->AddForce(Forward*ThrottleInput*Acceleration*Body->GetMass());
     if(BrakeInput>0.f) Body->AddForce(-Body->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*Body->GetMass()*BrakeInput);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
     Body->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*Body->GetMass()*4.f));
     if(Body->GetPhysicsLinearVelocity().Size()>MaxSpeed) Body->SetPhysicsLinearVelocity(Body->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
+}
+
+void ADhakaVehiclePawn::SaveProgress()
+{
+    UDhakaSaveGame* Save=Cast<UDhakaSaveGame>(UGameplayStatics::CreateSaveGameObject(UDhakaSaveGame::StaticClass()));
+    if(!Save)return;
+    Save->PlayerLocation=GetActorLocation();Save->PlayerRotation=GetActorRotation();Save->TravelDistanceKm=TravelDistanceKm;
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
+        Save->Wallet=Missions->Wallet;
+        for(const FDhakaMission& Mission:Missions->Missions)if(Mission.bCompleted)Save->CompletedMissionIds.Add(Mission.Id);
+    }
+    UGameplayStatics::SaveGameToSlot(Save,TEXT("DhakaOpenWorldSave"),0);
+}
+void ADhakaVehiclePawn::LoadProgress()
+{
+    UDhakaSaveGame* Save=Cast<UDhakaSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("DhakaOpenWorldSave"),0));
+    if(!Save)return;
+    SetActorLocation(Save->PlayerLocation,false,nullptr,ETeleportType::TeleportPhysics);SetActorRotation(Save->PlayerRotation);TravelDistanceKm=FMath::Max(0.f,Save->TravelDistanceKm);
+    if(Body)Body->SetPhysicsLinearVelocity(FVector::ZeroVector);
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
+        Missions->Wallet=FMath::Max<int64>(0,Save->Wallet);
+        for(FDhakaMission& Mission:Missions->Missions)Mission.bCompleted=Save->CompletedMissionIds.Contains(Mission.Id);
+    }
 }
