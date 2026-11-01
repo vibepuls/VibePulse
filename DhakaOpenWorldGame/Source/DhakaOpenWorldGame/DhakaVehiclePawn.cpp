@@ -95,6 +95,7 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("SaveGame",IE_Pressed,this,&ADhakaVehiclePawn::SaveProgress);
     Input->BindAction("LoadGame",IE_Pressed,this,&ADhakaVehiclePawn::LoadProgress);
     Input->BindAction("ToggleVehicle",IE_Pressed,this,&ADhakaVehiclePawn::ToggleVehicleMode);
+    Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaVehiclePawn::CycleCamera);
 }
 void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
@@ -150,4 +151,12 @@ void ADhakaVehiclePawn::ToggleVehicleMode()
     const FVector ExitLocation=GetActorLocation()+GetActorRightVector()*280.f+FVector(0,0,75.f);
     ADhakaPlayerCharacter* Character=GetWorld()->SpawnActor<ADhakaPlayerCharacter>(ADhakaPlayerCharacter::StaticClass(),ExitLocation,GetActorRotation());
     if(Character){bOccupied=false;Character->SetNearbyVehicle(this);PC->Possess(Character);}
+}
+
+void ADhakaVehiclePawn::CycleCamera()
+{
+    CameraModeIndex=(CameraModeIndex+1)%3;
+    if(CameraModeIndex==0){SpringArm->TargetArmLength=650.f;SpringArm->SetRelativeLocation(FVector(-20,0,190));}
+    else if(CameraModeIndex==1){SpringArm->TargetArmLength=260.f;SpringArm->SetRelativeLocation(FVector(-10,0,145));}
+    else{SpringArm->TargetArmLength=0.f;SpringArm->SetRelativeLocation(FVector(92,0,82));}
 }
