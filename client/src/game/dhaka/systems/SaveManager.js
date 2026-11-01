@@ -18,6 +18,9 @@ export class SaveManager {
         money: Math.max(0, Math.floor(finite(value.money, 12500))),
         targetIndex: Number.isInteger(value.targetIndex) ? value.targetIndex : 0,
         completedMissions: Array.isArray(value.completedMissions) ? value.completedMissions : [],
+        ownedVehicles: Array.isArray(value.ownedVehicles) ? value.ownedVehicles.filter(v => typeof v === 'string').slice(0,40) : ['car'],
+        ownedGarages: Array.isArray(value.ownedGarages) ? value.ownedGarages.filter(v => typeof v === 'string').slice(0,12) : ['starter'],
+        vehicleType: typeof value.vehicleType === 'string' ? value.vehicleType : 'car',
         mission: value.mission && typeof value.mission === 'object' ? value.mission : {},
         settings: value.settings && typeof value.settings === 'object' ? value.settings : {},
       };
