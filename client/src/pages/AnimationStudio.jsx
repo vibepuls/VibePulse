@@ -48,7 +48,7 @@ export default function AnimationStudio() {
   const canvasRef=useRef(null), stageWrapRef=useRef(null), imagesRef=useRef({}), rafRef=useRef(0), mediaRecorderRef=useRef(null), chunksRef=useRef([]);
   const [layers,setLayers]=useState([]), [selectedId,setSelectedId]=useState(null), [frame,setFrame]=useState(0), [playing,setPlaying]=useState(false), [tool,setTool]=useState('select');
   const [projectName,setProjectName]=useState('Untitled Cartoon'), [zoom,setZoom]=useState(0.72), [assets,setAssets]=useState([]), [status,setStatus]=useState('Ready');
-  const [history,setHistory]=useState([]), [future,setFuture]=useState([]), [showExport,setShowExport]=useState(false);
+  const [history,setHistory]=useState([]), [future,setFuture]=useState([]), [showExport,setShowExport]=useState(false);\n  const [speechText,setSpeechText]=useState('Hello! Welcome to my cartoon world.'); const [voiceRate,setVoiceRate]=useState(0.92); const [mouthOpen,setMouthOpen]=useState(false); const [mouthOffsetX,setMouthOffsetX]=useState(0); const [mouthOffsetY,setMouthOffsetY]=useState(0); const [rigEnabled,setRigEnabled]=useState(true); const speechTimer=useRef(null);
   const selected=layers.find(l=>l.id===selectedId)||null;
   const duration=TOTAL_FRAMES/FPS;
 
@@ -77,9 +77,13 @@ export default function AnimationStudio() {
   };
   const addToStage=(asset)=>{
     const img=imagesRef.current[asset.id];
-    const add={id:uid(),assetId:asset.id,name:asset.name,kind:'image',visible:true,locked:false,x:W/2,y:H/2,scale:img?Math.min(400/img.naturalWidth,480/img.naturalHeight,1):0.5,rotation:0,opacity:1,keys:[]};
+    const add={id:uid(),assetId:asset.id,name:asset.name,kind:'image',visible:true,locked:false,x:W/2,y:H/2,scale:img?Math.min(400/img.naturalWidth,480/img.naturalHeight,1):0.5,rotation:0,opacity:1,keys:[],rigged:false,mouthEnabled:true,mouthOpen:false,mouthX:0,mouthY:img?Math.min(150,img.naturalHeight*.18):60};
     snapshot([...layers,add]);setSelectedId(add.id);setStatus('Character/image added to stage');
   };
+  const rigCharacter=()=>{if(!selected||selected.kind!=='image'){setStatus('Select a character image layer first');return;} updateLayer(selected.id,{rigged:true,mouthEnabled:true,mouthY:selected.mouthY??60});setStatus('Basic mouth rig enabled. Adjust mouth position for your character.');};
+  const speakAsCharacter=()=>{if(!('speechSynthesis' in window)){setStatus('Speech generation is not supported in this browser');return;}if(!selected||selected.kind!=='image'){setStatus('Select a character image first');return;}window.speechSynthesis.cancel();if(speechTimer.current)clearInterval(speechTimer.current);updateLayer(selected.id,{rigged:true,mouthEnabled:true,mouthOpen:false});const utterance=new SpeechSynthesisUtterance(speechText);utterance.rate=voiceRate;utterance.pitch=1.08;utterance.onstart=()=>{let open=false;speechTimer.current=setInterval(()=>{open=!open;setMouthOpen(open);setLayers(prev=>prev.map(l=>l.id===selected.id?{...l,rigged:true,mouthEnabled:true,mouthOpen:open}:l));},105);setStatus('Character voice playing with animated mouth');};utterance.onend=()=>{clearInterval(speechTimer.current);setMouthOpen(false);setLayers(prev=>prev.map(l=>l.id===selected.id?{...l,mouthOpen:false}:l));setStatus('Voice playback finished');};window.speechSynthesis.speak(utterance);};
+  const stopSpeech=()=>{window.speechSynthesis?.cancel();if(speechTimer.current)clearInterval(speechTimer.current);setMouthOpen(false);setLayers(prev=>prev.map(l=>({...l,mouthOpen:false})));setStatus('Voice stopped');};
+  const makeWalkCycle=()=>{if(!selected||selected.kind!=='image'){setStatus('Select a character image first');return;}const startX=selected.x??W/2,startY=selected.y??H/2,base=frame;const keys=[{frame:base,x:startX,y:startY,scale:selected.scale??1,rotation:selected.rotation??0,opacity:selected.opacity??1},{frame:Math.min(TOTAL_FRAMES-1,base+12),x:startX+35,y:startY-9,scale:selected.scale??1,rotation:-3,opacity:selected.opacity??1},{frame:Math.min(TOTAL_FRAMES-1,base+24),x:startX+70,y:startY,scale:selected.scale??1,rotation:3,opacity:selected.opacity??1},{frame:Math.min(TOTAL_FRAMES-1,base+36),x:startX+105,y:startY-9,scale:selected.scale??1,rotation:-3,opacity:selected.opacity??1},{frame:Math.min(TOTAL_FRAMES-1,base+48),x:startX+140,y:startY,scale:selected.scale??1,rotation:0,opacity:selected.opacity??1}].filter((k,i,a)=>i===0||k.frame>a[i-1].frame);updateLayer(selected.id,{keys:[...(selected.keys||[]).filter(k=>k.frame<base),...keys]});setStatus('Walk-cycle motion keyframes added; adjust poses for a more natural walk');};
   const addKeyframe=()=>{
     if(!selected)return;
     const state={frame,x:selected.x??W/2,y:selected.y??H/2,scale:selected.scale??1,rotation:selected.rotation??0,opacity:selected.opacity??1};
@@ -133,6 +137,16 @@ export default function AnimationStudio() {
           <div className="vp-anim-prop-buttons"><button onClick={()=>updateLayer(selected.id,{visible:!selected.visible})}>{selected.visible?'Hide layer':'Show layer'}</button><button onClick={()=>updateLayer(selected.id,{locked:!selected.locked})}>{selected.locked?'Unlock':'Lock'}</button><button className="danger" onClick={deleteSelected}><Trash2 size={14}/> Delete</button></div>
           <div className="vp-anim-key-list"><b>KEYFRAMES</b>{(selected.keys||[]).length===0?<small>No keyframes yet</small>:[...selected.keys].sort((a,b)=>a.frame-b.frame).map(k=><button key={k.frame} onClick={()=>setFrame(k.frame)}>◆ Frame {k.frame}</button>)}</div>
         </div>}
+        <div className="vp-anim-panel-title">CHARACTER & VOICE <span>2D</span></div>
+        <div className="vp-anim-character-tools">
+          <button onClick={rigCharacter}>◎ Rig selected character mouth</button>
+          <label>Voice script<textarea value={speechText} onChange={e=>setSpeechText(e.target.value)} rows="3" placeholder="Type what your character should say…"/></label>
+          <label>Voice speed <span>{voiceRate.toFixed(2)}×</span><input type="range" min="0.65" max="1.35" step="0.05" value={voiceRate} onChange={e=>setVoiceRate(Number(e.target.value))}/></label>
+          <div className="vp-anim-character-buttons"><button onClick={speakAsCharacter}>▶ Speak + lip movement</button><button onClick={stopSpeech}>■ Stop</button></div>
+          <button onClick={makeWalkCycle}>↔ Create walk motion</button>
+          {selected?.kind==='image'&&selected.rigged&&<label>Mouth vertical position<input type="range" min={-220} max={220} value={selected.mouthY??60} onChange={e=>updateLayer(selected.id,{mouthY:Number(e.target.value)})}/></label>}
+          <small>Basic voice/lip movement is a starter rig, not phoneme-accurate lip-sync. Place the mouth on your character and test it.</small>
+        </div>
         <div className="vp-anim-panel-title">LAYERS <span>{layers.length}</span></div>
         <div className="vp-anim-layers">{[...layers].reverse().map(l=><div key={l.id} className={'vp-anim-layer '+(selectedId===l.id?'selected':'')}><button className="vp-anim-layer-main" onClick={()=>setSelectedId(l.id)}><span className="vp-anim-layer-icon">{l.kind==='drawing'?'✎':'▧'}</span><span>{l.name}</span></button><button title={l.visible?'Hide':'Show'} onClick={()=>updateLayer(l.id,{visible:!l.visible})}>{l.visible?'◉':'○'}</button></div>)}</div>
       </aside>
