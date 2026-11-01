@@ -93,7 +93,7 @@ router.post('/sessions/:sessionId/missions/:missionId/complete', wrap(async (req
 
 router.post('/sessions/:sessionId/heartbeat', wrap(async (req, res) => {
   const x = Number(req.body.x), z = Number(req.body.z), heading = Number(req.body.heading || 0);
-  const allowed = new Set(['car','suv','van','pickup','bus','minibus','truck','ambulance','cng','rickshaw','motorcycle','scooter','bicycle']);
+  const allowed = new Set(['car','hatchback','suv','luxury','van','microbus','deliveryVan','pickup','bus','minibus','schoolBus','coach','truck','firetruck','ambulance','police','cng','rickshaw','batteryRickshaw','handcart','motorcycle','scooter','bicycle','boat','riverLaunch']);
   const vehicleType = allowed.has(req.body.vehicleType) ? req.body.vehicleType : 'car';
   if (!Number.isFinite(x) || !Number.isFinite(z) || !Number.isFinite(heading) || Math.abs(x)>1650 || Math.abs(z)>1650) {
     return res.status(400).json({ error: 'Invalid player position.' });
