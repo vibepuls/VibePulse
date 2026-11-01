@@ -49,7 +49,7 @@ void ADhakaCityGenerator::AddBoxMesh(const FVector& Center,const FVector& Size,c
     TArray<FVector> N; N.Init(FVector::UpVector,8); TArray<FVector2D> UV={{0,0},{1,0},{1,1},{0,1},{0,0},{1,0},{1,1},{0,1}};
     TArray<FColor> Colors; Colors.Init(Color.ToFColor(true),8); TArray<FProcMeshTangent> Tangents; Tangents.Init(FProcMeshTangent(1,0,0),8);
     Mesh->CreateMeshSection(0,V,T,N,UV,Colors,Tangents,bCollision);
-    static UMaterialInterface* Mat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    static UMaterialInterface* Mat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/VertexColorMaterial.VertexColorMaterial"));
     if(Mat) Mesh->SetMaterial(0,Mat);
     GeneratedMeshes.Add(Mesh);
 }
