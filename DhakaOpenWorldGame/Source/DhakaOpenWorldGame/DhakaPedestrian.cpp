@@ -8,8 +8,8 @@
 ADhakaPedestrian::ADhakaPedestrian()
 {
     PrimaryActorTick.bCanEverTick=true;
-    Root=CreateDefaultSubobject<USceneComponent>(TEXT("Root"));SetRootComponent(Root);
-    CollisionCapsule=CreateDefaultSubobject<UCapsuleComponent>(TEXT("PedestrianCollision"));CollisionCapsule->SetupAttachment(Root);CollisionCapsule->SetRelativeLocation(FVector(0,0,92.f));CollisionCapsule->InitCapsuleSize(38.f,92.f);CollisionCapsule->SetCollisionProfileName(TEXT("Pawn"));CollisionCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    CollisionCapsule=CreateDefaultSubobject<UCapsuleComponent>(TEXT("PedestrianCollision"));SetRootComponent(CollisionCapsule);CollisionCapsule->InitCapsuleSize(38.f,92.f);CollisionCapsule->SetCollisionProfileName(TEXT("Pawn"));CollisionCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    Root=CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));Root->SetupAttachment(CollisionCapsule);Root->SetRelativeLocation(FVector(0,0,-92.f));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     UMaterialInterface* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
