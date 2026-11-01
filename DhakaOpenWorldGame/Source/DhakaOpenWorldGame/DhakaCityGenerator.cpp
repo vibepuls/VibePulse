@@ -3,12 +3,13 @@
 #include "Materials/Material.h"
 #include "UObject/ConstructorHelpers.h"
 
-ADhakaCityGenerator::ADhakaCityGenerator(){ PrimaryActorTick.bCanEverTick=false; SceneRoot=CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot")); SetRootComponent(SceneRoot); SetActorEnableCollision(false); }
+ADhakaCityGenerator::ADhakaCityGenerator(){ PrimaryActorTick.bCanEverTick=false; SceneRoot=CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot")); SetRootComponent(SceneRoot); }
 void ADhakaCityGenerator::ClearGenerated(){ for(auto* M:GeneratedMeshes){if(M){M->DestroyComponent();}} GeneratedMeshes.Reset(); }
 void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform); ClearGenerated(); FRandomStream R(RandomSeed);
     const float Step=CityExtent/FMath::Max(4,GridBlocks); const float Start=-CityExtent*0.5f;
+    AddBoxMesh(FVector(0,0,-90.f),FVector(CityExtent+20000.f,CityExtent+20000.f,100.f),FLinearColor(0.19f,0.27f,0.17f),true);
     if(bGenerateRoads){
         for(int32 I=0;I<=GridBlocks;++I){
             const float P=Start+I*Step;
