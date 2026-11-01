@@ -29,6 +29,8 @@ jobs:
         run: npm --prefix client install
       - name: Generate Prisma client
         run: npm run db:generate
+      - name: Check Dhaka game API syntax
+        run: node --check server/routes/dhakaGame.js && node --check server/app.js
       - name: Build API
         run: npm --prefix server run build
       - name: Test Dhaka game systems
