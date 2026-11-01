@@ -371,7 +371,7 @@ export default function DhakaDrive() {
           vehicleController.gripMultiplier=world.weather?.type==='monsoon'?0.58:world.weather?.type==='rain'?0.78:world.weather?.type==='fog'?0.9:1;
           world.weather?.update(dt, p);
           world.audio?.updateEngine(p.speed, p.walking);
-          if (world.missions.definition.duration > 0 && world.missions.startedAt > 0 && world.missions.remaining(clock.elapsedTime) <= 0) { setNotice(world.missions.definition.title + ' expired. Start the mission again to retry.'); world.missions.start('explore', clock.elapsedTime); }
+          if (world.missions.definition.duration > 0 && world.missions.startedAt > 0 && world.missions.remaining(clock.elapsedTime) <= 0) { setNotice(world.missions.definition.title + ' expired. Start the mission again to retry.'); const nextIndex=(world.targetIndex+1)%LANDMARKS.length; world.missions.start('explore',clock.elapsedTime,nextIndex); setTarget(world.missions.target||LANDMARKS[nextIndex]); }
           let vehicleStep=null;
           if(!p.walking){
             const throttle=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0);
