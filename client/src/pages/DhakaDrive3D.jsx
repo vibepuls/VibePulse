@@ -74,7 +74,8 @@ export default function DhakaDrive() {
   const [muted, setMuted] = useState(true);
   const [hud, setHud] = useState({ speed: 0, area: 'Gulshan', money: 12500, mission: 'Explore Dhaka', distance: 0 });
   const [notice, setNotice] = useState('Welcome to Dhaka. Drive safely and explore the city.');
-  const [quality, setQuality] = useState('High');\n  const [nightMode, setNightMode] = useState(false);
+  const [quality, setQuality] = useState('High');
+  const [nightMode, setNightMode] = useState(false);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -289,7 +290,8 @@ export default function DhakaDrive() {
     }
   }, [quality]);
 
-  useEffect(()=>{if(engine.current)engine.current.world.running=running;},[running]);\n  useEffect(()=>{if(!engine.current)return;const w=engine.current.world;w.scene.background.set(nightMode?0x101c35:0x9ab9ca);w.scene.fog.color.set(nightMode?0x101c35:0x9ab9ca);w.sun.intensity=nightMode?0.45:3.1;w.sun.color.set(nightMode?0x9bbcff:0xffe0b1);w.hemi.intensity=nightMode?0.55:2.0;w.hemi.color.set(nightMode?0x526e9c:0xddeeff);w.hemi.groundColor.set(nightMode?0x151b2c:0x697353);},[nightMode]);
+  useEffect(()=>{if(engine.current)engine.current.world.running=running;},[running]);
+  useEffect(()=>{if(!engine.current)return;const w=engine.current.world;w.scene.background.set(nightMode?0x101c35:0x9ab9ca);w.scene.fog.color.set(nightMode?0x101c35:0x9ab9ca);w.sun.intensity=nightMode?0.45:3.1;w.sun.color.set(nightMode?0x9bbcff:0xffe0b1);w.hemi.intensity=nightMode?0.55:2.0;w.hemi.color.set(nightMode?0x526e9c:0xddeeff);w.hemi.groundColor.set(nightMode?0x151b2c:0x697353);},[nightMode]);
   const chooseLandmark=(lm)=>{if(!engine.current)return;engine.current.setTarget(lm);};
   const reset=()=>{const p=engine.current?.world.player;if(p){p.x=-520;p.z=-520;p.heading=0;p.speed=0;p.walking=false;setWalkMode(false);setNotice('Back at Gulshan Circle 2.');}};
   return <div className="min-h-screen bg-[#070b10] text-white">
