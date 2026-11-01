@@ -104,6 +104,7 @@ export default function DhakaDrive() {
   const mapCanvasRef = useRef(null);
   const audioRef = useRef(null);
   const serverSessionRef = useRef(null);
+  const serverSyncIntervalRef = useRef(null);
   const [onlineProfile, setOnlineProfile] = useState(null);
   const [onlineLeaderboard, setOnlineLeaderboard] = useState([]);
   const [running, setRunning] = useState(true);
@@ -133,8 +134,8 @@ export default function DhakaDrive() {
     let cancelled = false;
     api.get('/dhaka-game/profile').then(({data}) => { if(!cancelled) setOnlineProfile(data.profile || null); }).catch(() => {});
     api.get('/dhaka-game/leaderboard').then(({data}) => { if(!cancelled) setOnlineLeaderboard(Array.isArray(data) ? data : []); }).catch(() => {});
-    api.post('/dhaka-game/sessions').then(({data}) => { if(!cancelled) serverSessionRef.current = data?.session?.id || null; }).catch(() => {});
-    return () => { cancelled = true; const id = serverSessionRef.current; if(id) api.post('/dhaka-game/sessions/' + id + '/finish').catch(() => {}); };
+    api.post('/dhaka-game/sessions').then(({data}) => { if(cancelled) return; serverSessionRef.current = data?.session?.id || null; const sync = async () => { const game=engine.current, id=serverSessionRef.current; if(!game||!id)return; const p=game.world.player; try { await api.post('/dhaka-game/sessions/'+id+'/heartbeat',{x:p.x,z:p.z,heading:p.heading,vehicleType:game.world.playerCarType||'car'}); const nearby=await api.get('/dhaka-game/sessions/nearby',{params:{x:p.x,z:p.z}}); game.syncRemotePlayers(nearby.data); } catch {} }; sync(); serverSyncIntervalRef.current=window.setInterval(sync,3000); }).catch(() => {});
+    return () => { cancelled = true; if(serverSyncIntervalRef.current)window.clearInterval(serverSyncIntervalRef.current); const id = serverSessionRef.current; if(id) api.post('/dhaka-game/sessions/' + id + '/finish').catch(() => {}); };
   }, []);
   useEffect(() => { audioRef.current?.setMuted(muted); }, [muted]);
   useEffect(() => { engine.current?.world.weather?.set(weather, engine.current.scene); audioRef.current?.setWeather(weather); }, [weather]);
@@ -154,7 +155,7 @@ export default function DhakaDrive() {
       autoDayCycle, timeOfDay: 14,
       cars: [], police: [], wantedLevel: 0, lastCrimeFrame: -9999, peds: [], trees: [], colliders: [], labels: [], lastHud: 0, frame: 0,
       missionTarget: LANDMARKS[savedTargetIndex], targetIndex: savedTargetIndex, money: Number.isFinite(savedGame.money) ? savedGame.money : 12500, running: true, keys, cameraMode: 'Chase', saveManager,
-      missions: new MissionSystem({ landmarks: LANDMARKS, saved: savedGame.mission }), weather: null, audio: audioRef.current
+      missions: new MissionSystem({ landmarks: LANDMARKS, saved: savedGame.mission }), weather: null, audio: audioRef.current, remotePlayers: new Map()
     };
     try {
       scene = new THREE.Scene();
@@ -336,6 +337,7 @@ export default function DhakaDrive() {
       const ring=new THREE.Mesh(new THREE.TorusGeometry(5,.4,8,32),new THREE.MeshStandardMaterial({color:0x55f3b2,emissive:0x0d5a3b}));ring.rotation.x=Math.PI/2;ring.position.y=.3;destinationMarker.add(ring);
       const beam=new THREE.Mesh(new THREE.CylinderGeometry(.2,.7,20,10,1,true),new THREE.MeshBasicMaterial({color:0x55f3b2,transparent:true,opacity:.35,side:THREE.DoubleSide}));beam.position.y=10;destinationMarker.add(beam);scene.add(destinationMarker);world.destinationMarker=destinationMarker;
       const changeVehicleType = (type) => { const allowed=['car','suv','van','pickup','bus','minibus','truck','ambulance','cng','rickshaw','motorcycle','scooter','bicycle']; if(!allowed.includes(type))return; const old=world.playerCar; if(old){scene.remove(old);old.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});} const car=makeVehicle(THREE,new THREE.Color(carColorRef.current).getHex(),type,true);car.position.set(world.player.x,0,world.player.z);car.rotation.y=world.player.heading;scene.add(car);world.playerCar=car;world.playerCarType=type;world.player.speed=0;setVehicleType(type);setNotice('Vehicle changed to '+type.toUpperCase()+'.'); };
+      const syncRemotePlayers = (players = []) => { if(!Array.isArray(players))return; const seen=new Set(); for(const remote of players){if(!remote?.user_id||!Number.isFinite(Number(remote.player_x))||!Number.isFinite(Number(remote.player_z)))continue;const id=remote.user_id;seen.add(id);let mesh=world.remotePlayers.get(id);if(!mesh){const type=['car','suv','van','pickup','bus','minibus','truck','ambulance','cng','rickshaw','motorcycle','scooter','bicycle'].includes(remote.vehicle_type)?remote.vehicle_type:'car';mesh=makeVehicle(THREE,0x35d399,type,false);mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{m.transparent=true;m.opacity=.68;});}o.castShadow=false;});scene.add(mesh);world.remotePlayers.set(id,mesh);}mesh.position.set(Number(remote.player_x),0,Number(remote.player_z));mesh.rotation.y=Number(remote.player_heading)||0;}for(const [id,mesh] of world.remotePlayers){if(!seen.has(id)){scene.remove(mesh);mesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});world.remotePlayers.delete(id);}}};
       const setTarget = (lm) => { world.missionTarget=lm;world.targetIndex=Math.max(0,LANDMARKS.findIndex(item=>item.name===lm.name));destinationMarker.position.set(lm.x,0,lm.z);setHud(old=>({...old,mission:'Reach '+lm.name}));setNotice('New objective: reach '+lm.name+'.'); };
       setTarget(LANDMARKS[savedTargetIndex]);
       const startMission = (id) => { const result = world.missions.start(id, clock.elapsedTime); if (!result.ok) { setNotice(result.reason); return; } const sessionId = serverSessionRef.current; if(sessionId) api.post('/dhaka-game/sessions/' + sessionId + '/missions/' + id + '/start').catch(() => {}); const next = LANDMARKS[(world.targetIndex + 1) % LANDMARKS.length]; setTarget(next); setHud(old => ({ ...old, mission: result.mission.title + ': ' + next.name })); setNotice(result.mission.title + ' started — ' + result.mission.description); };
@@ -408,7 +410,7 @@ export default function DhakaDrive() {
         }
         renderer.render(scene,camera);
       };
-      engine.current={setTarget,startMission,changeVehicleType,world,renderer,scene,camera};
+      engine.current={setTarget,startMission,changeVehicleType,syncRemotePlayers,world,renderer,scene,camera};
       animate();
       return ()=>{disposed=true;cancelAnimationFrame(animationId);window.removeEventListener('keydown',onKeyDown);window.removeEventListener('keyup',onKeyUp);resizeObserver?.disconnect();scene.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());});renderer.dispose();if(renderer.domElement.parentNode===mount)mount.removeChild(renderer.domElement);};
     } catch (err) {
