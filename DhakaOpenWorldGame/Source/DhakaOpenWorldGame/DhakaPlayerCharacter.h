@@ -22,6 +22,8 @@ private:
     void StartSprint();
     void StopSprint();
     void InteractVehicle();
+    void StartJump();
+    void StopJump();
     float NormalWalkSpeed = 420.f;
     float SprintSpeed = 720.f;
 };
