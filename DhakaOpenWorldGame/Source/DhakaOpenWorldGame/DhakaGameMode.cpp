@@ -20,7 +20,7 @@ void ADhakaGameMode::BeginPlay()
     if(CityGeneratorClass) World->SpawnActor<ADhakaCityGenerator>(CityGeneratorClass,FVector::ZeroVector,FRotator::ZeroRotator);
     World->SpawnActor<ADhakaWeatherController>(ADhakaWeatherController::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
     if(VehiclePawnClass){
-        const FVector SpawnLocation(-52000.f,-52000.f,125.f);
+        const FVector SpawnLocation(-53333.f,-53333.f,125.f);
         ADhakaVehiclePawn* Vehicle=World->SpawnActor<ADhakaVehiclePawn>(VehiclePawnClass,SpawnLocation,FRotator::ZeroRotator);
         if(Vehicle){ if(APlayerController* PC=World->GetFirstPlayerController()) PC->Possess(Vehicle); }
     }
