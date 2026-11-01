@@ -25,11 +25,7 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             const float PX=Start+(X+0.5f)*Step, PZ=Start+(Y+0.5f)*Step;
             const float W=Step*R.FRandRange(0.28f,0.65f), D=Step*R.FRandRange(0.28f,0.65f), H=R.FRandRange(350.f,2100.f);
             const FLinearColor C=FLinearColor::LerpUsingHSV(FLinearColor(0.34f,0.29f,0.22f),FLinearColor(0.63f,0.61f,0.54f),R.FRand());
-            AddBoxMesh(FVector(PX,PZ,H*0.5f),FVector(W,D,H),C,true);
-            AddBoxMesh(FVector(PX,PZ,H+24.f),FVector(W*0.7f,D*0.7f,48.f),FLinearColor(0.12f,0.15f,0.17f),false);
-            if(bGenerateStreetProps && R.FRand()<0.38f){
-                AddBoxMesh(FVector(PX+W*0.58f,PZ+D*0.35f,52.f),FVector(W*0.75f,85.f,105.f),R.FRand()<0.5f?FLinearColor(0.62f,0.13f,0.08f):FLinearColor(0.08f,0.38f,0.26f),false);
-            }
+            AddBuildingMesh(PX,PZ,W,D,H,C,R);
         }
     }
     if(bGenerateStreetProps){
@@ -52,5 +48,61 @@ void ADhakaCityGenerator::AddBoxMesh(const FVector& Center,const FVector& Size,c
     Mesh->CreateMeshSection(0,V,T,N,UV,Colors,Tangents,bCollision);
     static UMaterialInterface* Mat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/VertexColorMaterial.VertexColorMaterial"));
     if(Mat) Mesh->SetMaterial(0,Mat);
+    GeneratedMeshes.Add(Mesh);
+}
+
+namespace
+{
+    void AppendBoxGeometry(const FVector& Center,const FVector& Size,const FColor& Color,
+        TArray<FVector>& Vertices,TArray<int32>& Triangles,TArray<FVector>& Normals,
+        TArray<FVector2D>& UVs,TArray<FColor>& Colors,TArray<FProcMeshTangent>& Tangents)
+    {
+        const int32 Base=Vertices.Num();const float X=Size.X*.5f,Y=Size.Y*.5f,Z=Size.Z*.5f;
+        const FVector V[8]={Center+FVector(-X,-Y,-Z),Center+FVector(X,-Y,-Z),Center+FVector(X,Y,-Z),Center+FVector(-X,Y,-Z),
+            Center+FVector(-X,-Y,Z),Center+FVector(X,-Y,Z),Center+FVector(X,Y,Z),Center+FVector(-X,Y,Z)};
+        for(const FVector& P:V)Vertices.Add(P);
+        const int32 T[36]={0,2,1,0,3,2,4,5,6,4,6,7,0,1,5,0,5,4,2,3,7,2,7,6,1,2,6,1,6,5,3,0,4,3,4,7};
+        for(int32 I:T)Triangles.Add(Base+I);
+        for(int32 I=0;I<8;++I){Normals.Add(FVector::UpVector);UVs.Add(FVector2D((I==1||I==2||I==5||I==6)?1.f:0.f,(I>=4)?1.f:0.f));Colors.Add(Color);Tangents.Add(FProcMeshTangent(1,0,0));}
+    }
+}
+void ADhakaCityGenerator::AddBuildingMesh(float X,float Y,float Width,float Depth,float Height,const FLinearColor& Color,FRandomStream& Random)
+{
+    UProceduralMeshComponent* Mesh=NewObject<UProceduralMeshComponent>(this);if(!Mesh)return;
+    Mesh->SetupAttachment(SceneRoot);AddInstanceComponent(Mesh);Mesh->RegisterComponent();Mesh->SetRelativeLocation(FVector(X,Y,0));
+    TArray<FVector> V,N;TArray<int32> T;TArray<FVector2D> UV;TArray<FColor> C;TArray<FProcMeshTangent> Tangents;
+    auto Box=[&](FVector Center,FVector Size,FLinearColor Tint){AppendBoxGeometry(Center,Size,Tint.ToFColor(true),V,T,N,UV,C,Tangents);};
+    Box(FVector(0,0,Height*.5f),FVector(Width,Depth,Height),Color);
+    Box(FVector(0,0,Height+24.f),FVector(Width*.72f,Depth*.72f,48.f),FLinearColor(.12f,.15f,.17f));
+    const int32 Floors=FMath::Clamp(FMath::FloorToInt(Height/420.f),2,6);
+    const int32 Columns=FMath::Clamp(FMath::FloorToInt(Width/1800.f),2,7);
+    const float WindowW=FMath::Min(210.f,Width/(Columns*2.3f)),WindowH=FMath::Min(170.f,Height/(Floors*2.7f));
+    const FLinearColor Glass=Random.FRand()<.35f?FLinearColor(.12f,.25f,.31f):FLinearColor(.27f,.42f,.48f);
+    for(int32 Floor=0;Floor<Floors;++Floor){
+        const float Z=150.f+(Floor+1)*(Height-300.f)/(Floors+1);
+        for(int32 Col=0;Col<Columns;++Col){
+            const float AlongX=-Width*.5f+(Col+.5f)*Width/Columns;
+            const float AlongY=-Depth*.5f+(Col+.5f)*Depth/Columns;
+            Box(FVector(AlongX,-Depth*.5f-5.f,Z),FVector(WindowW,10.f,WindowH),Glass);
+            Box(FVector(AlongX,Depth*.5f+5.f,Z),FVector(WindowW,10.f,WindowH),Glass);
+            Box(FVector(-Width*.5f-5.f,AlongY,Z),FVector(10.f,WindowW,WindowH),Glass);
+            Box(FVector(Width*.5f+5.f,AlongY,Z),FVector(10.f,WindowW,WindowH),Glass);
+        }
+        if(Floor>0&&Random.FRand()<.45f){
+            Box(FVector(0,-Depth*.5f-20.f,Z-WindowH*.55f),FVector(Width*.66f,34.f,16.f),FLinearColor(.48f,.48f,.43f));
+            Box(FVector(0,-Depth*.5f-36.f,Z-WindowH*.35f),FVector(Width*.66f,5.f,55.f),FLinearColor(.24f,.29f,.3f));
+        }
+        if(Random.FRand()<.42f){
+            const float ACX=Random.FRandRange(-Width*.35f,Width*.35f);
+            Box(FVector(ACX,-Depth*.5f-18.f,Z-WindowH*.2f),FVector(70.f,35.f,65.f),FLinearColor(.54f,.56f,.55f));
+        }
+    }
+    const FLinearColor ShopColor=Random.FRand()<.5f?FLinearColor(.62f,.13f,.08f):FLinearColor(.08f,.38f,.26f);
+    Box(FVector(0,-Depth*.5f-8.f,85.f),FVector(Width*.7f,16.f,145.f),ShopColor);
+    Box(FVector(0,-Depth*.5f-18.f,180.f),FVector(Width*.75f,8.f,42.f),FLinearColor(.91f,.74f,.29f));
+    if(Random.FRand()<.65f)Box(FVector(Width*.25f,Depth*.15f,Height+90.f),FVector(280.f,220.f,180.f),FLinearColor(.42f,.43f,.4f));
+    Mesh->CreateMeshSection(0,V,T,N,UV,C,Tangents,true);
+    static UMaterialInterface* VertexMat=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/EngineDebugMaterials/VertexColorMaterial.VertexColorMaterial"));
+    if(VertexMat)Mesh->SetMaterial(0,VertexMat);
     GeneratedMeshes.Add(Mesh);
 }
