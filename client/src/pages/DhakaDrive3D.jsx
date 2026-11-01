@@ -78,6 +78,7 @@ export default function DhakaDrive() {
   const [quality, setQuality] = useState('High');
   const [nightMode, setNightMode] = useState(false);
   const [cameraMode, setCameraMode] = useState('Chase');
+  const [carColor, setCarColor] = useState('#c72f2f');
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -229,7 +230,7 @@ export default function DhakaDrive() {
         const p=makePedestrian(THREE);p.position.set((Math.random()*3000-1500),0,(Math.random()*3000-1500));scene.add(p);
         world.peds.push({mesh:p,phase:Math.random()*6.28,originX:p.position.x,originZ:p.position.z,angle:Math.random()*6.28,speed:.5+Math.random()*1.3});
       }
-      const playerCar=makeVehicle(THREE,0xc72f2f,'car',true);playerCar.position.set(world.player.x,0,world.player.z);scene.add(playerCar);
+      const playerCar=makeVehicle(THREE,new THREE.Color(carColor).getHex(),'car',true);playerCar.position.set(world.player.x,0,world.player.z);scene.add(playerCar);
       const playerPed=makePedestrian(THREE);playerPed.position.set(world.player.x,0,world.player.z);playerPed.visible=false;scene.add(playerPed);
       world.playerCar=playerCar;world.playerPed=playerPed;world.sun=sun;world.hemi=hemi;world.scene=scene;
       const destinationMarker=new THREE.Group();
@@ -329,6 +330,7 @@ export default function DhakaDrive() {
         <div className="absolute bottom-4 right-4 rounded-xl border border-white/15 bg-black/60 p-3 backdrop-blur-md"><div className="mb-2 flex items-center gap-2 text-xs font-bold"><Gauge size={15} className="text-red-300"/> GRAPHICS</div><select value={quality} onChange={e=>setQuality(e.target.value)} className="rounded-md border border-white/15 bg-slate-900 px-3 py-1.5 text-sm"><option>High</option><option>Medium</option><option>Low</option></select></div>
         {!running&&<div className="absolute inset-0 grid place-items-center bg-black/45"><div className="rounded-2xl border border-white/15 bg-black/70 px-8 py-6 text-center"><Pause size={34} className="mx-auto mb-2"/><div className="text-2xl font-black">GAME PAUSED</div><button onClick={()=>setRunning(true)} className="mt-4 rounded-lg bg-red-600 px-5 py-2 font-bold">Continue</button></div></div>}
       </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-[#101924] p-3"><span className="text-xs font-black tracking-widest text-slate-400">VEHICLE PAINT</span>{[{label:"Red",value:"#c72f2f"},{label:"Blue",value:"#2563eb"},{label:"Black",value:"#20252c"},{label:"White",value:"#e5e7eb"},{label:"Yellow",value:"#eab308"},{label:"Green",value:"#15803d"}].map(c=><button key={c.value} title={c.label} aria-label={c.label+" car paint"} onClick={()=>{setCarColor(c.value);const car=engine.current?.world.playerCar;if(car)car.children.forEach(child=>{if(child.material&&child.material.color&&child.geometry?.type==="BoxGeometry"&&child.position.y>0.4&&child.position.y<1.3)child.material.color.set(c.value);});}} className={"h-7 w-7 rounded-full border-2 "+(carColor===c.value?"border-white ring-2 ring-emerald-400":"border-white/20")} style={{backgroundColor:c.value}}/></div>
       <div className="mt-3 grid grid-cols-4 gap-2 md:hidden">
         {[
           ['◀','a'],['▲','w'],['▼','s'],['▶','d']
