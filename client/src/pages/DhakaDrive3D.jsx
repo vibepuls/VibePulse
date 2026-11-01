@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { VehicleController } from '../game/dhaka/systems/VehicleController';
+import { TrafficAI } from '../game/dhaka/systems/TrafficAI';
 import { CarFront, MapPin, Pause, Play, RotateCcw, Volume2, VolumeX, Gauge, Footprints } from 'lucide-react';
 
 const AREAS = [
@@ -247,7 +248,7 @@ export default function DhakaDrive() {
         const v=makeVehicle(THREE,pick(trafficColors),type);
         v.position.set(horizontal?(Math.random()*3000-1500):road,0,horizontal?road:(Math.random()*3000-1500));
         v.rotation.y=horizontal?(Math.random()<.5?0:Math.PI):(Math.random()<.5?Math.PI/2:-Math.PI/2);
-        scene.add(v);world.cars.push({mesh:v,horizontal,road,lane,speed:3+Math.random()*9,dir:Math.random()<.5?-1:1});
+        scene.add(v);const dir=Math.random()<.5?-1:1;world.cars.push({mesh:v,horizontal,axis:horizontal?'x':'z',road,lane:road,speed:3+Math.random()*9,desiredSpeed:3+Math.random()*9,dir});
       }
       for(let i=0;i<90;i++){
         const p=makePedestrian(THREE);p.position.set((Math.random()*3000-1500),0,(Math.random()*3000-1500));scene.add(p);
@@ -269,6 +270,7 @@ export default function DhakaDrive() {
       const clock=new THREE.Clock();
       const tempTarget=new THREE.Vector3();
       const vehicleController=new VehicleController();
+      const trafficAI=new TrafficAI({minSpeed:2.5,maxSpeed:15,followingDistance:10,yieldDistance:8});
       const animate=()=>{
         if(disposed)return;animationId=requestAnimationFrame(animate);
         const dt=Math.min(clock.getDelta(),.04);world.frame++;
@@ -290,7 +292,7 @@ export default function DhakaDrive() {
             if(hit){p.speed*=-.18;if(world.frame%30===0)setNotice(trafficHit?'Traffic collision! Slow down and steer carefully.':'Building collision! Steer back onto the road.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
           }
           p.x=clamp(p.x,-1650,1650);p.z=clamp(p.z,-1650,1650);
-          for(const v of world.cars){const m=v.mesh;if(v.horizontal){m.position.x+=v.dir*v.speed*dt;if(m.position.x>1700)m.position.x=-1700;if(m.position.x< -1700)m.position.x=1700;}else{m.position.z+=v.dir*v.speed*dt;if(m.position.z>1700)m.position.z=-1700;if(m.position.z< -1700)m.position.z=1700;}}
+          trafficAI.update(world.cars,p,dt,world.peds.map(ped=>ped.mesh.position));for(const v of world.cars){const m=v.mesh;if(v.horizontal){if(m.position.x>1700)m.position.x=-1700;if(m.position.x< -1700)m.position.x=1700;}else{if(m.position.z>1700)m.position.z=-1700;if(m.position.z< -1700)m.position.z=1700;}}
           for(const ped of world.peds){ped.phase+=dt*ped.speed;ped.mesh.position.x=ped.originX+Math.sin(ped.phase)*2.5;ped.mesh.position.z=ped.originZ+Math.cos(ped.phase*.7)*2.5;ped.mesh.rotation.y=ped.angle+Math.sin(ped.phase)*.35;}
         }
         const active= p.walking?world.playerPed:world.playerCar;active.visible=true; (p.walking?world.playerCar:world.playerPed).visible=false;
