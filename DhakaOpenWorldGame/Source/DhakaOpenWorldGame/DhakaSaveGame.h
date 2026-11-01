@@ -8,7 +8,7 @@ class DHAKAOPENWORLDGAME_API UDhakaSaveGame : public USaveGame
 {
     GENERATED_BODY()
 public:
-    UPROPERTY(BlueprintReadWrite) FVector PlayerLocation = FVector(-520,-520,100);
+    UPROPERTY(BlueprintReadWrite) FVector PlayerLocation = FVector(-52000,-52000,125);
     UPROPERTY(BlueprintReadWrite) FRotator PlayerRotation = FRotator::ZeroRotator;
     UPROPERTY(BlueprintReadWrite) float TravelDistanceKm = 0.f;
     UPROPERTY(BlueprintReadWrite) int64 Wallet = 12500;
