@@ -78,3 +78,22 @@ Use licensed or original assets for Dhaka roads, signs, rickshaws, CNGs, buses, 
 - Add browser/device profiling, low-memory tests, missing-asset fallback, accessibility checks and a deployment smoke test.
 - Add server-side validation for saves, missions and any economy. Never trust client-side wallet/reward values.
 - A GTA V-scale experience requires original/appropriately licensed assets, extensive QA and a substantially larger engineering effort; the current browser implementation remains a scalable prototype until these gates pass.
+
+
+## Implemented gameplay modules in this repository
+
+- `systems/VehicleController.js`: throttle, braking, reverse, steering and weather traction.
+- `systems/TrafficAI.js`: nearby-cell spatial indexing, following-distance response, pedestrian yielding and opportunistic lane changes.
+- `systems/PedestrianAI.js`: walk/wait/cross/idle state machine.
+- `systems/MissionSystem.js`: timed missions, multi-stop routes, checkpoints, completion records and replay.
+- `systems/SaveManager.js`: versioned, validated local save data.
+- `systems/WeatherSystem.js`: clear/smog/rain/monsoon/fog presets, local rain particles, fog and wet-road material response.
+- `systems/AudioManager.js`: generated engine, horn, rickshaw bell, mission-complete tones and weather ambience.
+- `systems/CollisionWorld.js`: reusable spatial broad-phase grid.
+- `tests/systems.test.js`: automated tests for vehicle movement, mission rewards/routes, saves and collision-grid queries.
+- `/api/dhaka-game`: authenticated profile, leaderboard, session, mission-reward and nearby-player presence endpoints; mission rewards are computed server-side and limited to one claim per mission per day.
+- `/DhakaOpenWorldGame`: separate UE5 C++ source project with procedural city, vehicle, traffic, pedestrian, weather, mission and save-game classes.
+
+## Multiplayer and release boundary
+
+The browser shared-world implementation uses authenticated HTTP heartbeats and 3-second nearby-player polling. It is a lightweight presence/synchronization layer, not a dedicated authoritative Unreal multiplayer server. The native Unreal source has not been compiled in this environment. Production release still requires building/testing in Unreal Engine 5.5, Android SDK/NDK setup for Android packaging, device profiling, dedicated-server/network QA, and appropriate original/licensed assets and sound. Do not treat local browser money as VibePulse points; only the backend-verified game score is synced to the online leaderboard.
