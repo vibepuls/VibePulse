@@ -1,0 +1,58 @@
+{
+  "gameId": "dhaka-open-world",
+  "version": "0.1.0",
+  "world": {
+    "city": "Dhaka, Bangladesh",
+    "worldBounds": {
+      "minX": -1650,
+      "maxX": 1650,
+      "minZ": -1650,
+      "maxZ": 1650
+    },
+    "streaming": {
+      "enabled": true,
+      "cellSize": 256,
+      "activeRadiusCells": 2
+    }
+  },
+  "render": {
+    "antialias": true,
+    "pixelRatioCap": 1.75,
+    "shadowsDefault": "Medium",
+    "fog": {
+      "near": 220,
+      "far": 1450
+    },
+    "targetFrameRate": 60
+  },
+  "traffic": {
+    "maxActiveVehicles": 140,
+    "targetMobileVehicles": 48,
+    "spawnRadius": 240,
+    "despawnRadius": 420,
+    "laneSnapDistance": 3.5,
+    "types": {
+      "bus": 0.08,
+      "truck": 0.07,
+      "cng": 0.15,
+      "rickshaw": 0.17,
+      "motorcycle": 0.15,
+      "car": 0.38
+    }
+  },
+  "pedestrians": {
+    "maxActiveDesktop": 90,
+    "maxActiveMobile": 32,
+    "spawnRadius": 100,
+    "despawnRadius": 180
+  },
+  "input": {
+    "steeringDeadZone": 0.12,
+    "touchButtonRepeat": true,
+    "reverseSteering": true
+  },
+  "accessibility": {
+    "reduceMotion": false,
+    "highContrastHud": false
+  }
+}
