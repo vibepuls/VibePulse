@@ -26,24 +26,45 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
   const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.38, metalness: 0.25 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x202833, roughness: 0.5 });
   const glass = new THREE.MeshStandardMaterial({ color: 0x8cb7c8, metalness: 0.2, roughness: 0.18 });
-  const bodyLength = type === 'bus' ? 7.5 : type === 'rickshaw' ? 2.5 : 4.4;
-  const bodyWidth = type === 'bus' ? 2.3 : type === 'rickshaw' ? 1.65 : 1.9;
-  const bodyHeight = type === 'bus' ? 2.7 : type === 'rickshaw' ? 1.5 : 1.05;
+  const bodyLength = type === 'bus' ? 7.5 : type === 'truck' ? 7.2 : type === 'rickshaw' ? 2.5 : type === 'cng' ? 2.8 : type === 'motorcycle' ? 2.1 : 4.4;
+  const bodyWidth = type === 'bus' ? 2.3 : type === 'truck' ? 2.35 : type === 'rickshaw' ? 1.65 : type === 'cng' ? 1.55 : type === 'motorcycle' ? 0.85 : 1.9;
+  const bodyHeight = type === 'bus' ? 2.7 : type === 'truck' ? 2.25 : type === 'rickshaw' ? 1.5 : type === 'cng' ? 1.6 : type === 'motorcycle' ? 0.9 : 1.05;
   const body = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyLength), bodyMat);
   body.position.y = type === 'rickshaw' ? 0.85 : type === 'bus' ? 1.75 : 0.9;
   body.castShadow = true; body.receiveShadow = true; group.add(body);
-  if (type !== 'rickshaw') {
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth * 0.83, type === 'bus' ? 1.05 : 0.78, bodyLength * 0.48), glass);
-    cabin.position.set(0, type === 'bus' ? 2.55 : 1.62, -0.15); cabin.castShadow = true; group.add(cabin);
-  } else {
+  if (type === 'bus') {
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth * 0.88, 1.05, bodyLength * 0.88), glass);
+    cabin.position.set(0, 2.55, -0.15); cabin.castShadow = true; group.add(cabin);
+    for (let z = -2.6; z <= 2.7; z += 1.05) for (const x of [-1.17, 1.17]) { const win = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.68, 0.72), glass); win.position.set(x, 2.05, z); group.add(win); }
+  } else if (type === 'truck') {
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(2.05, 1.65, 2.1), bodyMat); cab.position.set(0, 1.8, -2.0); group.add(cab);
+    const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.72, 0.06), glass); windshield.position.set(0, 2.05, -3.07); group.add(windshield);
+    const cargo = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.75, 4.0), new THREE.MeshStandardMaterial({color:pick([0x9eaaad,0xb7a17b,0x3d7e74,0x9d493b]),roughness:.8})); cargo.position.set(0, 2.0, 1.15); group.add(cargo);
+  } else if (type === 'cng') {
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.12, 1.8), new THREE.MeshStandardMaterial({color:0x18834c,roughness:.65})); roof.position.set(0, 1.8, 0.05); group.add(roof);
+    const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.62, 0.06), glass); frontGlass.position.set(0, 1.35, -1.25); group.add(frontGlass);
+    const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.9), glass); for(const x of [-0.79,0.79]){const win=sideGlass.clone();win.position.set(x,1.35,0.05);group.add(win);}
+  } else if (type === 'motorcycle') {
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.16, 0.85), dark); seat.position.set(0, 1.0, 0.12); group.add(seat);
+    const tank = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), bodyMat); tank.scale.set(0.8,0.7,1.15); tank.position.set(0, 1.0, -0.25); group.add(tank);
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.08), dark); handle.position.set(0, 1.2, -0.7); group.add(handle);
+    const rider = new THREE.Mesh(new THREE.CapsuleGeometry(0.2,0.42,3,6), new THREE.MeshStandardMaterial({color:0x34465d})); rider.position.set(0,1.35,0.18); rider.rotation.x=-0.2; group.add(rider);
+  } else if (type === 'rickshaw') {
     const canopy = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.13, 1.65), new THREE.MeshStandardMaterial({ color: 0xe4bd44, roughness: 0.8 }));
     canopy.position.set(0, 1.72, -0.15); group.add(canopy);
     const seat = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.45, 0.75), dark); seat.position.set(0, 1.0, 0.25); group.add(seat);
     const front = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), bodyMat); front.position.set(0, 0.8, -0.85); group.add(front);
   }
-  const wheelGeo = new THREE.CylinderGeometry(type === 'rickshaw' ? 0.28 : 0.38, type === 'rickshaw' ? 0.28 : 0.38, 0.22, 12);
-  for (const x of [-bodyWidth / 2 - 0.04, bodyWidth / 2 + 0.04]) for (const z of [-bodyLength * 0.31, bodyLength * 0.31]) {
-    const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI / 2; wheel.position.set(x, type === 'rickshaw' ? 0.32 : 0.42, z); wheel.castShadow = true; group.add(wheel);
+  const wheelRadius = type === 'motorcycle' ? 0.38 : type === 'rickshaw' ? 0.28 : type === 'cng' ? 0.31 : 0.38;
+  const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.22, 12);
+  if (type === 'motorcycle') {
+    for (const z of [-0.72, 0.72]) { const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI/2; wheel.position.set(0, 0.4, z); group.add(wheel); }
+  } else {
+    const axles = type === 'rickshaw' ? [-bodyLength * 0.25, bodyLength * 0.28] : [-bodyLength * 0.31, bodyLength * 0.31];
+    for (const x of [-bodyWidth / 2 - 0.04, bodyWidth / 2 + 0.04]) for (const z of axles) {
+      if (type === 'rickshaw' && x > 0) continue;
+      const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI / 2; wheel.position.set(x, type === 'rickshaw' ? 0.32 : type === 'cng' ? 0.34 : 0.42, z); wheel.castShadow = true; group.add(wheel);
+    }
   }
   if (player) {
     const bumper = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth * 0.9, 0.14, 0.2), new THREE.MeshStandardMaterial({ color: 0xe7e9e8, metalness: 0.55 }));
@@ -218,9 +239,10 @@ export default function DhakaDrive() {
         const head=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.1,.9),new THREE.MeshStandardMaterial({color:pick([0x247b49,0xc39a29,0xa43e34]),emissive:0x100e08}));head.position.set(x+14,6.6,z+14);scene.add(head);
       }
       const trafficColors=[0xf0c53e,0xe9e6df,0xc84a3b,0x286e9d,0x242b33,0x23825b,0xc4c9c9];
-      for(let i=0;i<58;i++){
+      for(let i=0;i<140;i++){
         const horizontal=Math.random()<.5, lane=(Math.random()<.5?-1:1)*4.7, road= Math.round((Math.random()*28-14))*block;
-        const type=i%13===0?'bus':i%4===0?'rickshaw':'car';
+        const typeRoll=Math.random();
+        const type=typeRoll<0.08?'bus':typeRoll<0.15?'truck':typeRoll<0.30?'cng':typeRoll<0.47?'rickshaw':typeRoll<0.62?'motorcycle':'car';
         const v=makeVehicle(THREE,pick(trafficColors),type);
         v.position.set(horizontal?(Math.random()*3000-1500):road,0,horizontal?road:(Math.random()*3000-1500));
         v.rotation.y=horizontal?(Math.random()<.5?0:Math.PI):(Math.random()<.5?Math.PI/2:-Math.PI/2);
@@ -261,7 +283,7 @@ export default function DhakaDrive() {
           }
           if(!p.walking){const nx=p.x+Math.sin(p.heading)*p.speed*dt,nz=p.z+Math.cos(p.heading)*p.speed*dt;
             const buildingHit=world.colliders.some(b=>Math.abs(nx-b.x)<b.w/2+1.5&&Math.abs(nz-b.z)<b.d/2+2.4);
-            const trafficHit=world.cars.some(v=>Math.abs(nx-v.mesh.position.x)<(v.mesh.userData.length||4.4)*0.48+1.8&&Math.abs(nz-v.mesh.position.z)<3.0);
+            const trafficHit=world.cars.some(v=>Math.abs(nx-v.mesh.position.x)<(v.mesh.userData.length||4.4)*0.48+1.8&&Math.abs(nz-v.mesh.position.z)<(v.mesh.userData.length||4.4)*0.35+1.0);
             const hit=buildingHit||trafficHit;
             if(hit){p.speed*=-.18;if(world.frame%30===0)setNotice(trafficHit?'Traffic collision! Slow down and steer carefully.':'Building collision! Steer back onto the road.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
           }
