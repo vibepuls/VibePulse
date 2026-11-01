@@ -38,4 +38,6 @@ private:
     void InputBrake(float Value);
     void SaveProgress();
     void LoadProgress();
+    void CycleCamera();
+    int32 CameraModeIndex = 0;
 };
