@@ -10,8 +10,8 @@ class DHAKAOPENWORLDGAME_API ADhakaCityGenerator : public AActor
 public:
     ADhakaCityGenerator();
     virtual void OnConstruction(const FTransform& Transform) override;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City", meta=(ClampMin="4",ClampMax="80")) int32 GridBlocks = 24;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City", meta=(ClampMin="600",ClampMax="5000")) float CityExtent = 3200.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City", meta=(ClampMin="4",ClampMax="80")) int32 GridBlocks = 18;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City", meta=(ClampMin="600",ClampMax="5000")) float CityExtent = 320000.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City") int32 RandomSeed = 2026;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City") bool bGenerateRoads = true;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="City") bool bGenerateBuildings = true;
