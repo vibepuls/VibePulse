@@ -48,8 +48,6 @@ void UDhakaEconomyWidget::NativeConstruct()
     StatusLabel->SetAutoWrapText(true);StatusLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.95f,.83f,.48f,1.f)));Layout->AddChildToVerticalBox(StatusLabel);
     InventoryLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("InventoryLabel"));
     InventoryLabel->SetAutoWrapText(true);InventoryLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.82f,.87f,.9f,1.f)));Layout->AddChildToVerticalBox(InventoryLabel);
-    InventoryLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("InventoryLabel"));
-    InventoryLabel->SetAutoWrapText(true);InventoryLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.82f,.87f,.9f,1.f)));Layout->AddChildToVerticalBox(InventoryLabel);
     UScrollBox* Scroll=WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(),TEXT("EconomyActionsScroll"));
     if(UVerticalBoxSlot* ScrollSlot=Layout->AddChildToVerticalBox(Scroll))ScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
     UVerticalBox* Actions=WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(),TEXT("EconomyActions"));
@@ -70,9 +68,6 @@ void UDhakaEconomyWidget::NativeConstruct()
     AddActionButton(Actions,TEXT("Paint Vehicle Blue"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::PaintVehicleBlue);
     AddActionButton(Actions,TEXT("Paint Vehicle Green"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::PaintVehicleGreen);
     AddActionButton(Actions,TEXT("Use First Aid  |  F1"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseSelectedFirstAid);
-    AddActionButton(Actions,TEXT("Use Food/Drink  |  F2"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFood);
-    AddActionButton(Actions,TEXT("Use Fuel Can  |  F3"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFuel);
-    AddActionButton(Actions,TEXT("Use Repair Kit  |  F4"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseRepair);
     AddActionButton(Actions,TEXT("Use Food/Drink  |  F2"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFood);
     AddActionButton(Actions,TEXT("Use Fuel Can  |  F3"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFuel);
     AddActionButton(Actions,TEXT("Use Repair Kit  |  F4"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseRepair);
