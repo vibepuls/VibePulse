@@ -1,0 +1,26 @@
+name: Dhaka Native Source Sanity
+
+on:
+  pull_request:
+    paths:
+      - "DhakaOpenWorldGame/**"
+      - ".github/workflows/dhaka-native-source-check.yml"
+  push:
+    branches:
+      - "feat/dhaka-open-world-rebuild"
+    paths:
+      - "DhakaOpenWorldGame/**"
+
+jobs:
+  source-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check native C++ source structure
+        working-directory: DhakaOpenWorldGame
+        run: python Scripts/validate_native_source.py
