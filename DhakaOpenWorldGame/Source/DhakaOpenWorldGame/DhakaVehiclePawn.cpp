@@ -152,6 +152,16 @@ void ADhakaVehiclePawn::LoadProgress()
         Missions->Wallet=FMath::Max<int64>(0,Save->Wallet);
         Missions->ActiveMissionIndex=INDEX_NONE;for(int32 I=0;I<Missions->Missions.Num();++I){Missions->Missions[I].bCompleted=Save->CompletedMissionIds.Contains(Missions->Missions[I].Id);if(Missions->ActiveMissionIndex==INDEX_NONE&&!Missions->Missions[I].bCompleted)Missions->ActiveMissionIndex=I;}
     }
+    if(GetWorld())
+    {
+        const int32 WeatherIndex=FMath::Clamp(FCString::Atoi(*Save->Weather),0,4);
+        for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
+        {
+            It->SetWeather(static_cast<EDhakaWeather>(WeatherIndex));
+            It->SetTimeOfDay(Save->DayTimeHours);
+            break;
+        }
+    }
 }
 
 void ADhakaVehiclePawn::ToggleVehicleMode()
