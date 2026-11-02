@@ -124,6 +124,21 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
     "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "WALLET", "UseItem", "InventoryLabel", "UseFood", "UseFuel", "UseRepair", "MissionPicker", "OnMissionSelected", "NextVehicleType", "PaintVehicleRed", "PaintVehicleBlue", "PaintVehicleGreen"
 ])
+
+# Prevent duplicate runtime controls from silently stacking in the native economy panel.
+widget_path = MODULE / "DhakaEconomyWidget.cpp"
+if widget_path.is_file():
+    widget_source = widget_path.read_text(encoding="utf-8", errors="replace")
+    for label, token in [
+        ("inventory label construction", 'InventoryLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("InventoryLabel"))'),
+        ("food-use button", 'AddActionButton(Actions,TEXT("Use Food/Drink  |  F2"),Button)'),
+        ("fuel-use button", 'AddActionButton(Actions,TEXT("Use Fuel Can  |  F3"),Button)'),
+        ("repair-use button", 'AddActionButton(Actions,TEXT("Use Repair Kit  |  F4"),Button)'),
+    ]:
+        count = widget_source.count(token)
+        if count != 1:
+            errors.append(f"Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp: expected one {label}, found {count}")
+
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
     "CreateWidget<UDhakaEconomyWidget>", "SetInputMode(FInputModeGameAndUI())"
 ])
