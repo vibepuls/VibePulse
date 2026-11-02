@@ -5,6 +5,7 @@
 
 class UTextBlock;
 class UButton;
+class UComboBoxString;
 
 UCLASS()
 class DHAKAOPENWORLDGAME_API UDhakaEconomyWidget : public UUserWidget
@@ -17,6 +18,7 @@ private:
     UPROPERTY() TObjectPtr<UTextBlock> WalletLabel;
     UPROPERTY() TObjectPtr<UTextBlock> StatusLabel;
     UPROPERTY() TObjectPtr<UTextBlock> InventoryLabel;
+    UPROPERTY() TObjectPtr<UComboBoxString> MissionPicker;
     float RefreshTimer=0.f;
     void AddLabel(class UVerticalBox* Box,const FString& Text,bool bHeading=false);
     void AddActionButton(class UVerticalBox* Box,const FString& Text,UButton*& OutButton);
@@ -34,4 +36,5 @@ private:
     UFUNCTION() void UseFood();
     UFUNCTION() void UseFuel();
     UFUNCTION() void UseRepair();
+    UFUNCTION() void OnMissionSelected(FString SelectedItem,ESelectInfo::Type SelectionType);
 };
