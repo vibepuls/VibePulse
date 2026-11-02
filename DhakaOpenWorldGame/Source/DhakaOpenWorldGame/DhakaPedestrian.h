@@ -39,6 +39,8 @@ private:
     float WaitRemaining = 0.f;
     float WalkPhase = 0.f;
     float WeatherRefreshTimer = 0.f;
+    float CrowdLodRefreshTimer = 0.f;
+    bool bVisualsHiddenForDistance = false;
     float WeatherWalkMultiplier = 1.f;
     UPROPERTY() TObjectPtr<class ADhakaWeatherController> WeatherController;
 };
