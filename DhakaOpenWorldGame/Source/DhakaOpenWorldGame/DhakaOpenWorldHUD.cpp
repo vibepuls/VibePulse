@@ -1,4 +1,6 @@
 #include "DhakaOpenWorldHUD.h"
+#include "DhakaEconomyWidget.h"
+#include "GameFramework/PlayerController.h"
 #include "DhakaMissionSubsystem.h"
 #include "DhakaEconomySubsystem.h"
 #include "DhakaPlayerCharacter.h"
@@ -11,6 +13,17 @@
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 
+void ADhakaOpenWorldHUD::BeginPlay()
+{
+    Super::BeginPlay();
+    if(APlayerController* PC=UGameplayStatics::GetPlayerController(this,0))
+    {
+        EconomyWidget=CreateWidget<UDhakaEconomyWidget>(PC,UDhakaEconomyWidget::StaticClass());
+        if(EconomyWidget)EconomyWidget->AddToViewport(20);
+        PC->bShowMouseCursor=true;
+        PC->SetInputMode(FInputModeGameAndUI());
+    }
+}
 void ADhakaOpenWorldHUD::DrawHUD()
 {
     Super::DrawHUD();
