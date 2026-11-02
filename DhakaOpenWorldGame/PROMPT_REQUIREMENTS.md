@@ -99,7 +99,7 @@ Status: **PARTIAL** — keyboard/mouse/controller mappings, basic touch driving 
 ## Part 16 — Project output
 - [ ] Complete connected C++ source for world, traffic, pedestrian, missions, UI, input, multiplayer, save/audio/material/platform/backend systems.
 - [ ] No missing dependencies or placeholders; automated tests and packaging instructions.
-Status: **PARTIAL** — source/build instructions exist, with mission HUD/persistence and procedural rain/obstacle-avoidance additions; no successful UE5 compile, automated gameplay test or packaged build has been verified.
+Status: **PARTIAL** — source/build instructions and a lightweight Python source-sanity checker exist, with mission HUD/persistence, differentiated traffic, audio routing and procedural rain/puddle additions; no successful UE5 compile, automated gameplay test or packaged build has been verified.
 
 ## Part 17 — Final delivery
 - [ ] Open, compile, test and package in UE5.
