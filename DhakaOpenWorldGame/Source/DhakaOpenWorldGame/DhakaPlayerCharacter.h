@@ -38,6 +38,15 @@ private:
     void UseFoodInput();
     void UseFuelInput();
     void UseRepairInput();
+    void HandleTouchPressed(ETouchIndex::Type FingerIndex,FVector Location);
+    void HandleTouchMoved(ETouchIndex::Type FingerIndex,FVector Location);
+    void HandleTouchReleased(ETouchIndex::Type FingerIndex,FVector Location);
+    FVector TouchStartLocation=FVector::ZeroVector;
+    FVector LastTouchLocation=FVector::ZeroVector;
+    float TouchMoveForward=0.f;
+    float TouchMoveRight=0.f;
+    bool bTouchMoveActive=false;
+    bool bTouchLookActive=false;
     bool bFirstPerson = false;
     float NormalWalkSpeed = 420.f;
     float SprintSpeed = 720.f;
