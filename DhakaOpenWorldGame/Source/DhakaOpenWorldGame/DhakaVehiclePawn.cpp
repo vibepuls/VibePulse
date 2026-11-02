@@ -117,17 +117,24 @@ void ADhakaVehiclePawn::Tick(float Dt)
     const FVector Forward=GetActorForwardVector();
     Speed=FVector::DotProduct(PhysicsBody->GetPhysicsLinearVelocity(),Forward);
     TravelDistanceKm+=PhysicsBody->GetPhysicsLinearVelocity().Size()*Dt/100000.f;
-    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
-        if(Missions->Missions.IsValidIndex(Missions->ActiveMissionIndex)){
-            const FDhakaMission& Mission=Missions->Missions[Missions->ActiveMissionIndex];
-            if(FVector::Dist2D(GetActorLocation(),Mission.Target)<1800.f)Missions->CompleteActiveMission();
-        }
-    }
+    // Mission completion is owned by UDhakaMissionSubsystem so every mission uses its configured radius and timer.
     PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*PhysicsBody->GetMass());
     if(BrakeInput>0.f) PhysicsBody->AddForce(-PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*PhysicsBody->GetMass()*BrakeInput);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
     PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*PhysicsBody->GetMass()*4.f));
     if(PhysicsBody->GetPhysicsLinearVelocity().Size()>MaxSpeed) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
+    const float WheelSpin=Speed*Dt/32.f;
+    for(UStaticMeshComponent* Part:VisualParts)
+    {
+        if(!Part)continue;
+        const FString PartName=Part->GetName();
+        if(PartName.Contains(TEXT("Wheel")))
+        {
+            FRotator WheelRotation=Part->GetRelativeRotation();
+            WheelRotation.Pitch+=FMath::RadiansToDegrees(WheelSpin);
+            Part->SetRelativeRotation(WheelRotation);
+        }
+    }
 }
 
 void ADhakaVehiclePawn::SaveProgress()
@@ -148,9 +155,21 @@ void ADhakaVehiclePawn::LoadProgress()
     if(!Save)return;
     SetActorLocation(Save->PlayerLocation,false,nullptr,ETeleportType::TeleportPhysics);SetActorRotation(Save->PlayerRotation);TravelDistanceKm=FMath::Max(0.f,Save->TravelDistanceKm);
     if(PhysicsBody)PhysicsBody->SetPhysicsLinearVelocity(FVector::ZeroVector);
-    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
-        Missions->Wallet=FMath::Max<int64>(0,Save->Wallet);
-        Missions->ActiveMissionIndex=INDEX_NONE;for(int32 I=0;I<Missions->Missions.Num();++I){Missions->Missions[I].bCompleted=Save->CompletedMissionIds.Contains(Missions->Missions[I].Id);if(Missions->ActiveMissionIndex==INDEX_NONE&&!Missions->Missions[I].bCompleted)Missions->ActiveMissionIndex=I;}
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())
+    {
+        if(!Missions->LoadProgress())
+        {
+            Missions->Wallet=FMath::Max<int64>(0,Save->Wallet);
+            Missions->ActiveMissionIndex=INDEX_NONE;
+            for(int32 I=0;I<Missions->Missions.Num();++I)
+            {
+                Missions->Missions[I].bCompleted=Save->CompletedMissionIds.Contains(Missions->Missions[I].Id);
+                Missions->Missions[I].bFailed=false;
+                if(Missions->ActiveMissionIndex==INDEX_NONE&&!Missions->Missions[I].bCompleted)
+                    Missions->ActiveMissionIndex=I;
+            }
+            Missions->EnsureMissionMonitor();
+        }
     }
     if(GetWorld())
     {
