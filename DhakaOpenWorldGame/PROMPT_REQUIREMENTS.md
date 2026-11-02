@@ -43,7 +43,7 @@ Status: **PARTIAL** — modular primitive citizens and clothing-style variants e
 - [ ] Roads/intersections/flyovers/bridges/underpasses, sidewalks, markets, homes/business districts, parks/lakes, bus/rail terminals and riverfronts.
 - [ ] Distinct Old Dhaka, Gulshan, Banani, Motijheel, Dhanmondi, Mirpur, Uttara, Farmgate, Sadarghat, Jatrabari, Mohakhali and Shahbagh.
 - [ ] Configurable density and streamed districts.
-Status: **PARTIAL** — grid, river and district-inspired landmarks exist; accurate geographic roads, all listed areas and density-aware streaming remain.
+Status: **PARTIAL** — grid, river and district-inspired landmarks exist; procedural building generation now assigns different density, height and color profiles to approximate Old Dhaka, Gulshan, Banani, Motijheel, Dhanmondi, Mirpur, Uttara, Farmgate, Sadarghat, Jatrabari, Mohakhali and Shahbagh. These are approximate gameplay zones, not survey-accurate GIS; accurate geographic roads, landmark-accurate footprints and density-aware streaming remain.
 
 ## Part 6 — Roads and sidewalks
 - [ ] Asphalt/concrete/markings, cracks, potholes, patches, speed breakers, drains/covers, uneven surfaces, barriers, signs, lights, poles/wires, construction materials/dust.
