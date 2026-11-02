@@ -6,6 +6,7 @@
 #include "Engine/Font.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 
 void ADhakaOpenWorldHUD::DrawHUD()
