@@ -9,6 +9,7 @@ class DHAKAOPENWORLDGAME_API ADhakaRainEffect : public AActor
     GENERATED_BODY()
 public:
     ADhakaRainEffect();
+    virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     UFUNCTION(BlueprintCallable) void SetRainIntensity(float NewIntensity);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Rain", meta=(ClampMin="0",ClampMax="1")) float Intensity=0.f;
