@@ -9,6 +9,7 @@
 #include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
 #include "DhakaVehiclePawn.h"
+#include "DhakaPlayerCharacter.h"
 #include "DhakaTrafficSignal.h"
 #include "DhakaPedestrian.h"
 
@@ -219,6 +220,17 @@ void ADhakaTrafficVehicle::Tick(float Dt)
                             {bClear=false;break;}
                         }
                         if(!bClear)break;
+                        // The player may be on foot; do not change lanes into
+                        // the controlled character's immediate movement corridor.
+                        for(TActorIterator<ADhakaPlayerCharacter> CharacterIt(GetWorld());CharacterIt;++CharacterIt)
+                        {
+                            const ADhakaPlayerCharacter* PlayerCharacter=*CharacterIt;
+                            if(!PlayerCharacter)continue;
+                            const FVector Separation=PlayerCharacter->GetActorLocation()-Probe;
+                            if(FMath::Abs(Separation.Z)<220.f&&Separation.Size2D()<380.f)
+                            {bClear=false;break;}
+                        }
+                        if(!bClear)break;
                     }
                     if(bClear){TargetLaneShift=CandidateShift;LaneChangeCooldown=4.f;bFoundLane=true;break;}
                 }
@@ -308,20 +320,24 @@ void ADhakaTrafficVehicle::Tick(float Dt)
     // slowdown, not a substitute for a NavMesh/crosswalk-aware pedestrian system.
     {
         const FVector Direction=RouteDirection.GetSafeNormal2D();
-        for(TActorIterator<ADhakaPedestrian> It(GetWorld());It;++It)
+        const float YieldDistance=FMath::Max(BrakeDistance*.65f,520.f);
+        auto YieldForPerson=[&](const FVector& PersonLocation,float SideLimit)
         {
-            const ADhakaPedestrian* Pedestrian=*It;
-            if(!Pedestrian)continue;
-            const FVector Delta=Pedestrian->GetActorLocation()-GetActorLocation();
+            const FVector Delta=PersonLocation-GetActorLocation();
             const float Ahead=FVector::DotProduct(Delta,Direction);
             const float Side=FMath::Abs(FVector::CrossProduct(Delta,Direction).Z);
-            const float YieldDistance=FMath::Max(BrakeDistance*.65f,520.f);
-            if(Ahead>0.f&&Ahead<YieldDistance&&Side<220.f)
+            if(Ahead>0.f&&Ahead<YieldDistance&&Side<SideLimit)
             {
                 const float SafeSpeed=FMath::Clamp((Ahead-115.f)/FMath::Max(1.f,YieldDistance-115.f),0.f,1.f);
                 Desired=FMath::Min(Desired,CruiseSpeed*SafeSpeed);
             }
-        }
+        };
+        for(TActorIterator<ADhakaPedestrian> It(GetWorld());It;++It)
+            if(const ADhakaPedestrian* Pedestrian=*It)YieldForPerson(Pedestrian->GetActorLocation(),220.f);
+        // The controlled character is not an ambient pedestrian actor, so it
+        // must be checked separately while the player walks through traffic.
+        for(TActorIterator<ADhakaPlayerCharacter> CharacterIt(GetWorld());CharacterIt;++CharacterIt)
+            if(const ADhakaPlayerCharacter* PlayerCharacter=*CharacterIt)YieldForPerson(PlayerCharacter->GetActorLocation(),300.f);
     }
     CurrentSpeed=FMath::FInterpTo(CurrentSpeed,Desired,Dt,Desired<CurrentSpeed?3.8f:1.5f);
     const float PreviousLaneShift=CurrentLaneShift;
