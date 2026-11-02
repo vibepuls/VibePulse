@@ -41,6 +41,8 @@ public:
     UFUNCTION(BlueprintCallable) bool CompleteActiveMission();
     UFUNCTION(BlueprintCallable) void FailActiveMission();
     UFUNCTION(BlueprintCallable) void AddWallet(int64 Amount);
+    UFUNCTION(BlueprintCallable) bool SaveProgress();
+    UFUNCTION(BlueprintCallable) bool LoadProgress();
 private:
     FTimerHandle MissionUpdateTimer;
     void UpdateActiveMission();
