@@ -11,6 +11,7 @@ public:
     ADhakaPlayerCharacter();
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
     virtual void Tick(float DeltaSeconds) override;
+    virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
     UPROPERTY(BlueprintReadOnly, Category="Player Stats", meta=(ClampMin="0",ClampMax="100")) float Health=100.f;
     UPROPERTY(BlueprintReadOnly, Category="Player Stats", meta=(ClampMin="0",ClampMax="100")) float Stamina=100.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class USpringArmComponent> CameraArm;
