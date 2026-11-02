@@ -40,6 +40,8 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             if(I%4==0)for(float Side : {-1.f,1.f})AddBoxMesh(FVector(RiverCenterX,P+Side*520.f,125.f),FVector(RiverHalfWidth*2.f,22.f,80.f),FLinearColor(.65f,.68f,.67f),true);
         }
     }
+    if(bGenerateRoads)
+    {
         // Random asphalt patches and pothole silhouettes provide low-cost road-surface variation.
         for(int32 Damage=0;Damage<GridBlocks*3;++Damage)
         {
@@ -53,6 +55,7 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             else if(!bVertical)
                 AddBoxMesh(FVector(Along,RoadP,10.f),FVector(D,W,2.f),R.FRand()<.5f?FLinearColor(.045f,.05f,.052f):FLinearColor(.12f,.125f,.12f),false);
         }
+    }
     if(bGenerateBuildings){
         for(int32 X=0;X<GridBlocks;++X) for(int32 Y=0;Y<GridBlocks;++Y){
             if(R.FRand()<0.12f) continue;
