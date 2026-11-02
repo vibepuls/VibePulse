@@ -57,6 +57,12 @@ void UDhakaEconomyWidget::NativeConstruct()
     AddActionButton(Actions,TEXT("Buy First Aid Kit  |  ৳250"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyFirstAid);
     AddActionButton(Actions,TEXT("Buy Fuel Can  |  ৳450"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyFuel);
     AddActionButton(Actions,TEXT("Buy Repair Kit  |  ৳800"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyRepair);
+    AddActionButton(Actions,TEXT("Sell Water Bottle  |  ৳10"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SellWater);
+    AddActionButton(Actions,TEXT("Sell Street Snack  |  ৳20"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SellSnack);
+    AddActionButton(Actions,TEXT("Sell Cha (Tea)  |  ৳5"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SellTea);
+    AddActionButton(Actions,TEXT("Sell Fuchka Plate  |  ৳30"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SellFuchka);
+    AddActionButton(Actions,TEXT("Sell Jhalmuri  |  ৳15"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SellJhalmuri);
+    AddActionButton(Actions,TEXT("Sell Fruit Bag  |  ৳25"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SellFruit);
     AddActionButton(Actions,TEXT("Buy Old Dhaka Shop  |  ৳85,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyOldDhakaShop);
     AddActionButton(Actions,TEXT("Buy Dhanmondi Flat  |  ৳420,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyDhanmondiFlat);
     AddActionButton(Actions,TEXT("Buy Uttara Garage  |  ৳650,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyUttaraGarage);
@@ -103,8 +109,15 @@ void UDhakaEconomyWidget::RefreshStatus()
     if(WalletLabel&&Missions)WalletLabel->SetText(FText::FromString(FString::Printf(TEXT("WALLET  ৳ %lld"),static_cast<long long>(Missions->Wallet))));
     if(StatusLabel&&Economy&&!Economy->LastTransactionMessage.IsEmpty())StatusLabel->SetText(Economy->LastTransactionMessage);
     if(InventoryLabel&&Economy)InventoryLabel->SetText(FText::FromString(FString::Printf(TEXT("BAG Water:%d First aid:%d Snack:%d Fuel:%d Repair:%d"),Economy->Inventory.FindRef(TEXT("water_bottle")),Economy->Inventory.FindRef(TEXT("first_aid")),Economy->Inventory.FindRef(TEXT("street_snack")),Economy->Inventory.FindRef(TEXT("fuel_can")),Economy->Inventory.FindRef(TEXT("repair_kit")))));
-    if(InventoryLabel&&Economy)InventoryLabel->SetText(FText::FromString(FString::Printf(TEXT("BAG  Water:%d  First aid:%d  Snack:%d  Fuel:%d  Repair:%d"),Economy->Inventory.FindRef(TEXT("water_bottle")),Economy->Inventory.FindRef(TEXT("first_aid")),Economy->Inventory.FindRef(TEXT("street_snack")),Economy->Inventory.FindRef(TEXT("fuel_can")),Economy->Inventory.FindRef(TEXT("repair_kit")))));
+    if(InventoryLabel&&Economy)InventoryLabel->SetText(FText::FromString(FString::Printf(TEXT("BAG Water:%d Snack:%d Tea:%d Fuchka:%d Jhalmuri:%d Fruit:%d First aid:%d Fuel:%d Repair:%d Data:%d"),Economy->Inventory.FindRef(TEXT("water_bottle")),Economy->Inventory.FindRef(TEXT("street_snack")),Economy->Inventory.FindRef(TEXT("tea_cup")),Economy->Inventory.FindRef(TEXT("fuchka_plate")),Economy->Inventory.FindRef(TEXT("jhalmuri_packet")),Economy->Inventory.FindRef(TEXT("fruit_bag")),Economy->Inventory.FindRef(TEXT("first_aid")),Economy->Inventory.FindRef(TEXT("fuel_can")),Economy->Inventory.FindRef(TEXT("repair_kit")),Economy->Inventory.FindRef(TEXT("phone_data")))));
 }
+void UDhakaEconomyWidget::SellWater(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("water_bottle"));}
+void UDhakaEconomyWidget::SellSnack(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("street_snack"));}
+void UDhakaEconomyWidget::SellTea(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("tea_cup"));}
+void UDhakaEconomyWidget::SellFuchka(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("fuchka_plate"));}
+void UDhakaEconomyWidget::SellJhalmuri(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("jhalmuri_packet"));}
+void UDhakaEconomyWidget::SellFruit(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("fruit_bag"));}
+
 void UDhakaEconomyWidget::BuyWater(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseItem(TEXT("water_bottle"));}
 void UDhakaEconomyWidget::BuyFirstAid(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseItem(TEXT("first_aid"));}
 void UDhakaEconomyWidget::BuyFuel(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseItem(TEXT("fuel_can"));}
