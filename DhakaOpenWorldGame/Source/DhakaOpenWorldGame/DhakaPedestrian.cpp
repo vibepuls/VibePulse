@@ -112,11 +112,54 @@ void ADhakaPedestrian::Tick(float Dt)
     if(State==EDhakaPedestrianState::Shop||State==EDhakaPedestrianState::Talk||State==EDhakaPedestrianState::BoardVehicle){return;}
     if(State==EDhakaPedestrianState::Wait){WaitRemaining-=Dt;if(WaitRemaining<=0.f)State=EDhakaPedestrianState::Walk;else return;}
     FVector Delta=Destination-GetActorLocation();Delta.Z=0.f;
-    if(Delta.Size2D()<=ArrivalRadius){
-        State=EDhakaPedestrianState::Wait;WaitRemaining=FMath::FRandRange(.7f,2.8f);
+    if(Delta.Size2D()<=ArrivalRadius)
+    {
+        const FVector Here=GetActorLocation();
         const FVector Forward=GetActorForwardVector().GetSafeNormal2D();
+        const bool bHorizontal=FMath::Abs(Forward.X)>=FMath::Abs(Forward.Y);
+        constexpr float StreetGridStep=17777.78f;
+        constexpr float StreetGridOrigin=-160000.f;
+        constexpr float SidewalkOffset=660.f;
+
+        // A pedestrian who reaches the approach point crosses only at a grid
+        // intersection, then resumes walking along the opposite sidewalk.
+        if(bWalkingToCrosswalk)
+        {
+            bWalkingToCrosswalk=false;
+            bCrossingRoad=true;
+            State=EDhakaPedestrianState::Cross;
+            const float Lateral= bHorizontal ? Here.Y : Here.X;
+            const float RoadCenter=StreetGridOrigin+FMath::RoundToFloat((Lateral-StreetGridOrigin)/StreetGridStep)*StreetGridStep;
+            float SideSign=FMath::Sign(Lateral-RoadCenter);
+            if(FMath::IsNearlyZero(SideSign))SideSign=FMath::RandBool()?1.f:-1.f;
+            const float OppositeSide=RoadCenter-SideSign*SidewalkOffset;
+            Destination=bHorizontal?FVector(Here.X,OppositeSide,Here.Z):FVector(OppositeSide,Here.Y,Here.Z);
+            return;
+        }
+        if(bCrossingRoad)
+        {
+            bCrossingRoad=false;
+            State=EDhakaPedestrianState::Walk;
+            Destination=Here+Forward*FMath::FRandRange(450.f,950.f);
+            return;
+        }
+
+        // Roughly one in six sidewalk segments heads to the nearest junction
+        // before crossing, rather than stepping directly into traffic mid-block.
+        if(FMath::FRand()<.16f)
+        {
+            bWalkingToCrosswalk=true;
+            State=EDhakaPedestrianState::Walk;
+            const float Along=bHorizontal?Here.X:Here.Y;
+            const float Junction=StreetGridOrigin+FMath::RoundToFloat((Along-StreetGridOrigin)/StreetGridStep)*StreetGridStep;
+            Destination=bHorizontal?FVector(Junction,Here.Y,Here.Z):FVector(Here.X,Junction,Here.Z);
+            return;
+        }
+
+        State=EDhakaPedestrianState::Wait;
+        WaitRemaining=FMath::FRandRange(.7f,2.8f);
         const FVector Side=FVector::CrossProduct(FVector::UpVector,Forward).GetSafeNormal2D();
-        Destination=GetActorLocation()+Forward*FMath::FRandRange(450.f,950.f)+Side*FMath::FRandRange(-70.f,70.f);
+        Destination=Here+Forward*FMath::FRandRange(450.f,950.f)+Side*FMath::FRandRange(-70.f,70.f);
         return;
     }
     FVector Direction=Delta.GetSafeNormal2D();
