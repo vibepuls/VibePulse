@@ -63,7 +63,7 @@ Status: **PARTIAL** — timed signals, basic following/red-light stopping, confi
 ## Part 9 — Pedestrian AI/crowds
 - [ ] Sidewalk walking, crossing, obstacle/vendor/vehicle avoidance, gathering, bus-stop waiting, boarding/exiting, shopping, talking and reactions to weather/events/player.
 - [ ] Personality profiles, distance-based updates and low-detail distant crowds.
-Status: **PARTIAL** — simple walkers/local wanderers use swept collision checks to sidestep or briefly wait around blocked paths; traffic yields to nearby pedestrians and avoids them when attempting a lane shift. Behavior Tree/NavMesh routing, explicit crosswalk intent, boarding and personality remain; a distance-based tick-rate/visual LOD is present but needs device profiling and gameplay verification.
+Status: **PARTIAL** — simple walkers/local wanderers use swept collision checks to sidestep or briefly wait around blocked paths; traffic yields to nearby pedestrians and avoids them when attempting a lane shift; pedestrians briefly flee from vehicle impacts and then return to their baseline walking speed. Behavior Tree/NavMesh routing, explicit crosswalk intent, boarding and personality remain; a distance-based tick-rate/visual LOD is present but needs device profiling and gameplay verification.
 
 ## Part 10 — Player gameplay
 - [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
