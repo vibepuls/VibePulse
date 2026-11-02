@@ -17,6 +17,7 @@
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/GameUserSettings.h"
 #include "Kismet/GameplayStatics.h"
 
 void UDhakaEconomyWidget::NativeConstruct()
@@ -68,6 +69,11 @@ void UDhakaEconomyWidget::NativeConstruct()
     AddActionButton(Actions,TEXT("Buy Uttara Garage  |  ৳650,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyUttaraGarage);
     AddActionButton(Actions,TEXT("Buy Gulshan Office  |  ৳1,500,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyGulshanOffice);
     AddActionButton(Actions,TEXT("Claim Daily Property Rent  |  P"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::ClaimRent);
+    AddLabel(Actions,TEXT("GRAPHICS QUALITY  |  applies and saves"),true);
+    AddActionButton(Actions,TEXT("Graphics: Low"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SetGraphicsLow);
+    AddActionButton(Actions,TEXT("Graphics: Medium"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SetGraphicsMedium);
+    AddActionButton(Actions,TEXT("Graphics: High"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SetGraphicsHigh);
+    AddActionButton(Actions,TEXT("Graphics: Epic"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::SetGraphicsEpic);
     AddLabel(Actions,TEXT("GARAGE / VEHICLE CUSTOMIZATION"),true);
     AddActionButton(Actions,TEXT("Next Vehicle Type  |  N"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::NextVehicleType);
     AddActionButton(Actions,TEXT("Paint Vehicle Red"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::PaintVehicleRed);
@@ -111,6 +117,25 @@ void UDhakaEconomyWidget::RefreshStatus()
     if(InventoryLabel&&Economy)InventoryLabel->SetText(FText::FromString(FString::Printf(TEXT("BAG Water:%d First aid:%d Snack:%d Fuel:%d Repair:%d"),Economy->Inventory.FindRef(TEXT("water_bottle")),Economy->Inventory.FindRef(TEXT("first_aid")),Economy->Inventory.FindRef(TEXT("street_snack")),Economy->Inventory.FindRef(TEXT("fuel_can")),Economy->Inventory.FindRef(TEXT("repair_kit")))));
     if(InventoryLabel&&Economy)InventoryLabel->SetText(FText::FromString(FString::Printf(TEXT("BAG Water:%d Snack:%d Tea:%d Fuchka:%d Jhalmuri:%d Fruit:%d First aid:%d Fuel:%d Repair:%d Data:%d"),Economy->Inventory.FindRef(TEXT("water_bottle")),Economy->Inventory.FindRef(TEXT("street_snack")),Economy->Inventory.FindRef(TEXT("tea_cup")),Economy->Inventory.FindRef(TEXT("fuchka_plate")),Economy->Inventory.FindRef(TEXT("jhalmuri_packet")),Economy->Inventory.FindRef(TEXT("fruit_bag")),Economy->Inventory.FindRef(TEXT("first_aid")),Economy->Inventory.FindRef(TEXT("fuel_can")),Economy->Inventory.FindRef(TEXT("repair_kit")),Economy->Inventory.FindRef(TEXT("phone_data")))));
 }
+void UDhakaEconomyWidget::ApplyGraphicsQuality(int32 Level)
+{
+    if(UGameUserSettings* Settings=UGameUserSettings::GetGameUserSettings())
+    {
+        Settings->SetOverallScalabilityLevel(FMath::Clamp(Level,0,3));
+        Settings->ApplySettings(false);
+        Settings->SaveSettings();
+        if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())
+        {
+            static const TCHAR* Names[]={TEXT("Low"),TEXT("Medium"),TEXT("High"),TEXT("Epic")};
+            E->LastTransactionMessage=FText::FromString(FString::Printf(TEXT("Graphics quality set to %s and saved."),Names[FMath::Clamp(Level,0,3)]));
+        }
+    }
+}
+void UDhakaEconomyWidget::SetGraphicsLow(){ApplyGraphicsQuality(0);}
+void UDhakaEconomyWidget::SetGraphicsMedium(){ApplyGraphicsQuality(1);}
+void UDhakaEconomyWidget::SetGraphicsHigh(){ApplyGraphicsQuality(2);}
+void UDhakaEconomyWidget::SetGraphicsEpic(){ApplyGraphicsQuality(3);}
+
 void UDhakaEconomyWidget::SellWater(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("water_bottle"));}
 void UDhakaEconomyWidget::SellSnack(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("street_snack"));}
 void UDhakaEconomyWidget::SellTea(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->SellItem(TEXT("tea_cup"));}
