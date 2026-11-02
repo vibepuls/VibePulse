@@ -58,7 +58,7 @@ Status: **PARTIAL** — procedural stalls/furniture exist; functional vendor int
 ## Part 8 — Traffic
 - [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
 - [ ] Road/time/density-based traffic rules and Dhaka-specific behavior.
-Status: **PARTIAL** — timed signals, basic following/red-light stopping, route-aligned vehicle dimensions and configurable randomized turns at procedural grid intersections exist in source. A full graph-based route planner, lane changes/overtaking, intersection reservations, bus/emergency behavior and robust avoidance remain.
+Status: **PARTIAL** — timed signals, basic following/red-light stopping, configurable randomized turns, and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components exist in source. A full graph-based route planner, lane changes/overtaking, intersection reservations, functional emergency behavior and robust avoidance remain.
 
 ## Part 9 — Pedestrian AI/crowds
 - [ ] Sidewalk walking, crossing, obstacle/vendor/vehicle avoidance, gathering, bus-stop waiting, boarding/exiting, shopping, talking and reactions to weather/events/player.
@@ -94,7 +94,7 @@ Status: **NOT DONE for native UE5** — browser backend APIs do not automaticall
 - [ ] Android/iOS touch joystick, driving/camera controls, graphics settings, memory/performance optimization and LOD/crowd/traffic scaling.
 - [ ] Windows keyboard/mouse/controller, resolution/graphics/draw-distance settings.
 - [ ] Playable builds tested on supported devices.
-Status: **PARTIAL** — keyboard/mouse/controller mappings and basic touch driving zones exist; graphics UI, full scalability, iOS setup and packaged device QA remain.
+Status: **PARTIAL** — keyboard/mouse/controller mappings, basic touch driving zones and platform-aware traffic/crowd caps exist; graphics settings UI, full scalability, iOS setup and packaged device QA remain.
 
 ## Part 16 — Project output
 - [ ] Complete connected C++ source for world, traffic, pedestrian, missions, UI, input, multiplayer, save/audio/material/platform/backend systems.
