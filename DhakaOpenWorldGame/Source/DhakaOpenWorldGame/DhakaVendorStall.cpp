@@ -54,6 +54,9 @@ FName ADhakaVendorStall::GetStockItemId() const
         case EDhakaVendorType::Fuchka: return TEXT("fuchka_plate");
         case EDhakaVendorType::Jhalmuri: return TEXT("jhalmuri_packet");
         case EDhakaVendorType::Fruit: return TEXT("fruit_bag");
+        case EDhakaVendorType::Chotpoti: return TEXT("chotpoti_plate");
+        case EDhakaVendorType::Vegetables: return TEXT("vegetable_bag");
+        case EDhakaVendorType::Clothing: return TEXT("clothing_bundle");
         default: return TEXT("water_bottle");
     }
 }
