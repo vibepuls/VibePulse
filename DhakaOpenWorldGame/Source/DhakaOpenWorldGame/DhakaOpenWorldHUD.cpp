@@ -18,8 +18,7 @@ void ADhakaOpenWorldHUD::DrawHUD()
         Missions=GI->GetSubsystem<UDhakaMissionSubsystem>();
 
     const float PanelX=24.f, PanelY=24.f, PanelW=430.f, PanelH=150.f;
-    Canvas->SetDrawColor(FColor(10,14,20,220));
-    Canvas->DrawTile(nullptr,PanelX,PanelY,PanelW,PanelH,0,0,0,0);
+    Canvas->DrawRect(FLinearColor(0.025f,0.035f,0.055f,0.88f),PanelX,PanelY,PanelW,PanelH);
     Canvas->SetDrawColor(FColor(30,210,190,255));
     Canvas->DrawRect(FLinearColor(0.08f,0.82f,0.72f,1.f),PanelX,PanelY,4.f,PanelH);
 
