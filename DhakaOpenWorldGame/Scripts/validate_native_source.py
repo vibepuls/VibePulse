@@ -159,7 +159,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
-    "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth", "Low-profile speed humps", "curb-cut landing pads", "GridBlocks;I+=5",
+    "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth", "Low-profile speed humps", "curb-cut landing pads", "Short dashed lane dividers", "LaneSide*220.f", "GridBlocks;I+=5",
     "struct FDistrictStyle", "Old Dhaka", "Gulshan", "Banani", "Motijheel", "Dhanmondi", "Mirpur", "Uttara", "Farmgate", "Sadarghat", "Jatrabari", "Mohakhali", "Shahbagh",
     "BestDistrict", "Style.MinHeight", "Style.MaxHeight", "Style.Vacancy"
 ])
