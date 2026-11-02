@@ -37,4 +37,9 @@ private:
     UFUNCTION() void UseFuel();
     UFUNCTION() void UseRepair();
     UFUNCTION() void OnMissionSelected(FString SelectedItem,ESelectInfo::Type SelectionType);
+    UFUNCTION() void NextVehicleType();
+    UFUNCTION() void PaintVehicleRed();
+    UFUNCTION() void PaintVehicleBlue();
+    UFUNCTION() void PaintVehicleGreen();
+    class ADhakaVehiclePawn* FindVehicleForCustomization() const;
 };
