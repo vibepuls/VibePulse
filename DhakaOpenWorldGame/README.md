@@ -4,7 +4,7 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 
 ## Included native gameplay source
 - Procedural city actor with configurable grid, roads, sidewalks, curbs, asphalt patch/pothole silhouettes, buildings, shopfront props and utility-wire silhouettes.
-- Physics-driven vehicle pawn with throttle, steering, braking, chase camera and adjustable handling parameters.
+- Physics-driven vehicle pawn with throttle, steering, braking, chase camera, weather-sensitive tire grip and switchable Sedan/CNG/Rickshaw/Bus/Motorcycle handling profiles; press **N** while driving to cycle types.
 - Game-instance mission subsystem, destination markers/HUD, rewards, timed-progress autosave, mission switching and versioned SaveGame persistence; use **1–9 or 0** to start a listed mission from the native HUD.
 - Four district property terminals; press **F** near a property sign to purchase an investment, and **P** to claim eligible 24-hour property income.
 - Procedural district-inspired landmarks: Old Dhaka/Lalbagh, markets, Gulshan/Banani, Motijheel, Farmgate, Dhanmondi, Uttara and Sadarghat.
@@ -31,5 +31,6 @@ This is an active native-game rebuild, not a finished AAA-scale game. It has not
 - Driving: **W/S** throttle/reverse, **A/D** steering, **Space** brake, **C** exit to on-foot mode.
 - Walking: **W/A/S/D** move relative to camera, mouse look, **Shift** sprint, **Space** jump, **E** or **C** enter a nearby unoccupied vehicle.
 - Persistence: **F5** save; **F9** load.
-- Touch driving: drag left side to steer; upper-right accelerates; lower-right brakes.
+- Touch driving: drag left side to steer; upper-right accelerates; lower-right brakes; drag the middle-right area to rotate the camera.
+- Vehicle types: press **N** to cycle Sedan/CNG/Rickshaw/Bus/Motorcycle. Weather/time: **F6** cycles weather, **F7** advances time. Mission slots: **1–9 / 0**. Property: **F** buy near a sign, **P** claim rent. Vendors: **E** buy when nearby.
 - Horn: **H**; rickshaw bell: **B** (requires sound assets assigned in the editor).
