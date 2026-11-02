@@ -5,7 +5,7 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 ## Included native gameplay source
 - Procedural city actor with configurable grid, roads, sidewalks, curbs, asphalt patch/pothole silhouettes, buildings, shopfront props and utility-wire silhouettes.
 - Physics-driven vehicle pawn with throttle, steering, braking, chase camera and adjustable handling parameters.
-- Game-instance mission subsystem, destination markers/HUD, rewards, timed-progress autosave, mission switching and versioned SaveGame persistence.
+- Game-instance mission subsystem, destination markers/HUD, rewards, timed-progress autosave, mission switching and versioned SaveGame persistence; use **1–9 or 0** to start a listed mission from the native HUD.
 - Four district property terminals; press **F** near a property sign to purchase an investment, and **P** to claim eligible 24-hour property income.
 - Procedural district-inspired landmarks: Old Dhaka/Lalbagh, markets, Gulshan/Banani, Motijheel, Farmgate, Dhanmondi, Uttara and Sadarghat.
 - Procedural vehicle generator with body shell, glazing, wheels/rims, trim and basic interior pieces; sedan, bus, motorcycle, rickshaw, CNG and boat categories.
