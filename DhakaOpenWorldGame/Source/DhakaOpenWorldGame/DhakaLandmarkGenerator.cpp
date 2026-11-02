@@ -33,13 +33,16 @@ void ADhakaLandmarkGenerator::Tower(FVector P,float W,float D,float H,FLinearCol
 {
     Box(TEXT("District_Tower_Core"),P+FVector(0,0,H*.5f),FVector(W,D,H),Color);
     const FLinearColor Glass(.10f,.25f,.31f);
-    const int32 Rows=FMath::Clamp(Floors,2,12);
-    for(int32 Row=0;Row<Rows;++Row)
+    // Four continuous facade bands keep the procedural district set efficient on mobile GPUs.
+    const float GlassH=H*.78f, GlassZ=H*.52f;
+    Box(TEXT("District_Tower_FrontGlass"),P+FVector(0,-D*.5f-2.f,GlassZ),FVector(W*.80f,2.f,GlassH),Glass);
+    Box(TEXT("District_Tower_RearGlass"),P+FVector(0,D*.5f+2.f,GlassZ),FVector(W*.80f,2.f,GlassH),Glass);
+    Box(TEXT("District_Tower_LeftGlass"),P+FVector(-W*.5f-2.f,0,GlassZ),FVector(2.f,D*.80f,GlassH),Glass);
+    Box(TEXT("District_Tower_RightGlass"),P+FVector(W*.5f+2.f,0,GlassZ),FVector(2.f,D*.80f,GlassH),Glass);
+    const int32 FloorBands=FMath::Clamp(Floors,3,10);
+    for(int32 Row=1;Row<FloorBands;++Row)
     {
-        const float Z=H*(Row+.5f)/Rows;
-        // Combine window bays into long strips to keep runtime component count mobile-friendly.
-        Box(TEXT("District_Tower_FrontWindowBand"),P+FVector(0,-D*.5f-2.f,Z),FVector(W*.82f,2.f,FMath::Min(28.f,H/Rows*.38f)),Glass);
-        Box(TEXT("District_Tower_RearWindowBand"),P+FVector(0,D*.5f+2.f,Z),FVector(W*.82f,2.f,FMath::Min(28.f,H/Rows*.38f)),Glass);
-        Box(TEXT("District_Tower_LeftWindowBand"),P+FVector(-W*.5f-2.f,0,Z),FVector(2.f,D*.82f,FMath::Min(28.f,H/Rows*.38f)),Glass);
-        Box(TEXT("District_Tower_RightWindowBand"),P+FVector(W*.5f+2.f,0,Z),FVector(2.f,D*.82f,FMath::Min(28.f,H/Rows*.38f)),Glass);
+        const float Z=H*float(Row)/float(FloorBands);
+        Box(TEXT("District_Tower_FloorBand_Front"),P+FVector(0,-D*.5f-4.f,Z),FVector(W*.82f,3.f,3.f),FLinearColor(.28f,.31f,.32f));
+        Box(TEXT("District_Tower_FloorBand_Rear"),P+FVector(0,D*.5f+4.f,Z),FVector(W*.82f,3.f,3.f),FLinearColor(.28f,.31f,.32f));
     }
