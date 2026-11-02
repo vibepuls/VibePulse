@@ -2,7 +2,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "DhakaTrafficVehicle.generated.h"
-#include "DhakaTrafficVehicle.generated.h"
 
 UENUM(BlueprintType)
 enum class EDhakaTrafficVehicleType : uint8 { Car, Bus, Truck, CNG, Motorcycle, Rickshaw, Emergency };
@@ -14,7 +13,13 @@ class DHAKAOPENWORLDGAME_API ADhakaTrafficVehicle : public AActor
 public:
     ADhakaTrafficVehicle();
     virtual void Tick(float DeltaSeconds) override;
-    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> Body;\n    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelFrontLeft;\n    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelFrontRight;\n    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelRearLeft;\n    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelRearRight;\n    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic|Vehicle Type") EDhakaTrafficVehicleType VehicleType = EDhakaTrafficVehicleType::Car;\n    UFUNCTION(BlueprintCallable, Category="Traffic|Vehicle Type") void ConfigureVehicleType(EDhakaTrafficVehicleType NewType);
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> Body;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelFrontLeft;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelFrontRight;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelRearLeft;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelRearRight;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic|Vehicle Type") EDhakaTrafficVehicleType VehicleType = EDhakaTrafficVehicleType::Car;
+    UFUNCTION(BlueprintCallable, Category="Traffic|Vehicle Type") void ConfigureVehicleType(EDhakaTrafficVehicleType NewType);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") FVector RouteDirection = FVector(1,0,0);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") float CruiseSpeed = 650.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") float AccelerationRate = 220.f;
