@@ -4,6 +4,8 @@
 #include "DhakaTrafficVehicle.h"
 #include "DhakaPedestrian.h"
 #include "DhakaWeatherController.h"
+#include "DhakaStreetLifeGenerator.h"
+#include "DhakaProceduralCitizen.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/DirectionalLight.h"
@@ -23,6 +25,9 @@ void ADhakaGameMode::BeginPlay()
     Super::BeginPlay();
     UWorld* World=GetWorld(); if(!World)return;
     if(CityGeneratorClass) World->SpawnActor<ADhakaCityGenerator>(CityGeneratorClass,FVector::ZeroVector,FRotator::ZeroRotator);
+    // Additional street-life dressing is generated procedurally at runtime, with a fixed seed for repeatable layouts.
+    if(ADhakaStreetLifeGenerator* StreetLife=World->SpawnActor<ADhakaStreetLifeGenerator>(ADhakaStreetLifeGenerator::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator))
+    { StreetLife->RandomSeed=2026; StreetLife->VendorCount=14; StreetLife->StreetPropCount=72; StreetLife->TreeCount=24; StreetLife->AreaExtent=72000.f; }
     ADirectionalLight* Sun=World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(),FVector::ZeroVector,FRotator(-42.f,-32.f,0.f));if(Sun){Sun->GetLightComponent()->SetIntensity(4.0f);Sun->GetLightComponent()->SetCastShadows(true);}
     ASkyLight* Sky=World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);if(Sky){Sky->GetLightComponent()->SetIntensity(1.1f);Sky->GetLightComponent()->RecaptureSky();}
     World->SpawnActor<ASkyAtmosphere>(ASkyAtmosphere::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
@@ -41,6 +46,12 @@ void ADhakaGameMode::BeginPlay()
         const FVector Direction=bHorizontal?FVector(I%4<2?1.f:-1.f,0,0):FVector(0,I%4<2?1.f:-1.f,0);
         ADhakaTrafficVehicle* Traffic=World->SpawnActor<ADhakaTrafficVehicle>(ADhakaTrafficVehicle::StaticClass(),Location,Direction.Rotation());
         if(Traffic){Traffic->RouteDirection=Direction;Traffic->CruiseSpeed=FMath::FRandRange(350.f,1050.f);Traffic->BrakeDistance=FMath::FRandRange(450.f,900.f);}
+    }
+    // Procedural citizens provide clothing and body variation near active streets.
+    for(int32 I=0;I<18;++I){
+        const float X=FMath::FRandRange(-45000.f,45000.f),Y=FMath::FRandRange(-45000.f,45000.f);
+        ADhakaProceduralCitizen* Citizen=World->SpawnActor<ADhakaProceduralCitizen>(ADhakaProceduralCitizen::StaticClass(),FVector(X,Y,5.f),FRotator(0.f,FMath::FRandRange(0.f,360.f),0.f));
+        if(Citizen){Citizen->AppearanceSeed=2026+I*37;Citizen->Appearance.Clothing=static_cast<EDhakaClothingStyle>(I%9);Citizen->bWanderLocally=(I%3)!=0;Citizen->WalkSpeed=FMath::FRandRange(65.f,115.f);Citizen->WanderRadius=FMath::FRandRange(500.f,1400.f);Citizen->Appearance.TopColor=FLinearColor(FMath::FRandRange(.05f,.8f),FMath::FRandRange(.05f,.8f),FMath::FRandRange(.05f,.8f),1.f);}
     }
     // Low-poly crowd agents use randomized footpath destinations and pause states.
     for(int32 I=0;I<64;++I){
