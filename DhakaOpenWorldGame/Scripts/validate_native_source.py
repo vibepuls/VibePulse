@@ -143,7 +143,9 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
-    "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth"
+    "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth",
+    "struct FDistrictStyle", "Old Dhaka", "Gulshan", "Banani", "Motijheel", "Dhanmondi", "Mirpur", "Uttara", "Farmgate", "Sadarghat", "Jatrabari", "Mohakhali", "Shahbagh",
+    "BestDistrict", "Style.MinHeight", "Style.MaxHeight", "Style.Vacancy"
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
