@@ -3,6 +3,7 @@
 #include "DhakaMissionSubsystem.h"
 #include "DhakaPlayerCharacter.h"
 #include "DhakaVehiclePawn.h"
+#include "DhakaPropertyTerminal.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
@@ -67,6 +68,8 @@ void UDhakaEconomyWidget::NativeConstruct()
     AddActionButton(Actions,TEXT("Buy Old Dhaka Shop  |  ৳85,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyOldDhakaShop);
     AddActionButton(Actions,TEXT("Buy Dhanmondi Flat  |  ৳420,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyDhanmondiFlat);
     AddActionButton(Actions,TEXT("Buy Uttara Garage  |  ৳650,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyUttaraGarage);
+    AddActionButton(Actions,TEXT("Garage: Full Repair  |  ৳2,500 (owned garage nearby)"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::GarageRepair);
+    AddActionButton(Actions,TEXT("Garage: Full Refuel  |  ৳1,200 (owned garage nearby)"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::GarageRefuel);
     AddActionButton(Actions,TEXT("Buy Gulshan Office  |  ৳1,500,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyGulshanOffice);
     AddActionButton(Actions,TEXT("Claim Daily Property Rent  |  P"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::ClaimRent);
     AddLabel(Actions,TEXT("GRAPHICS QUALITY  |  applies and saves"),true);
@@ -150,6 +153,8 @@ void UDhakaEconomyWidget::BuyRepair(){if(UGameInstance* GI=GetGameInstance())if(
 void UDhakaEconomyWidget::BuyOldDhakaShop(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseProperty(TEXT("old_dhaka_shop"));}
 void UDhakaEconomyWidget::BuyDhanmondiFlat(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseProperty(TEXT("dhanmondi_flat"));}
 void UDhakaEconomyWidget::BuyUttaraGarage(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseProperty(TEXT("uttara_garage"));}
+void UDhakaEconomyWidget::GarageRepair(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())if(AActor* User=UGameplayStatics::GetPlayerPawn(this,0))E->ServiceGarage(User,false);}
+void UDhakaEconomyWidget::GarageRefuel(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())if(AActor* User=UGameplayStatics::GetPlayerPawn(this,0))E->ServiceGarage(User,true);}
 void UDhakaEconomyWidget::BuyGulshanOffice(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseProperty(TEXT("gulshan_office"));}
 void UDhakaEconomyWidget::ClaimRent(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->ClaimPropertyIncome();}
 void UDhakaEconomyWidget::UseSelectedFirstAid()
