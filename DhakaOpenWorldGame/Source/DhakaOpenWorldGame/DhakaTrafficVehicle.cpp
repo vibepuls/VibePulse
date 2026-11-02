@@ -1,5 +1,5 @@
 #include "DhakaTrafficVehicle.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/StaticMeshComponent.h"\n#include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
