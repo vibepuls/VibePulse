@@ -6,6 +6,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "DhakaEconomySubsystem.h"
+#include "DhakaAudioDirector.h"
+#include "EngineUtils.h"
 
 ADhakaVendorStall::ADhakaVendorStall()
 {
@@ -59,6 +61,10 @@ bool ADhakaVendorStall::Interact(AActor* Customer)
 {
     if(!Customer||FVector::Dist2D(Customer->GetActorLocation(),GetActorLocation())>400.f||!GetGameInstance())return false;
     if(UDhakaEconomySubsystem* Economy=GetGameInstance()->GetSubsystem<UDhakaEconomySubsystem>())
-        return Economy->PurchaseItem(GetStockItemId(),1);
+    {
+        const bool bPurchased=Economy->PurchaseItem(GetStockItemId(),1);
+        if(bPurchased)for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayVendorCall();break;}
+        return bPurchased;
+    }
     return false;
 }
