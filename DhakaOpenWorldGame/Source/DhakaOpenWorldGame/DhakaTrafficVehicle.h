@@ -35,6 +35,9 @@ protected:
     virtual void BeginPlay() override;
 private:
     float CurrentSpeed = 0.f;
+    float CurrentLaneShift = 0.f;
+    float TargetLaneShift = 0.f;
+    float LaneChangeCooldown = 0.f;
     float EmergencyLightTimer = 0.f;
     bool bEmergencyLightPhase = false;
     float AIUpdateTimer = 0.f;
