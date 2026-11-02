@@ -303,7 +303,7 @@ void ADhakaVehiclePawn::LoadProgress()
 }
 
 void ADhakaVehiclePawn::AddFuel(float Amount){if(Amount>0.f)FuelPercent=FMath::Clamp(FuelPercent+Amount,0.f,100.f);}
-void ADhakaVehiclePawn::RepairVehicle(float Amount){if(Amount>0.f)ConditionPercent=FMath::Clamp(ConditionPercent+Amount,0.f,100.f);}
+void ADhakaVehiclePawn::RepairVehicle(float Amount){if(Amount>0.f)ConditionPercent=FMath::Clamp(ConditionPercent+Amount,0.f,100.f);if(BodyMaterial){const float Blend=(1.f-ConditionPercent/100.f)*.72f;const FLinearColor Restored=FLinearColor::LerpUsingHSV(PaintColor,FLinearColor(.12f,.10f,.09f,1.f),Blend);BodyMaterial->SetVectorParameterValue(TEXT("BaseColor"),Restored);BodyMaterial->SetVectorParameterValue(TEXT("Color"),Restored);}}
 void ADhakaVehiclePawn::UseFuelInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("fuel_can"),this);}
 void ADhakaVehiclePawn::UseRepairInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("repair_kit"),this);}
 void ADhakaVehiclePawn::ToggleVehicleMode()
