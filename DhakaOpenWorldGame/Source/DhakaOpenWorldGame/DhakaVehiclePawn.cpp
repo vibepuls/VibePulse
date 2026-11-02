@@ -267,7 +267,12 @@ void ADhakaVehiclePawn::SaveProgress()
 {
     UDhakaSaveGame* Save=Cast<UDhakaSaveGame>(UGameplayStatics::CreateSaveGameObject(UDhakaSaveGame::StaticClass()));
     if(!Save)return;
-    Save->PlayerLocation=GetActorLocation();Save->PlayerRotation=GetActorRotation();Save->TravelDistanceKm=TravelDistanceKm;Save->PlayerVehicleType=static_cast<int32>(VehicleType);Save->VehicleFuelPercent=FuelPercent;Save->VehicleConditionPercent=ConditionPercent;
+    Save->PlayerLocation=GetActorLocation();
+    Save->PlayerRotation=GetActorRotation();
+    Save->TravelDistanceKm=FMath::IsFinite(TravelDistanceKm)?FMath::Max(0.f,TravelDistanceKm):0.f;
+    Save->PlayerVehicleType=FMath::Clamp(static_cast<int32>(VehicleType),0,4);
+    Save->VehicleFuelPercent=FMath::IsFinite(FuelPercent)?FMath::Clamp(FuelPercent,0.f,100.f):100.f;
+    Save->VehicleConditionPercent=FMath::IsFinite(ConditionPercent)?FMath::Clamp(ConditionPercent,0.f,100.f):100.f;
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
         Save->Wallet=Missions->Wallet;
         for(const FDhakaMission& Mission:Missions->Missions)if(Mission.bCompleted)Save->CompletedMissionIds.Add(Mission.Id);
@@ -279,9 +284,17 @@ void ADhakaVehiclePawn::LoadProgress()
 {
     UDhakaSaveGame* Save=Cast<UDhakaSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("DhakaOpenWorldSave"),0));
     if(!Save)return;
-    SetActorLocation(Save->PlayerLocation,false,nullptr,ETeleportType::TeleportPhysics);SetActorRotation(Save->PlayerRotation);TravelDistanceKm=FMath::Max(0.f,Save->TravelDistanceKm);
+    const FVector SavedLocation=Save->PlayerLocation;
+    const FRotator SavedRotation=Save->PlayerRotation;
+    const bool bLocationValid=FMath::IsFinite(SavedLocation.X)&&FMath::IsFinite(SavedLocation.Y)&&FMath::IsFinite(SavedLocation.Z);
+    const bool bRotationValid=FMath::IsFinite(SavedRotation.Pitch)&&FMath::IsFinite(SavedRotation.Yaw)&&FMath::IsFinite(SavedRotation.Roll);
+    // Ignore corrupt non-finite transforms rather than teleporting the player outside the world.
+    if(bLocationValid)SetActorLocation(SavedLocation,false,nullptr,ETeleportType::TeleportPhysics);
+    if(bRotationValid)SetActorRotation(SavedRotation);
+    TravelDistanceKm=FMath::IsFinite(Save->TravelDistanceKm)?FMath::Max(0.f,Save->TravelDistanceKm):0.f;
     ConfigureVehicleType(static_cast<EDhakaPlayerVehicleType>(FMath::Clamp(Save->PlayerVehicleType,0,4)));
-    FuelPercent=FMath::Clamp(Save->VehicleFuelPercent,0.f,100.f);ConditionPercent=FMath::Clamp(Save->VehicleConditionPercent,0.f,100.f);
+    FuelPercent=FMath::IsFinite(Save->VehicleFuelPercent)?FMath::Clamp(Save->VehicleFuelPercent,0.f,100.f):100.f;
+    ConditionPercent=FMath::IsFinite(Save->VehicleConditionPercent)?FMath::Clamp(Save->VehicleConditionPercent,0.f,100.f):100.f;
     if(PhysicsBody)PhysicsBody->SetPhysicsLinearVelocity(FVector::ZeroVector);
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())
     {
