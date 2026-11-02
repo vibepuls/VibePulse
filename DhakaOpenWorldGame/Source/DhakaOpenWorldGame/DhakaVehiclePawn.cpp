@@ -105,10 +105,19 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaVehiclePawn::CycleCamera);
     Input->BindAction("Horn",IE_Pressed,this,&ADhakaVehiclePawn::PlayHornInput);
     Input->BindAction("RickshawBell",IE_Pressed,this,&ADhakaVehiclePawn::PlayRickshawBellInput);
+    Input->BindAxis("MissionSlot",this,&ADhakaVehiclePawn::SelectMissionSlot);
     // Mobile: left-side touch steers; upper-right accelerates; lower-right brakes.
     Input->BindTouch(IE_Pressed,this,&ADhakaVehiclePawn::HandleTouchPressed);
     Input->BindTouch(IE_Repeat,this,&ADhakaVehiclePawn::HandleTouchMoved);
     Input->BindTouch(IE_Released,this,&ADhakaVehiclePawn::HandleTouchReleased);
+}
+void ADhakaVehiclePawn::SelectMissionSlot(float Value)
+{
+    const int32 Slot=FMath::RoundToInt(Value);
+    if(Slot<=0){LastMissionSlot=0;return;}
+    if(Slot==LastMissionSlot)return;
+    LastMissionSlot=Slot;
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())Missions->StartMissionBySlot(Slot);
 }
 void ADhakaVehiclePawn::PlayHornInput(){for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayHorn();break;}}
 void ADhakaVehiclePawn::PlayRickshawBellInput(){for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayRickshawBell();break;}}
