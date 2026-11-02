@@ -127,6 +127,7 @@ void ADhakaPedestrian::Tick(float Dt)
         {
             bWalkingToCrosswalk=false;
             bCrossingRoad=true;
+            CrosswalkTravelDirection=Forward;
             State=EDhakaPedestrianState::Cross;
             const float Lateral= bHorizontal ? Here.Y : Here.X;
             const float RoadCenter=StreetGridOrigin+FMath::RoundToFloat((Lateral-StreetGridOrigin)/StreetGridStep)*StreetGridStep;
@@ -140,7 +141,9 @@ void ADhakaPedestrian::Tick(float Dt)
         {
             bCrossingRoad=false;
             State=EDhakaPedestrianState::Walk;
-            Destination=Here+Forward*FMath::FRandRange(450.f,950.f);
+            if(!CrosswalkTravelDirection.IsNearlyZero())SetActorRotation(CrosswalkTravelDirection.Rotation());
+            Destination=Here+(!CrosswalkTravelDirection.IsNearlyZero()?CrosswalkTravelDirection:Forward)*FMath::FRandRange(450.f,950.f);
+            CrosswalkTravelDirection=FVector::ZeroVector;
             return;
         }
 
