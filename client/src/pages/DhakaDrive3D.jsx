@@ -456,7 +456,14 @@ export default function DhakaDrive() {
             const buildingHit=world.colliders.some(b=>Math.abs(nx-b.x)<b.w/2+1.5&&Math.abs(nz-b.z)<b.d/2+2.4);
             const trafficHit=world.cars.some(v=>Math.abs(nx-v.mesh.position.x)<(v.mesh.userData.length||4.4)*0.48+1.8&&Math.abs(nz-v.mesh.position.z)<(v.mesh.userData.length||4.4)*0.35+1.0);
             const hit=buildingHit||trafficHit;
-            if(hit){p.speed*=-.18;if(trafficHit&&world.frame-world.lastCrimeFrame>90){world.lastCrimeFrame=world.frame;world.wantedLevel=Math.min(5,world.wantedLevel+1);setNotice('Traffic incident reported! Police wanted level: '+world.wantedLevel+'/5.');}else if(world.frame%30===0)setNotice(buildingHit?'Building collision! Steer back onto the road.':'Traffic collision! Slow down and steer carefully.');}else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
+            if(hit){
+              // Do not invert velocity on every blocked frame: that creates a forward/reverse
+              // oscillation and makes the road appear to scroll while the car stays stuck.
+              // Stop on impact so the player can steer away or deliberately reverse.
+              p.speed=0;
+              if(trafficHit&&world.frame-world.lastCrimeFrame>90){world.lastCrimeFrame=world.frame;world.wantedLevel=Math.min(5,world.wantedLevel+1);setNotice('Traffic incident reported! Police wanted level: '+world.wantedLevel+'/5.');}
+              else if(world.frame%30===0)setNotice(buildingHit?'Building collision! Steer away or reverse onto the road.':'Traffic collision! Brake, steer away, or reverse.');
+            }else{p.x=nx;p.z=nz;p.distance+=Math.abs(p.speed*dt)/1000;}
           }
           p.x=clamp(p.x,-1650,1650);p.z=clamp(p.z,-1650,1650);
           if(world.frame%6===0){for(const signal of world.trafficSignals){const phase=(clock.elapsedTime+signal.phase)%8;signal.state=phase<3?'red':phase<4?'amber':phase<7?'green':'amber';const color=signal.state==='red'?0xe33b31:signal.state==='amber'?0xf2c14e:0x31d17c;signal.mesh.material.color.setHex(color);signal.mesh.material.emissive.setHex(signal.state==='red'?0x5b0805:signal.state==='amber'?0x59420a:0x064c20);}
