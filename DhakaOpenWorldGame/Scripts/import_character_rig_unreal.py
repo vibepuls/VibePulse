@@ -126,10 +126,36 @@ try:
             unreal.EditorAssetLibrary.rename_asset(cr.get_path_name(),CONTROLRIG_PATH)
     if cr:
         cr.set_preview_mesh(skeletal_mesh)
+        # Create a visible FK control set for the major body joints. The rig graph
+        # must still wire controls to bone transforms; this hierarchy pass is not
+        # treated as proof that the controls deform the mesh at runtime.
+        try:
+            hierarchy=cr.get_hierarchy()
+            hierarchy_controller=cr.get_hierarchy_controller()
+            existing=set(str(key.name) for key in hierarchy.get_all_keys())
+            for bone_name in ("root","pelvis","spine_01","spine_02","neck","head",
+                              "clavicle_l","upperarm_l","lowerarm_l","hand_l",
+                              "clavicle_r","upperarm_r","lowerarm_r","hand_r",
+                              "thigh_l","calf_l","foot_l","thigh_r","calf_r","foot_r"):
+                control_name=bone_name+"_CTRL"
+                if control_name in existing:
+                    continue
+                bone_key=unreal.RigElementKey(name=bone_name,type=unreal.RigElementType.BONE)
+                bone_transform=hierarchy.get_global_transform(bone_key)
+                settings=unreal.RigControlSettings()
+                settings.set_editor_property("control_type",unreal.RigControlType.EULER_TRANSFORM)
+                settings.set_editor_property("shape_visible",True)
+                settings.set_editor_property("shape_name","Circle_Thick")
+                value=unreal.RigHierarchy.make_control_value_from_transform(bone_transform)
+                hierarchy_controller.add_control(name=control_name,parent=unreal.RigElementKey(),
+                    settings=settings,value=value,setup_undo=False,print_python_command=False)
+                existing.add(control_name)
+        except Exception as control_error:
+            unreal.log_warning("FK control creation needs review in this UE version: "+str(control_error))
         cr.recompile_vm_if_required()
         unreal.BlueprintEditorLibrary.compile_blueprint(cr)
         unreal.EditorAssetLibrary.save_loaded_asset(cr)
-        unreal.log("Created and compiled CR_DhakaHuman from the imported skeletal mesh. Verify FK controls and add IK control-to-bone graph nodes in the Control Rig editor.")
+        unreal.log("Created CR_DhakaHuman and attempted FK controls for root, torso, head, arms and legs. Verify the graph drives bones before using it in production.")
 except Exception as e:
     unreal.log_warning("Control Rig setup needs review in this UE version: "+str(e))
 
