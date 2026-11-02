@@ -1,5 +1,6 @@
 #include "DhakaGameMode.h"
 #include "DhakaOpenWorldHUD.h"
+#include "DhakaMissionSubsystem.h"
 #include "DhakaCityGenerator.h"
 #include "DhakaVehiclePawn.h"
 #include "DhakaTrafficVehicle.h"
@@ -29,6 +30,8 @@ void ADhakaGameMode::BeginPlay()
 {
     Super::BeginPlay();
     UWorld* World=GetWorld(); if(!World)return;
+    if (UGameInstance* GI=World->GetGameInstance())
+        if (UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()) Missions->EnsureMissionMonitor();
     if(CityGeneratorClass) World->SpawnActor<ADhakaCityGenerator>(CityGeneratorClass,FVector::ZeroVector,FRotator::ZeroRotator);
     if(ADhakaLandmarkGenerator* Landmarks=World->SpawnActorDeferred<ADhakaLandmarkGenerator>(ADhakaLandmarkGenerator::StaticClass(),FTransform::Identity))
     { Landmarks->RandomSeed=2026; UGameplayStatics::FinishSpawningActor(Landmarks,FTransform::Identity); }
