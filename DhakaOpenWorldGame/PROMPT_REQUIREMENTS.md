@@ -58,7 +58,7 @@ Status: **PARTIAL** — procedural stalls/furniture exist; functional vendor int
 ## Part 8 — Traffic
 - [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
 - [ ] Road/time/density-based traffic rules and Dhaka-specific behavior.
-Status: **PARTIAL** — timed signals and basic following/red-light stop logic exist; traffic vehicle dimensions now align to route direction. Lane graph, intersection reservations, lane changes/overtaking, bus/emergency behavior and robust avoidance remain.
+Status: **PARTIAL** — timed signals, basic following/red-light stopping, route-aligned vehicle dimensions and configurable randomized turns at procedural grid intersections exist in source. A full graph-based route planner, lane changes/overtaking, intersection reservations, bus/emergency behavior and robust avoidance remain.
 
 ## Part 9 — Pedestrian AI/crowds
 - [ ] Sidewalk walking, crossing, obstacle/vendor/vehicle avoidance, gathering, bus-stop waiting, boarding/exiting, shopping, talking and reactions to weather/events/player.
