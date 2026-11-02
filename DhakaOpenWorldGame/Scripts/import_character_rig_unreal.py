@@ -150,6 +150,23 @@ try:
                 hierarchy_controller.add_control(name=control_name,parent=unreal.RigElementKey(),
                     settings=settings,value=value,setup_undo=False,print_python_command=False)
                 existing.add(control_name)
+            for side in ("l","r"):
+                for digit,segments in (("thumb",2),("index",3),("middle",3),("ring",3),("pinky",3)):
+                    for segment in range(1,segments+1):
+                        bone_name="%s_%s_%02d" % (digit,side,segment)
+                        control_name=bone_name+"_CTRL"
+                        if control_name in existing:
+                            continue
+                        bone_key=unreal.RigElementKey(name=bone_name,type=unreal.RigElementType.BONE)
+                        bone_transform=hierarchy.get_global_transform(bone_key)
+                        settings=unreal.RigControlSettings()
+                        settings.set_editor_property("control_type",unreal.RigControlType.EULER_TRANSFORM)
+                        settings.set_editor_property("shape_visible",True)
+                        settings.set_editor_property("shape_name","Circle_Thick")
+                        value=unreal.RigHierarchy.make_control_value_from_transform(bone_transform)
+                        hierarchy_controller.add_control(name=control_name,parent=unreal.RigElementKey(),
+                            settings=settings,value=value,setup_undo=False,print_python_command=False)
+                        existing.add(control_name)
         except Exception as control_error:
             unreal.log_warning("FK control creation needs review in this UE version: "+str(control_error))
         cr.recompile_vm_if_required()
