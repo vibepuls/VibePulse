@@ -15,4 +15,5 @@ public:
     UPROPERTY(BlueprintReadWrite) TArray<FName> CompletedMissionIds;
     UPROPERTY(BlueprintReadWrite) FString Weather = TEXT("Clear");
     UPROPERTY(BlueprintReadWrite) float DayTimeHours = 14.f;
+    UPROPERTY(BlueprintReadWrite) int32 PlayerVehicleType = 0;
 };
