@@ -48,4 +48,6 @@ private:
     bool bTouchThrottleActive = false;
     bool bTouchBrakeActive = false;
     int32 CameraModeIndex = 0;
+    float WeatherQueryTimer = 0.f;
+    float CachedWeatherGrip = 1.f;
 };
