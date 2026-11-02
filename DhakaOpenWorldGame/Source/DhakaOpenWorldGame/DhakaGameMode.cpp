@@ -12,6 +12,7 @@
 #include "DhakaLandmarkGenerator.h"
 #include "DhakaTrafficSignal.h"
 #include "DhakaAudioDirector.h"
+#include "DhakaWetRoadEffect.h"
 #include "Engine/World.h"
 #include "HAL/PlatformProperties.h"
 #include "GameFramework/PlayerController.h"
@@ -37,6 +38,8 @@ void ADhakaGameMode::BeginPlay()
         if (UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()) Missions->EnsureMissionMonitor();
     World->SpawnActor<ADhakaMissionMarker>(ADhakaMissionMarker::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
     World->SpawnActor<ADhakaAudioDirector>(ADhakaAudioDirector::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
+    if(ADhakaWetRoadEffect* WetRoad=World->SpawnActor<ADhakaWetRoadEffect>(ADhakaWetRoadEffect::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator))
+        WetRoad->PuddleCount=FPlatformProperties::SupportsMobileRendering()?40:120;
     if(CityGeneratorClass) World->SpawnActor<ADhakaCityGenerator>(CityGeneratorClass,FVector::ZeroVector,FRotator::ZeroRotator);
     if(ADhakaLandmarkGenerator* Landmarks=World->SpawnActorDeferred<ADhakaLandmarkGenerator>(ADhakaLandmarkGenerator::StaticClass(),FTransform::Identity))
     { Landmarks->RandomSeed=2026; UGameplayStatics::FinishSpawningActor(Landmarks,FTransform::Identity); }
