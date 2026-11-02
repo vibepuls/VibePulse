@@ -53,7 +53,6 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             else if(!bVertical)
                 AddBoxMesh(FVector(Along,RoadP,10.f),FVector(D,W,2.f),R.FRand()<.5f?FLinearColor(.045f,.05f,.052f):FLinearColor(.12f,.125f,.12f),false);
         }
-    }
     if(bGenerateBuildings){
         for(int32 X=0;X<GridBlocks;++X) for(int32 Y=0;Y<GridBlocks;++Y){
             if(R.FRand()<0.12f) continue;
