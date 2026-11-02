@@ -92,9 +92,11 @@ bool UDhakaEconomySubsystem::UseItem(FName ItemId,AActor* User)
         return false;
     }
     ADhakaPlayerCharacter* Character=Cast<ADhakaPlayerCharacter>(User);
-    // Only modify the vehicle the player is actually driving (or the explicitly supplied vehicle).
-    // Never let a nearby traffic NPC's vehicle consume the player's fuel/repair item.
+    // Explicitly supplied/player-owned vehicle first; never search arbitrary AI traffic vehicles.
     ADhakaVehiclePawn* Vehicle=Cast<ADhakaVehiclePawn>(User);
+    if(!Vehicle && Character && Character->NearbyVehicle
+        && FVector::Dist2D(User->GetActorLocation(),Character->NearbyVehicle->GetActorLocation())<=550.f)
+        Vehicle=Character->NearbyVehicle;
     if(!Vehicle)
     {
         APawn* PlayerPawn=UGameplayStatics::GetPlayerPawn(this,0);
