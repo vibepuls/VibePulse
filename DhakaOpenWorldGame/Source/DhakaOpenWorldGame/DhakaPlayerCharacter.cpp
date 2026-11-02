@@ -14,6 +14,7 @@
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "GameFramework/GameUserSettings.h"
 #include "EngineUtils.h"
 
 ADhakaPlayerCharacter::ADhakaPlayerCharacter()
@@ -42,6 +43,7 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAxis("MissionSlot",this,&ADhakaPlayerCharacter::SelectMissionSlot);
     Input->BindAction("CycleWeather",IE_Pressed,this,&ADhakaPlayerCharacter::CycleWeatherInput);
     Input->BindAction("AdvanceTime",IE_Pressed,this,&ADhakaPlayerCharacter::AdvanceTimeInput);
+    Input->BindAction("CycleGraphicsQuality",IE_Pressed,this,&ADhakaPlayerCharacter::CycleGraphicsQuality);
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaPlayerCharacter::CycleCamera);
     Input->BindAction("UseFirstAid",IE_Pressed,this,&ADhakaPlayerCharacter::UseFirstAidInput);
     Input->BindAction("UseFood",IE_Pressed,this,&ADhakaPlayerCharacter::UseFoodInput);
@@ -149,6 +151,7 @@ void ADhakaPlayerCharacter::SelectMissionSlot(float Value)
 
 void ADhakaPlayerCharacter::CycleWeatherInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->CycleWeather();break;}}
 void ADhakaPlayerCharacter::AdvanceTimeInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->AdvanceTimeOfDay();break;}}
+void ADhakaPlayerCharacter::CycleGraphicsQuality(){if(UGameUserSettings* Settings=UGameUserSettings::GetGameUserSettings()){int32 Level=Settings->GetOverallScalabilityLevel();Level=(FMath::Clamp(Level,0,3)+1)%4;Settings->SetOverallScalabilityLevel(Level);Settings->ApplySettings(false);Settings->SaveSettings();}}
 
 void ADhakaPlayerCharacter::HandleTouchPressed(ETouchIndex::Type FingerIndex,FVector Location)
 {
