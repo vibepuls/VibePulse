@@ -202,7 +202,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaCharacterAnimInstance.cpp", [
     "NativeInitializeAnimation", "NativeUpdateAnimation", "UKismetAnimationLibrary::CalculateDirection", "Move->IsFalling()"
 ])
 require_tokens("Scripts/build_character_rig_blender.py", [
-    "SK_DhakaHuman", "A_Dhaka_Idle", "A_Dhaka_Walk", "A_Dhaka_Run", "ik_foot_l", "ik_foot_r", "ik_hand_l", "ik_hand_r", "vertex_groups", "bake_anim"
+    "SK_DhakaHuman", "A_Dhaka_Idle", "A_Dhaka_Walk", "A_Dhaka_Run", "ik_foot_l", "ik_foot_r", "ik_hand_l", "ik_hand_r", "finger_specs", "pinky", "vertex_groups", "bake_anim"
 ])
 require_tokens("Scripts/import_character_rig_unreal.py", [
     "SK_DhakaHuman", "ABP_PlayerDhaka", "IK_DhakaHuman", "CR_DhakaHuman",
