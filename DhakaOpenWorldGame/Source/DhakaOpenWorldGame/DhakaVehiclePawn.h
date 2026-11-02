@@ -40,5 +40,12 @@ private:
     void SaveProgress();
     void LoadProgress();
     void CycleCamera();
+    void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
+    void HandleTouchMoved(ETouchIndex::Type FingerIndex, FVector Location);
+    void HandleTouchReleased(ETouchIndex::Type FingerIndex, FVector Location);
+    void UpdateTouchControls(FVector Location);
+    bool bTouchSteeringActive = false;
+    bool bTouchThrottleActive = false;
+    bool bTouchBrakeActive = false;
     int32 CameraModeIndex = 0;
 };
