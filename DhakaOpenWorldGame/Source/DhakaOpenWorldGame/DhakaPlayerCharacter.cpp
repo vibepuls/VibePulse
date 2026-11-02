@@ -1,4 +1,5 @@
 #include "DhakaPlayerCharacter.h"
+#include "DhakaCharacterAnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,6 +18,9 @@
 #include "GameFramework/GameUserSettings.h"
 #include "EngineUtils.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Animation/AnimInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -28,8 +32,11 @@ ADhakaPlayerCharacter::ADhakaPlayerCharacter()
     bUseControllerRotationYaw=false;
     CameraArm=CreateDefaultSubobject<USpringArmComponent>(TEXT("WalkCameraArm"));CameraArm->SetupAttachment(GetRootComponent());CameraArm->TargetArmLength=360.f;CameraArm->SetRelativeLocation(FVector(0,0,80));CameraArm->bUsePawnControlRotation=true;CameraArm->bEnableCameraLag=true;
     Camera=CreateDefaultSubobject<UCameraComponent>(TEXT("WalkCamera"));Camera->SetupAttachment(CameraArm);
-    // Lightweight procedural mannequin so the native player is visible even
-    // when no licensed skeletal character asset has been installed.
+    // Prefer the imported, fully weighted humanoid skeletal mesh and Animation Blueprint.
+    // The procedural six-part mannequin remains a fallback until the content-generation
+    // scripts have been run in Blender and Unreal Editor.
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerSkeletalMesh(TEXT("/Game/Characters/Player/SK_DhakaHuman.SK_DhakaHuman"));
+    static ConstructorHelpers::FClassFinder<UDhakaCharacterAnimInstance> PlayerAnimationBlueprint(TEXT("/Game/Characters/Player/ABP_PlayerDhaka"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyCube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     UMaterialInterface* BaseMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
     auto MakeBodyPart=[this,&BodyCube,BaseMaterial](const TCHAR* Name,const FVector& Scale,const FVector& Location,const FLinearColor& Color)->UStaticMeshComponent*
@@ -53,6 +60,24 @@ ADhakaPlayerCharacter::ADhakaPlayerCharacter()
     ProceduralRightArm=MakeBodyPart(TEXT("PlayerProceduralRightArm"),FVector(.12f,.13f,.34f),FVector(0,30,0),FLinearColor(.62f,.39f,.25f));
     ProceduralLeftLeg=MakeBodyPart(TEXT("PlayerProceduralLeftLeg"),FVector(.14f,.15f,.42f),FVector(0,-14,-43),FLinearColor(.055f,.065f,.08f));
     ProceduralRightLeg=MakeBodyPart(TEXT("PlayerProceduralRightLeg"),FVector(.14f,.15f,.42f),FVector(0,14,-43),FLinearColor(.055f,.065f,.08f));
+    if(PlayerSkeletalMesh.Succeeded())
+    {
+        GetMesh()->SetSkeletalMesh(PlayerSkeletalMesh.Object);
+        GetMesh()->SetRelativeLocation(FVector(0.f,0.f,-90.f));
+        GetMesh()->SetRelativeRotation(FRotator(0.f,-90.f,0.f));
+        if(PlayerAnimationBlueprint.Succeeded())
+        {
+            GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+            GetMesh()->SetAnimInstanceClass(PlayerAnimationBlueprint.Class);
+        }
+        // Avoid drawing the block mannequin over the skinned mesh.
+        if(ProceduralTorso)ProceduralTorso->SetVisibility(false,true);
+        if(ProceduralHead)ProceduralHead->SetVisibility(false,true);
+        if(ProceduralLeftArm)ProceduralLeftArm->SetVisibility(false,true);
+        if(ProceduralRightArm)ProceduralRightArm->SetVisibility(false,true);
+        if(ProceduralLeftLeg)ProceduralLeftLeg->SetVisibility(false,true);
+        if(ProceduralRightLeg)ProceduralRightLeg->SetVisibility(false,true);
+    }
 }
 void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 {
