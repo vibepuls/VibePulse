@@ -117,11 +117,24 @@ void ADhakaVehiclePawn::Tick(float Dt)
     const FVector Forward=GetActorForwardVector();
     Speed=FVector::DotProduct(PhysicsBody->GetPhysicsLinearVelocity(),Forward);
     TravelDistanceKm+=PhysicsBody->GetPhysicsLinearVelocity().Size()*Dt/100000.f;
+    WeatherQueryTimer-=Dt;
+    if(WeatherQueryTimer<=0.f)
+    {
+        WeatherQueryTimer=.5f;
+        CachedWeatherGrip=1.f;
+        for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
+        {
+            if(It->Weather==EDhakaWeather::Rain)CachedWeatherGrip=.82f;
+            else if(It->Weather==EDhakaWeather::Monsoon)CachedWeatherGrip=.58f;
+            else if(It->Weather==EDhakaWeather::Fog)CachedWeatherGrip=.94f;
+            break;
+        }
+    }
     // Mission completion is owned by UDhakaMissionSubsystem so every mission uses its configured radius and timer.
     PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*PhysicsBody->GetMass());
-    if(BrakeInput>0.f) PhysicsBody->AddForce(-PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*PhysicsBody->GetMass()*BrakeInput);
+    if(BrakeInput>0.f) PhysicsBody->AddForce(-PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*CachedWeatherGrip*PhysicsBody->GetMass()*BrakeInput);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
-    PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*PhysicsBody->GetMass()*4.f));
+    PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*CachedWeatherGrip*PhysicsBody->GetMass()*4.f));
     if(PhysicsBody->GetPhysicsLinearVelocity().Size()>MaxSpeed) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
     const float WheelSpin=Speed*Dt/32.f;
     bool bNight=false;
