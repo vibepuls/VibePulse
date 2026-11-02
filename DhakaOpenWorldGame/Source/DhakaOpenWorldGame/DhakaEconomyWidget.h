@@ -41,6 +41,8 @@ private:
     UFUNCTION() void BuyOldDhakaShop();
     UFUNCTION() void BuyDhanmondiFlat();
     UFUNCTION() void BuyUttaraGarage();
+    UFUNCTION() void GarageRepair();
+    UFUNCTION() void GarageRefuel();
     UFUNCTION() void BuyGulshanOffice();
     UFUNCTION() void ClaimRent();
     UFUNCTION() void UseSelectedFirstAid();
