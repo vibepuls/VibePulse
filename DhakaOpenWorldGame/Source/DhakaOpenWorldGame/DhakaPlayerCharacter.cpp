@@ -6,6 +6,7 @@
 #include "GameFramework/Controller.h"
 #include "DhakaVehiclePawn.h"
 #include "DhakaVendorStall.h"
+#include "DhakaPropertyTerminal.h"
 #include "DhakaEconomySubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -32,6 +33,8 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("Jump",IE_Pressed,this,&ADhakaPlayerCharacter::StartJump);
     Input->BindAction("Jump",IE_Released,this,&ADhakaPlayerCharacter::StopJump);
     Input->BindAction("InteractVehicle",IE_Pressed,this,&ADhakaPlayerCharacter::InteractVehicle);
+    Input->BindAction("BuyProperty",IE_Pressed,this,&ADhakaPlayerCharacter::InteractProperty);
+    Input->BindAction("ClaimRent",IE_Pressed,this,&ADhakaPlayerCharacter::ClaimPropertyIncome);
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaPlayerCharacter::CycleCamera);
 }
 void ADhakaPlayerCharacter::MoveForward(float V){if(!Controller||FMath::IsNearlyZero(V))return;const FRotator Yaw(0,Controller->GetControlRotation().Yaw,0);AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),V);}
@@ -71,4 +74,27 @@ void ADhakaPlayerCharacter::InteractVehicle()
                     Economy->LastTransactionMessage=FText::FromString(TEXT("Purchase failed: check wallet or vendor stock."));
         }
     }
+}
+
+void ADhakaPlayerCharacter::InteractProperty()
+{
+    ADhakaPropertyTerminal* Nearest=nullptr;float BestDistance=500.f;
+    for(TActorIterator<ADhakaPropertyTerminal> It(GetWorld());It;++It)
+    {
+        const float Distance=FVector::Dist2D(GetActorLocation(),It->GetActorLocation());
+        if(Distance<BestDistance){BestDistance=Distance;Nearest=*It;}
+    }
+    if(Nearest)
+    {
+        if(!Nearest->Interact(this))
+            if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* Economy=GI->GetSubsystem<UDhakaEconomySubsystem>())
+                if(Economy->LastTransactionMessage.IsEmpty())Economy->LastTransactionMessage=FText::FromString(TEXT("Property purchase unavailable."));
+    }
+    else if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* Economy=GI->GetSubsystem<UDhakaEconomySubsystem>())
+        Economy->LastTransactionMessage=FText::FromString(TEXT("No property office nearby. Find a property sign."));
+}
+void ADhakaPlayerCharacter::ClaimPropertyIncome()
+{
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* Economy=GI->GetSubsystem<UDhakaEconomySubsystem>())
+        Economy->ClaimPropertyIncome();
 }
