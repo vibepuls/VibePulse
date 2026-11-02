@@ -128,6 +128,14 @@ void ADhakaTrafficVehicle::Tick(float Dt)
                         if(*OtherIt==this)continue;
                         if(FVector::Dist2D(CandidateLocation,OtherIt->GetActorLocation())<420.f){bClear=false;break;}
                     }
+                    // Do not sidestep a blocked car into a pedestrian.
+                    if(bClear)
+                    {
+                        for(TActorIterator<ADhakaPedestrian> PedIt(GetWorld());PedIt;++PedIt)
+                        {
+                            if(FVector::Dist2D(CandidateLocation,PedIt->GetActorLocation())<300.f){bClear=false;break;}
+                        }
+                    }
                     if(bClear){TargetLaneShift=CandidateShift;LaneChangeCooldown=4.f;bFoundLane=true;break;}
                 }
                 if(!bFoundLane)TargetLaneShift=0.f;
