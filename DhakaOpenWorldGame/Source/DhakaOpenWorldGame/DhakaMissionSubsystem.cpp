@@ -70,6 +70,14 @@ void UDhakaMissionSubsystem::StartMissionMonitor()
     }
 }
 
+void UDhakaMissionSubsystem::EnsureMissionMonitor()
+{
+    if (!Missions.IsValidIndex(ActiveMissionIndex)) return;
+    UWorld* World=GetWorld();
+    if (World && !World->GetTimerManager().IsTimerActive(MissionUpdateTimer))
+        StartMissionMonitor();
+}
+
 void UDhakaMissionSubsystem::UpdateActiveMission()
 {
     if (!Missions.IsValidIndex(ActiveMissionIndex)) return;
