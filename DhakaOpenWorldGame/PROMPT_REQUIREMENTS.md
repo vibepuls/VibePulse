@@ -37,7 +37,7 @@ Status: **PARTIAL** — configurable procedural vehicle and force-driven pawn ex
 - [ ] Complete anatomy, hands/fingers, facial geometry, eyes/brows/nose/mouth/ears, hair/facial hair and body types.
 - [ ] Bangladesh clothing variants, footwear/headwear, realistic fabric fit/textures.
 - [ ] Skeletal/procedural animations for walk/run/stand/turn/sit/talk/eat/shop/carry/enter/exit/drive/ride/interact, blending and IK.
-Status: **PARTIAL** — modular primitive citizens and clothing-style variants exist; skeletal rigs, full anatomy, cloth, facial animation, Control Rig and IK remain.
+Status: **PARTIAL** — ambient citizens use procedural limb cycles; the player now has a visible six-part procedural mannequin with speed-driven alternating arm/leg swing and torso bob as a no-asset fallback. This is not a skeletal rig; production skeletal meshes, Animation Blueprints, facial animation, cloth, Control Rig and IK remain.
 
 ## Part 5 — Dhaka city
 - [ ] Roads/intersections/flyovers/bridges/underpasses, sidewalks, markets, homes/business districts, parks/lakes, bus/rail terminals and riverfronts.
