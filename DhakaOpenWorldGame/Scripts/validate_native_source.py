@@ -112,9 +112,13 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
     "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid", "BAG", "Mobile: drag left side"
 ])
 
+require_tokens("Source/DhakaOpenWorldGame/DhakaPedestrian.cpp", [
+    "ReactToVehicleImpact", "FleeRemaining", "BaseWalkSpeed"
+])
+
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection",
-    "ADhakaPedestrian", "YieldDistance", "SafeSpeed"
+    "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "ReactToVehicleImpact"
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
