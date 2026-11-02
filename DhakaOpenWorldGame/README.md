@@ -20,13 +20,13 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 ## Player skeletal rig / animation pipeline
 The Blender and Unreal Editor scripts are committed as source automation; generated binary assets are not committed yet.
 
-1. Install Blender 3.6+ or 4.x and run \`blender --background --python Scripts/build_character_rig_blender.py -- --output "<project>/ContentSource/Characters/Player"\`.
-2. Open the \`.uproject\` in Unreal Engine 5.5, enable the Python Editor Script Plugin if needed, and allow the project to compile once so \`UDhakaCharacterAnimInstance\` is available.
-3. In the Unreal Editor Python console, run \`py "<project>/Scripts/import_character_rig_unreal.py" --source "<project>/ContentSource/Characters/Player"\`.
-4. Confirm \`/Game/Characters/Player/SK_DhakaHuman\`, \`A_Dhaka_Idle\`, \`A_Dhaka_Walk\`, \`A_Dhaka_Run\`, \`ABP_PlayerDhaka\`, \`IK_DhakaHuman\`, and \`CR_DhakaHuman\` in the Content Browser.
+1. Install Blender 3.6+ or 4.x and run `blender --background --python Scripts/build_character_rig_blender.py -- --output "<project>/ContentSource/Characters/Player"`.
+2. Open the `.uproject` in Unreal Engine 5.5, enable the Python Editor Script Plugin if needed, and allow the project to compile once so `UDhakaCharacterAnimInstance` is available.
+3. In the Unreal Editor Python console, run `py "<project>/Scripts/import_character_rig_unreal.py" --source "<project>/ContentSource/Characters/Player"`.
+4. Confirm `/Game/Characters/Player/SK_DhakaHuman`, `A_Dhaka_Idle`, `A_Dhaka_Walk`, `A_Dhaka_Run`, `ABP_PlayerDhaka`, `IK_DhakaHuman`, and `CR_DhakaHuman` in the Content Browser.
 5. Open the Animation Blueprint and wire its locomotion state machine/blend graph; inspect the Control Rig graph and ensure controls drive the intended bones; test IK goals and floor placement. These steps are still required before calling the rig production-ready.
 
-The native character uses imported idle/walk/run sequences for movement-speed-based playback when those assets exist, otherwise the procedural mannequin remains visible. \`UDhakaCharacterAnimInstance\` exposes speed, direction, vertical velocity, movement and airborne state for the Animation Blueprint. Asset generation/import, UE compile, graph wiring and gameplay testing have not been run in this repository environment.
+The native character uses imported idle/walk/run sequences for movement-speed-based playback when those assets exist, otherwise the procedural mannequin remains visible. `UDhakaCharacterAnimInstance` exposes speed, direction, vertical velocity, movement and airborne state for the Animation Blueprint. Asset generation/import, UE compile, graph wiring and gameplay testing have not been run in this repository environment.
 
 ## Open and build
 - GitHub Actions runs the lightweight native-source sanity validator on changes to this folder; this is not a substitute for UnrealHeaderTool, a UE5 compile, playtesting, or packaging.
