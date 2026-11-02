@@ -147,6 +147,17 @@ void ADhakaTrafficVehicle::Tick(float Dt)
                             {bClear=false;break;}
                         }
                         if(!bClear)break;
+                        // Include the player-controlled vehicle in the corridor
+                        // check so an AI lane change cannot sweep into the player.
+                        for(TActorIterator<ADhakaVehiclePawn> PlayerIt(GetWorld());PlayerIt;++PlayerIt)
+                        {
+                            const ADhakaVehiclePawn* PlayerVehicle=*PlayerIt;
+                            if(!PlayerVehicle)continue;
+                            const FVector Separation=PlayerVehicle->GetActorLocation()-Probe;
+                            if(FMath::Abs(Separation.Z)<220.f&&Separation.Size2D()<460.f)
+                            {bClear=false;break;}
+                        }
+                        if(!bClear)break;
                     }
                     if(bClear){TargetLaneShift=CandidateShift;LaneChangeCooldown=4.f;bFoundLane=true;break;}
                 }
