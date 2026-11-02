@@ -14,6 +14,7 @@ public:
     ADhakaPedestrian();
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
+    void ReactToVehicleImpact(const FVector& VehicleForward,float Severity);
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class USceneComponent> Root;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UCapsuleComponent> CollisionCapsule;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Torso;
@@ -42,5 +43,7 @@ private:
     float CrowdLodRefreshTimer = 0.f;
     bool bVisualsHiddenForDistance = false;
     float WeatherWalkMultiplier = 1.f;
+    float BaseWalkSpeed = 150.f;
+    float FleeRemaining = 0.f;
     UPROPERTY() TObjectPtr<class ADhakaWeatherController> WeatherController;
 };
