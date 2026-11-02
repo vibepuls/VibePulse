@@ -103,7 +103,7 @@ require_tokens("Config/DefaultScalability.ini", [
 require_tokens("Config/DefaultInput.ini", [
     'AxisName="MissionSlot"', 'ActionName="CycleVehicleType"', 'ActionName="BuyProperty"',
     'ActionName="ClaimRent"', 'ActionName="UseFirstAid"', 'ActionName="UseFood"', 'ActionName="UseFuel"', 'ActionName="UseRepair"', 'ActionName="Horn"', 'ActionName="RickshawBell"',
-    'ActionName="CycleWeather"', 'ActionName="AdvanceTime"'
+    'ActionName="CycleWeather"', 'ActionName="AdvanceTime"', 'ActionName="CycleGraphicsQuality"'
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
@@ -112,11 +112,11 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw",
     "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent", "FuelPercent", "ConditionPercent", "HandleVehicleHit", "EffectiveGrip", "ConditionSpeedLimit",
-    "bLocationValid", "bRotationValid", "FMath::IsFinite(Save->TravelDistanceKm)", "FMath::IsFinite(Save->VehicleFuelPercent)", "FMath::IsFinite(Save->VehicleConditionPercent)", "RepairVehicle(0.f)"
+    "bLocationValid", "bRotationValid", "FMath::IsFinite(Save->TravelDistanceKm)", "FMath::IsFinite(Save->VehicleFuelPercent)", "FMath::IsFinite(Save->VehicleConditionPercent)", "RepairVehicle(0.f)", "CycleGraphicsQuality", "UGameUserSettings::GetGameUserSettings()", "Settings->SetOverallScalabilityLevel(Level)", "Settings->SaveSettings()"
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
-    "Stamina=FMath::Max", "void ADhakaPlayerCharacter::StartSprint(){if(Stamina>15.f)", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward", "TakeDamage"
+    "Stamina=FMath::Max", "void ADhakaPlayerCharacter::StartSprint(){if(Stamina>15.f)", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward", "TakeDamage", "CycleGraphicsQuality", "UGameUserSettings::GetGameUserSettings()", "Settings->SetOverallScalabilityLevel(Level)"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput", "VehicleFuelPercent", "VehicleConditionPercent"
