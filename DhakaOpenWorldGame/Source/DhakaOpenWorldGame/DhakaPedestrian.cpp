@@ -119,7 +119,12 @@ void ADhakaPedestrian::Tick(float Dt)
         WaitRemaining-=Dt;
         if(WaitRemaining>0.f)return;
         State=EDhakaPedestrianState::Walk;
-        Destination=GetActorLocation()+GetActorForwardVector()*FMath::FRandRange(500.f,1100.f);
+        if(bHasPostVendorDestination)
+        {
+            Destination=PostVendorDestination;
+            bHasPostVendorDestination=false;
+        }
+        else Destination=GetActorLocation()+GetActorForwardVector()*FMath::FRandRange(500.f,1100.f);
     }
     if(State==EDhakaPedestrianState::Wait){WaitRemaining-=Dt;if(WaitRemaining<=0.f)State=EDhakaPedestrianState::Walk;else return;}
     FVector Delta=Destination-GetActorLocation();Delta.Z=0.f;
@@ -132,8 +137,19 @@ void ADhakaPedestrian::Tick(float Dt)
         constexpr float StreetGridOrigin=-160000.f;
         constexpr float SidewalkOffset=660.f;
 
-        // Ambient pedestrians occasionally pause at a nearby street vendor,
-        // giving the market streets a little life without spending player money.
+        // A vendor-bound pedestrian reaches the stall edge, browses briefly,
+        // then returns to the sidewalk route it had chosen before shopping.
+        if(bWalkingToVendor)
+        {
+            bWalkingToVendor=false;
+            State=EDhakaPedestrianState::Shop;
+            WaitRemaining=FMath::FRandRange(2.5f,7.f);
+            Destination=Here;
+            return;
+        }
+
+        // Ambient pedestrians sometimes walk to a nearby stall instead of only
+        // freezing in place, then resume their previous sidewalk destination.
         if(!bWalkingToCrosswalk&&!bCrossingRoad&&FMath::FRand()<.07f)
         {
             ADhakaVendorStall* NearestStall=nullptr;
@@ -145,9 +161,15 @@ void ADhakaPedestrian::Tick(float Dt)
             }
             if(NearestStall)
             {
-                State=EDhakaPedestrianState::Shop;
-                WaitRemaining=FMath::FRandRange(2.5f,7.f);
-                Destination=Here;
+                const FVector Forward=GetActorForwardVector().GetSafeNormal2D();
+                const FVector Side=FVector::CrossProduct(FVector::UpVector,Forward).GetSafeNormal2D();
+                PostVendorDestination=Here+Forward*FMath::FRandRange(450.f,950.f)+Side*FMath::FRandRange(-70.f,70.f);
+                bHasPostVendorDestination=true;
+                FVector AwayFromStall=(Here-NearestStall->GetActorLocation()).GetSafeNormal2D();
+                if(AwayFromStall.IsNearlyZero())AwayFromStall=Forward;
+                Destination=NearestStall->GetActorLocation()+AwayFromStall*180.f;
+                bWalkingToVendor=true;
+                State=EDhakaPedestrianState::Walk;
                 return;
             }
         }
