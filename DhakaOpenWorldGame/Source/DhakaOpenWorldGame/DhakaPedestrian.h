@@ -45,5 +45,7 @@ private:
     float WeatherWalkMultiplier = 1.f;
     float BaseWalkSpeed = 150.f;
     float FleeRemaining = 0.f;
+    bool bWalkingToCrosswalk = false;
+    bool bCrossingRoad = false;
     UPROPERTY() TObjectPtr<class ADhakaWeatherController> WeatherController;
 };
