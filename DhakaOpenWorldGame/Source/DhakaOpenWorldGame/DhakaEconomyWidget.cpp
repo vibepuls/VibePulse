@@ -15,6 +15,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/GameInstance.h"
+#include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -32,7 +33,7 @@ void UDhakaEconomyWidget::NativeConstruct()
     Border->SetContent(Layout);Size->SetContent(Border);
     UCanvasPanelSlot* PanelSlot=Root->AddChildToCanvas(Size);
     PanelSlot->SetAnchors(FAnchors(1.f,0.f,1.f,0.f));PanelSlot->SetAlignment(FVector2D(1.f,0.f));PanelSlot->SetPosition(FVector2D(-18.f,18.f));PanelSlot->SetAutoSize(false);PanelSlot->SetSize(FVector2D(330.f,600.f));
-    AddLabel(Layout,TEXT("DHAKA MARKET & PROPERTIES"),true);
+    AddLabel(Layout,TEXT("DHAKA CITY SERVICES"),true);
     WalletLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("WalletLabel"));
     WalletLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.3f,1.f,.82f,1.f)));Layout->AddChildToVerticalBox(WalletLabel);
     MissionPicker=WidgetTree->ConstructWidget<UComboBoxString>(UComboBoxString::StaticClass(),TEXT("MissionPicker"));
@@ -63,6 +64,11 @@ void UDhakaEconomyWidget::NativeConstruct()
     AddActionButton(Actions,TEXT("Buy Uttara Garage  |  ৳650,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyUttaraGarage);
     AddActionButton(Actions,TEXT("Buy Gulshan Office  |  ৳1,500,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyGulshanOffice);
     AddActionButton(Actions,TEXT("Claim Daily Property Rent  |  P"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::ClaimRent);
+    AddLabel(Actions,TEXT("GARAGE / VEHICLE CUSTOMIZATION"),true);
+    AddActionButton(Actions,TEXT("Next Vehicle Type  |  N"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::NextVehicleType);
+    AddActionButton(Actions,TEXT("Paint Vehicle Red"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::PaintVehicleRed);
+    AddActionButton(Actions,TEXT("Paint Vehicle Blue"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::PaintVehicleBlue);
+    AddActionButton(Actions,TEXT("Paint Vehicle Green"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::PaintVehicleGreen);
     AddActionButton(Actions,TEXT("Use First Aid  |  F1"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseSelectedFirstAid);
     AddActionButton(Actions,TEXT("Use Food/Drink  |  F2"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFood);
     AddActionButton(Actions,TEXT("Use Fuel Can  |  F3"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFuel);
@@ -131,3 +137,30 @@ void UDhakaEconomyWidget::OnMissionSelected(FString SelectedItem,ESelectInfo::Ty
             if(Mission.Title.ToString()==SelectedItem){Missions->StartMission(Mission.Id);break;}
     }
 }
+
+ADhakaVehiclePawn* UDhakaEconomyWidget::FindVehicleForCustomization() const
+{
+    if(ADhakaVehiclePawn* Current=Cast<ADhakaVehiclePawn>(UGameplayStatics::GetPlayerPawn(this,0)))return Current;
+    APawn* Pawn=UGameplayStatics::GetPlayerPawn(this,0);
+    if(!Pawn||!GetWorld())return nullptr;
+    ADhakaVehiclePawn* BestVehicle=nullptr;float BestDistance=550.f;
+    for(TActorIterator<ADhakaVehiclePawn> It(GetWorld());It;++It)
+    {
+        const float Distance=FVector::Dist2D(Pawn->GetActorLocation(),It->GetActorLocation());
+        if(Distance<BestDistance){BestDistance=Distance;BestVehicle=*It;}
+    }
+    return BestVehicle;
+}
+void UDhakaEconomyWidget::NextVehicleType()
+{
+    if(ADhakaVehiclePawn* Vehicle=FindVehicleForCustomization())
+    {
+        const int32 Next=(static_cast<int32>(Vehicle->VehicleType)+1)%5;
+        Vehicle->ConfigureVehicleType(static_cast<EDhakaPlayerVehicleType>(Next));
+    }
+    else if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())
+        E->LastTransactionMessage=FText::FromString(TEXT("Go near an unoccupied vehicle to customize it."));
+}
+void UDhakaEconomyWidget::PaintVehicleRed(){if(ADhakaVehiclePawn* V=FindVehicleForCustomization())V->SetPaintColor(FLinearColor(.8f,.06f,.045f,1.f));}
+void UDhakaEconomyWidget::PaintVehicleBlue(){if(ADhakaVehiclePawn* V=FindVehicleForCustomization())V->SetPaintColor(FLinearColor(.04f,.22f,.85f,1.f));}
+void UDhakaEconomyWidget::PaintVehicleGreen(){if(ADhakaVehiclePawn* V=FindVehicleForCustomization())V->SetPaintColor(FLinearColor(.04f,.58f,.2f,1.f));}
