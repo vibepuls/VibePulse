@@ -95,20 +95,12 @@ require_tokens("Config/DefaultInput.ini", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
-    "CycleWeather", "AdvanceTimeOfDay", "SetWeather", "SetTimeOfDay", "LightningCountdown", "LightningFlashRemaining", "PlayThunder", "EmergencySirenLoop", "bEmergencyNearby"
+    "CycleWeather", "AdvanceTimeOfDay", "SetWeather", "SetTimeOfDay", "LightningCountdown", "LightningFlashRemaining", "PlayThunder"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw",
     "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent", "FuelPercent", "ConditionPercent", "HandleVehicleHit"
 ])
-
-print(f"Checked {checked} C++ header/source files and cross-file gameplay wiring.")
-if errors:
-    print(f"FAILED: {len(errors)} source sanity issue(s):")
-    for error in errors:
-        print(f" - {error}")
-    sys.exit(1)
-print("PASS: lightweight source sanity checks only. This does NOT replace UnrealHeaderTool, compilation, editor playtesting, or packaging.")
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
     "Stamina=FMath::Max", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward", "TakeDamage"
@@ -134,3 +126,16 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
     "CreateWidget<UDhakaEconomyWidget>", "SetInputMode(FInputModeGameAndUI())"
 ])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaAudioDirector.cpp", [
+    "EmergencySirenLoop", "bEmergencyNearby", "PlayThunder"
+])
+
+
+print(f"Checked {checked} C++ header/source files and cross-file gameplay wiring.")
+if errors:
+    print(f"FAILED: {len(errors)} source sanity issue(s):")
+    for error in errors:
+        print(f" - {error}")
+    sys.exit(1)
+print("PASS: lightweight source sanity checks only. This does NOT replace UnrealHeaderTool, compilation, editor playtesting, or packaging.")
