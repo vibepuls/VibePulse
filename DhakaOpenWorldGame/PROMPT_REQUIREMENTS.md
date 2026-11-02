@@ -1,112 +1,108 @@
 # Dhaka Open World — Master Prompt Acceptance Matrix
 
-This file is an engineering QA checklist for the user's complete 17-part master prompt. It is not a substitute for implementing or testing the game. A requirement is only "done" after the native UE5 implementation is built and verified in-editor/on target devices.
+This is the QA checklist for the full 17-part master prompt. A requirement is only "done" after native UE5 code compiles and is verified in-editor/on target devices. Source-only progress is not proof of a finished game.
 
-Legend: **PARTIAL** = some source exists but does not satisfy the whole requirement; **NOT DONE** = no verified complete implementation; **VERIFY** = code exists but requires UE5 compile/playtest.
+Legend: **PARTIAL** = some source exists but the full requirement is unmet; **NOT DONE** = no verified complete implementation.
 
 ## Delivery objective
 - [ ] Playable, immersive Dhaka open world inspired by GTA V.
-- [ ] Native Unreal Engine 5 C++ project compiles and packages for Windows and Android.
-- [ ] Architecture prepared for iOS and tested where possible.
-- [ ] No missing methods/dependencies/placeholders; source is connected and automated tests pass.
+- [ ] Native UE5 project compiles and packages for Windows and Android.
+- [ ] iOS project configuration and testing where supported.
+- [ ] No missing methods/dependencies/placeholders; automated tests pass.
 
 ## Part 1 — Engine and technology
-- [ ] UE5 C++ gameplay framework, Procedural Mesh / runtime mesh / Geometry Script as appropriate.
-- [ ] Chaos Vehicle Physics, Chaos Destruction, Niagara, materials/shaders.
-- [ ] Procedural animation, Control Rig, Animation Blueprints.
-- [ ] AI, Behavior Trees, Navigation Mesh.
-- [ ] World Partition and Level Streaming.
+- [ ] UE5 C++ gameplay framework and procedural mesh/runtime geometry.
+- [ ] Chaos Vehicle Physics/Destruction, Niagara, production materials/shaders.
+- [ ] Control Rig, Animation Blueprints, IK.
+- [ ] AI Behavior Trees, Navigation Mesh, World Partition/Level Streaming.
 - [ ] Gameplay Ability System where appropriate.
-- [ ] Unreal networking, dedicated-server architecture, mobile optimization.
+- [ ] Unreal networking, dedicated-server architecture and mobile optimization.
 - [ ] Blender-compatible procedural asset pipeline.
-Status: **PARTIAL** — UE5 C++ and ProceduralMeshComponent source exists; advanced engine integrations are not yet complete or validated.
+Status: **PARTIAL** — C++ and ProceduralMeshComponent source exists; advanced integrations are not complete or validated.
 
 ## Part 2 — Procedural asset framework
-- [ ] Vehicles, human characters, buildings, roads, sidewalks, vendors, furniture, trees, traffic infrastructure, environment, interiors and roadside assets.
-- [ ] Configurable parameters, realistic proportions, materials, collision, LOD/performance and save/load as appropriate.
-- [ ] Reusable modular geometry, not one static box per object.
-Status: **PARTIAL** — city, vehicle, citizen, landmark and street-life generators exist; interiors, LODs, save/load for generated assets and performance validation remain.
+- [ ] Vehicles, humans, buildings, roads, sidewalks, vendors, furniture, trees, traffic infrastructure, interiors and roadside assets.
+- [ ] Configurable parameters, realistic proportions, materials, collision, LOD/performance and save/load.
+- [ ] Reusable modular geometry and performance-aware batching.
+Status: **PARTIAL** — city, vehicle, citizen, landmark and street-life generators exist; interiors, LODs, batching, save/load of generated assets and performance validation remain.
 
 ## Part 3 — Vehicles
-- [ ] Exterior: body panels, hood, roof, trunk, bumpers, doors/handles, all windows, mirrors, lights, grille, plates, wheel arches, tires/rims, exhaust and accessories.
-- [ ] Interior: dashboard, steering, seats, console, selector, pedals, door panels, mirrors, instrument cluster, interior lights, functional doors, seatbelts and controls.
-- [ ] Physics: suspension, wheel rotation, steering, torque, transmission, braking, tire friction, mass, weight transfer, collision, damage/deformation.
-- [ ] Distinct handling profiles for sedan, hatchback, SUV, luxury, microbus, city/minibus/school bus, coach, truck, pickup, covered/delivery van, ambulance, police/fire, motorcycle, scooter, bicycle, cycle/battery rickshaw, CNG, handcart, passenger boat and river launch.
+- [ ] Complete exterior and interior: panels, doors/handles, windows, mirrors, lights, grille, plates, tires/rims, dashboard, seats, pedals, instruments and controls.
+- [ ] Functional doors/seatbelts; suspension, wheel rotation, steering, torque, transmission, braking, tire friction, mass/weight transfer, collision and damage/deformation.
+- [ ] Distinct handling profiles for sedan, hatchback, SUV, luxury, microbus, bus/coach, truck/pickup/van, emergency vehicles, motorcycles/scooters/bicycles, rickshaws, CNG, handcart and river craft.
 - [ ] Color/body/interior/performance variants and authentic Bangladesh references.
-Status: **PARTIAL** — configurable modular procedural vehicle generator and a separate force-driven vehicle pawn exist; production-grade vehicle meshes, Chaos wheel physics, functional doors/seatbelts, damage/deformation and category-specific handling are not done.
+Status: **PARTIAL** — configurable procedural vehicle and force-driven pawn exist; production meshes, Chaos wheel physics, functional doors/seatbelts, damage and category-specific handling remain.
 
 ## Part 4 — Human characters
-- [ ] Head, neck, torso, arms/hands/fingers, legs/feet, facial geometry, eyes/brows/nose/mouth/ears, hair/facial hair and body-type controls.
-- [ ] Clothing: shirts, T-shirts, trousers, jeans, panjabi, saree, salwar kameez, school/office/traditional/casual clothing, jackets, shoes/sandals and head coverings.
-- [ ] Fabric textures, wrinkles, realistic fit.
-- [ ] Skeletal/procedural animations: walk/run/stand/turn/sit/talk/eat/shop/carry/enter/exit/drive/ride/interact, blending and IK.
-Status: **PARTIAL** — procedural primitive citizen and clothing-style variants exist; full anatomy/fingers, cloth simulation, skeletal rigs, facial animation, Control Rig and IK are not done.
+- [ ] Complete anatomy, hands/fingers, facial geometry, eyes/brows/nose/mouth/ears, hair/facial hair and body types.
+- [ ] Bangladesh clothing variants, footwear/headwear, realistic fabric fit/textures.
+- [ ] Skeletal/procedural animations for walk/run/stand/turn/sit/talk/eat/shop/carry/enter/exit/drive/ride/interact, blending and IK.
+Status: **PARTIAL** — modular primitive citizens and clothing-style variants exist; skeletal rigs, full anatomy, cloth, facial animation, Control Rig and IK remain.
 
 ## Part 5 — Dhaka city
-- [ ] Road networks, intersections, flyovers, bridges, underpasses, sidewalks, buildings, markets/shops, residential/commercial areas, parks/lakes, bus terminals, railway stations and riverfronts.
-- [ ] Distinctive Old Dhaka, Gulshan, Banani, Motijheel, Dhanmondi, Mirpur, Uttara, Farmgate, Sadarghat, Jatrabari, Mohakhali and Shahbagh.
-- [ ] Configurable building/road/traffic/pedestrian/environment density.
-Status: **PARTIAL** — procedural grid/river/city blocks plus district-inspired landmarks exist; accurate geographic street networks, all listed areas and density-aware streaming are not complete.
+- [ ] Roads/intersections/flyovers/bridges/underpasses, sidewalks, markets, homes/business districts, parks/lakes, bus/rail terminals and riverfronts.
+- [ ] Distinct Old Dhaka, Gulshan, Banani, Motijheel, Dhanmondi, Mirpur, Uttara, Farmgate, Sadarghat, Jatrabari, Mohakhali and Shahbagh.
+- [ ] Configurable density and streamed districts.
+Status: **PARTIAL** — grid, river and district-inspired landmarks exist; accurate geographic roads, all listed areas and density-aware streaming remain.
 
 ## Part 6 — Roads and sidewalks
-- [ ] Asphalt/concrete/markings, cracks, potholes, patches, speed breakers, drain covers/drains, uneven surfaces, barriers/signs/lights/poles/wires, construction materials and dust.
+- [ ] Asphalt/concrete/markings, cracks, potholes, patches, speed breakers, drains/covers, uneven surfaces, barriers, signs, lights, poles/wires, construction materials/dust.
 - [ ] Broken/uneven sidewalks, crossings, ramps, curbs, drainage, furniture and roadside trees.
-Status: **PARTIAL** — base road grid and selected roadside props exist; realistic road surface damage, sidewalk geometry, markings and routing are incomplete.
+Status: **PARTIAL** — base road grid and selected props exist; realistic road damage, sidewalk geometry, detailed markings and routing remain.
 
 ## Part 7 — Vendors and crowded footpaths
-- [ ] Tea, food, fuchka, chotpoti, jhalmuri, fruit/vegetable/clothing stalls, retail shops, push/handcarts, temporary/tarpaulin stalls, umbrellas, chairs/tables, cooking equipment and shelves.
-- [ ] Natural sidewalk placement, customer/vendor interactions, crowding and pedestrian routing around obstacles.
-Status: **PARTIAL** — procedural stall/furniture props exist; complete vendor interaction/economy and obstacle-aware crowd routing are not done.
+- [ ] Tea, fuchka, chotpoti, jhalmuri, fruit/vegetable/clothing stalls, retail shops, pushcarts, tarpaulins, umbrellas, seating and cooking/shelf props.
+- [ ] Natural placement, vendor/customer interaction, crowding and obstacle-aware routing.
+Status: **PARTIAL** — procedural stalls/furniture exist; functional vendor interactions/economy and crowd routing remain.
 
 ## Part 8 — Traffic
-- [ ] Road graph, lanes, lane following, lights/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, congestion/queues, bus stops, crossings, blockages and emergency vehicles.
-- [ ] Traffic rules vary by road, time and density; Dhaka-specific irregular behavior.
-Status: **PARTIAL** — ambient vehicles now have a timed signal actor and basic following/stop logic, but lane graph, true intersection reservations, lane changing/overtaking, bus/emergency behaviors and robust collision avoidance are not done.
+- [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
+- [ ] Road/time/density-based traffic rules and Dhaka-specific behavior.
+Status: **PARTIAL** — timed signals and basic following/red-light stop logic exist; lane graph, intersection reservations, lane changes/overtaking, bus/emergency behavior and robust avoidance remain.
 
 ## Part 9 — Pedestrian AI/crowds
-- [ ] Sidewalk walking, road crossing, vehicle/obstacle/vendor avoidance, shop gathering, bus-stop waiting, boarding/exiting, shopping, vendor interactions, talking, weather/event/player reactions.
-- [ ] Personality profiles, distance-based updates and low-detail distant crowd simulation.
-Status: **PARTIAL** — simple walkers, wait states and local wanderers exist; behavior-tree/navmesh interactions, boarding, personality and scalable LOD crowd system are not done.
+- [ ] Sidewalk walking, crossing, obstacle/vendor/vehicle avoidance, gathering, bus-stop waiting, boarding/exiting, shopping, talking and reactions to weather/events/player.
+- [ ] Personality profiles, distance-based updates and low-detail distant crowds.
+Status: **PARTIAL** — simple walkers and local wanderers exist; Behavior Tree/NavMesh interactions, boarding, personality and scalable crowd LOD remain.
 
 ## Part 10 — Player gameplay
-- [ ] Third-/first-person movement, walking/running/jumping/sitting/interacting, enter/exit/drive/switch vehicles.
-- [ ] Character customization, inventory, currency, missions, shops, garages, property, save/load and progression.
-Status: **PARTIAL** — walking/driving/camera switching, basic wallet/missions and SaveGame exist; full inventory, shop/garage/property UI and robust progression are not done.
+- [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
+- [ ] Customization, inventory, currency, missions, shops, garages, property, save/load and progression.
+Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; full UI, vehicle-type enforcement, inventory/shop/garage/property gameplay and durable progression remain.
 
 ## Part 11 — Weather/environment
-- [ ] Day/night, sunrise/sunset, dynamic lighting, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
-- [ ] Weather affects visibility, vehicle handling, pedestrian behavior and visuals.
-Status: **PARTIAL** — time-of-day lighting and fog density are present and save/load now restores selected weather/time; rain particles, wet-road materials, puddles, splashes and gameplay effects are not done.
+- [ ] Day/night, sunrise/sunset, dynamic light, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
+- [ ] Weather affects visibility, handling, pedestrian behavior and visuals.
+Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected weather/time exist; Niagara rain, wet-road materials, puddles/splashes and gameplay effects remain.
 
 ## Part 12 — Sound
-- [ ] Engines/horns/rickshaw bells/motorcycles/buses/traffic/pedestrian/vendor/market/construction/rain/thunder/river/boats and indoor/outdoor ambience.
+- [ ] Engines, horns, rickshaw bells, motorcycles, buses, traffic, pedestrians/vendors/markets, construction, rain/thunder, river/boats and indoor/outdoor ambience.
 - [ ] Spatial audio, attenuation, zones and original/licensed assets.
-Status: **NOT DONE** — no verified complete soundscape/assets.
+Status: **NOT DONE** — no verified complete soundscape or audio asset set.
 
 ## Part 13 — Missions/activities
 - [ ] Taxi, rickshaw, bus, delivery, races, exploration, vehicle collection, business/property, daily/weekly challenges and social activities.
-- [ ] Objectives, rewards, progression and save-state integration.
-Status: **PARTIAL** — several basic point-to-point missions and wallet rewards exist; mission-specific vehicle requirements, timers, business/property/challenges and UI are incomplete.
+- [ ] Objectives, rewards, progression and saved state.
+Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; mission UI, vehicle requirements, persistent completion, business/property simulation and full activity set remain.
 
 ## Part 14 — Multiplayer/VibePulse
-- [ ] Sessions, profiles, friends, shared city, racing, co-op missions, sync, leaderboards, achievements, gameplay sharing, game events and community challenges.
+- [ ] Sessions, profiles, friends, shared city, racing, co-op, sync, leaderboards, achievements, gameplay sharing, events/community challenges.
 - [ ] Secure authentication, statistics, server-authoritative progression and anti-cheat.
-Status: **NOT DONE for native UE5** — existing browser-game backend APIs do not by themselves provide UE networking or a dedicated server.
+Status: **NOT DONE for native UE5** — browser backend APIs do not automatically provide UE networking or a dedicated server.
 
 ## Part 15 — Mobile/PC
-- [ ] Android/iOS touch joystick, driving/camera controls, graphics settings, performance/memory optimization, LOD/crowd/traffic scaling.
+- [ ] Android/iOS touch joystick, driving/camera controls, graphics settings, memory/performance optimization and LOD/crowd/traffic scaling.
 - [ ] Windows keyboard/mouse/controller, resolution/graphics/draw-distance settings.
-- [ ] Tested playable builds on supported devices.
-Status: **PARTIAL** — keyboard/mouse/controller mappings and basic touch driving zones exist; graphics UI, full scalability, iOS setup and packaged device QA are not done.
+- [ ] Playable builds tested on supported devices.
+Status: **PARTIAL** — keyboard/mouse/controller mappings and basic touch driving zones exist; graphics UI, full scalability, iOS setup and packaged device QA remain.
 
 ## Part 16 — Project output
-- [ ] Complete C++ classes/source/headers, procedural generators, traffic/pedestrian/mission/UI/input/multiplayer/save/audio/material/shader/build/platform config and backend interfaces.
-- [ ] Systems wired together, no empty methods/missing dependencies/placeholders.
-- [ ] Automated tests and packaging instructions.
-Status: **PARTIAL** — project source and build instructions exist; no successful UE5 compile, automated gameplay test run or packaged build has been verified.
+- [ ] Complete connected C++ source for world, traffic, pedestrian, missions, UI, input, multiplayer, save/audio/material/platform/backend systems.
+- [ ] No missing dependencies or placeholders; automated tests and packaging instructions.
+Status: **PARTIAL** — source/build instructions exist; no successful UE5 compile, automated gameplay test or packaged build has been verified.
 
 ## Part 17 — Final delivery
 - [ ] Open, compile, test and package in UE5.
 - [ ] Document third-party assets, SDKs, services and licenses.
-- [ ] Confirm realistic Dhaka experience, mobile/PC support and VibePulse integration.
-Status: **NOT DONE** — do not declare the game complete until all above checks pass in the actual UE5 toolchain.
+- [ ] Verify realistic Dhaka experience, PC/mobile support and VibePulse integration.
+Status: **NOT DONE** — only mark complete after actual UE5 build, playtest and platform package verification.
