@@ -68,5 +68,5 @@ void ADhakaOpenWorldHUD::DrawHUD()
         Canvas->DrawText(Font,FString::Printf(TEXT("LEVEL %d  |  XP %lld"),Economy->PlayerLevel,static_cast<long long>(Economy->Experience)),PanelX+18.f,PanelY+171.f,0.78f,0.78f);
         if(!Economy->LastTransactionMessage.IsEmpty())Canvas->DrawText(Font,Economy->LastTransactionMessage.ToString(),PanelX+18.f,PanelY+198.f,0.68f,0.68f);
     }
-    Canvas->DrawText(Font,TEXT("E: Interact / Vendor  |  Shift: Sprint  |  Space: Jump  |  V: Camera"),PanelX+18.f,PanelY+224.f,0.62f,0.62f);
+    Canvas->DrawText(Font,TEXT("E: Vendor / Vehicle  |  F: Buy Property  |  P: Claim Rent"),PanelX+18.f,PanelY+224.f,0.62f,0.62f);
 }
