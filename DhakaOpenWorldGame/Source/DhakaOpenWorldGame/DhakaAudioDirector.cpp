@@ -62,6 +62,13 @@ void ADhakaAudioDirector::Tick(float DeltaSeconds)
     const bool bNearRiverfront=FMath::Abs(PlayerPawn->GetActorLocation().X-135000.f)<18000.f;
     UpdateLoop(RiverAudio,RiverfrontLoop,bNearRiverfront,AmbienceVolume*0.7f);
     UpdateLoop(EngineAudio,EngineLoop,PlayerPawn->IsA(ADhakaVehiclePawn::StaticClass())&&Speed>10.f,AmbienceVolume);
+    bool bEmergencyNearby=false;
+    for(TActorIterator<ADhakaTrafficVehicle> It(GetWorld());It;++It)
+    {
+        if(It->VehicleType==EDhakaTrafficVehicleType::Emergency && FVector::DistSquared2D(PlayerLocation,It->GetActorLocation())<FMath::Square(8500.f))
+        {bEmergencyNearby=true;break;}
+    }
+    UpdateLoop(SirenAudio,EmergencySirenLoop,bEmergencyNearby,OneShotVolume);
 }
 void ADhakaAudioDirector::PlayOneShot(USoundBase* Sound,float Volume)
 {
