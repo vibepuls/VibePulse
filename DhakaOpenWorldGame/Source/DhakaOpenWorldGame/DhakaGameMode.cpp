@@ -6,6 +6,7 @@
 #include "DhakaWeatherController.h"
 #include "DhakaStreetLifeGenerator.h"
 #include "DhakaProceduralCitizen.h"
+#include "DhakaLandmarkGenerator.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/DirectionalLight.h"
@@ -26,6 +27,8 @@ void ADhakaGameMode::BeginPlay()
     Super::BeginPlay();
     UWorld* World=GetWorld(); if(!World)return;
     if(CityGeneratorClass) World->SpawnActor<ADhakaCityGenerator>(CityGeneratorClass,FVector::ZeroVector,FRotator::ZeroRotator);
+    if(ADhakaLandmarkGenerator* Landmarks=World->SpawnActorDeferred<ADhakaLandmarkGenerator>(ADhakaLandmarkGenerator::StaticClass(),FTransform::Identity))
+    { Landmarks->RandomSeed=2026; UGameplayStatics::FinishSpawningActor(Landmarks,FTransform::Identity); }
     // Additional street-life dressing is generated procedurally at runtime, with a fixed seed for repeatable layouts.
     if(ADhakaStreetLifeGenerator* StreetLife=World->SpawnActorDeferred<ADhakaStreetLifeGenerator>(ADhakaStreetLifeGenerator::StaticClass(),FTransform::Identity))
     {
