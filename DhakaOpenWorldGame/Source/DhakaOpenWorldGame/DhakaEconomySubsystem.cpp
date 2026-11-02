@@ -108,16 +108,30 @@ void UDhakaEconomySubsystem::AwardExperience(int64 Amount)
     SaveEconomy();
 }
 
-void UDhakaEconomySubsystem::CreditOwnedPropertyIncome()
+int64 UDhakaEconomySubsystem::ClaimPropertyIncome()
 {
-    // Property income is catalogued for future in-game day settlement; it is not granted repeatedly per frame/session.
+    const FDateTime Now=FDateTime::UtcNow();
+    if(LastIncomeClaimUtc.GetTicks()>0 && Now-LastIncomeClaimUtc<FDateTime::FromHours(24))return 0;
+    int64 Income=0;
+    for(const FName PropertyId:OwnedProperties)
+    {
+        const FDhakaPropertyOffer* Offer=PropertyCatalog.FindByPredicate([PropertyId](const FDhakaPropertyOffer& Candidate){return Candidate.Id==PropertyId;});
+        if(Offer)Income=FMath::Min<int64>(MAX_int64,Income+FMath::Max<int64>(0,Offer->DailyIncome));
+    }
+    if(Income<=0)return 0;
+    UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
+    if(!Missions)return 0;
+    LastIncomeClaimUtc=Now;
+    Missions->AddWallet(Income);
+    SaveEconomy();
+    return Income;
 }
 
 bool UDhakaEconomySubsystem::SaveEconomy()
 {
     UDhakaEconomySaveGame* Save=Cast<UDhakaEconomySaveGame>(UGameplayStatics::CreateSaveGameObject(UDhakaEconomySaveGame::StaticClass()));
     if(!Save)return false;
-    Save->Inventory=Inventory;Save->OwnedProperties=OwnedProperties;Save->PlayerLevel=PlayerLevel;Save->Experience=Experience;
+    Save->Inventory=Inventory;Save->OwnedProperties=OwnedProperties;Save->PlayerLevel=PlayerLevel;Save->Experience=Experience;Save->LastIncomeClaimUtc=LastIncomeClaimUtc;
     return UGameplayStatics::SaveGameToSlot(Save,DhakaEconomySlot,DhakaEconomyUser);
 }
 
@@ -125,8 +139,8 @@ bool UDhakaEconomySubsystem::LoadEconomy()
 {
     if(!UGameplayStatics::DoesSaveGameExist(DhakaEconomySlot,DhakaEconomyUser))return false;
     UDhakaEconomySaveGame* Save=Cast<UDhakaEconomySaveGame>(UGameplayStatics::LoadGameFromSlot(DhakaEconomySlot,DhakaEconomyUser));
-    if(!Save||Save->Version!=1)return false;
+    if(!Save||Save->Version!=2)return false;
     Inventory=Save->Inventory;OwnedProperties=Save->OwnedProperties;
-    PlayerLevel=FMath::Clamp(Save->PlayerLevel,1,1000);Experience=FMath::Max<int64>(0,Save->Experience);
+    PlayerLevel=FMath::Clamp(Save->PlayerLevel,1,1000);Experience=FMath::Max<int64>(0,Save->Experience);LastIncomeClaimUtc=Save->LastIncomeClaimUtc;
     return true;
 }
