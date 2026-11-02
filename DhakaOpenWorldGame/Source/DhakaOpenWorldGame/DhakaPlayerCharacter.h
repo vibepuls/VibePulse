@@ -16,6 +16,10 @@ public:
     UPROPERTY(BlueprintReadOnly, Category="Player Stats", meta=(ClampMin="0",ClampMax="100")) float Stamina=100.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class USpringArmComponent> CameraArm;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UCameraComponent> Camera;
+    UPROPERTY(Transient, BlueprintReadOnly, Category="Character Animation") TObjectPtr<class UAnimSequence> IdleAnimation;
+    UPROPERTY(Transient, BlueprintReadOnly, Category="Character Animation") TObjectPtr<class UAnimSequence> WalkAnimation;
+    UPROPERTY(Transient, BlueprintReadOnly, Category="Character Animation") TObjectPtr<class UAnimSequence> RunAnimation;
+    UPROPERTY(Transient) TObjectPtr<class UAnimSequence> ActiveLocomotionAnimation;
     UPROPERTY(BlueprintReadOnly) TObjectPtr<class ADhakaVehiclePawn> NearbyVehicle;
     void SetNearbyVehicle(class ADhakaVehiclePawn* Vehicle) { NearbyVehicle=Vehicle; }
 private:
@@ -26,6 +30,7 @@ private:
     UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralLeftLeg;
     UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralRightLeg;
     float ProceduralAnimationTime=0.f;
+    void UpdateSkeletalLocomotion(float MovementSpeed);
     void MoveForward(float Value);
     void MoveRight(float Value);
     void Turn(float Value);
