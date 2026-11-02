@@ -160,7 +160,9 @@ if widget_path.is_file():
             errors.append(f"Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp: expected one {label}, found {count}")
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
-    "CreateWidget<UDhakaEconomyWidget>", "SetInputMode(FInputModeGameAndUI())"
+    "CreateWidget<UDhakaEconomyWidget>", "SetInputMode(FInputModeGameAndUI())",
+    "QualityNames[]={TEXT(\"LOW\"),TEXT(\"MEDIUM\"),TEXT(\"HIGH\"),TEXT(\"EPIC\")}",
+    "F8 GRAPHICS: %s", "GetOverallScalabilityLevel()"
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaAudioDirector.cpp", [
