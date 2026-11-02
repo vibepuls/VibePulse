@@ -73,7 +73,7 @@ Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations
 ## Part 11 — Weather/environment
 - [ ] Day/night, sunrise/sunset, dynamic light, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
 - [ ] Weather affects visibility, handling, pedestrian behavior and visuals.
-Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected weather/time exist; a procedural instanced-rain actor is connected to Rain/Monsoon intensity in source; vehicle headlights and brake lights react to time/braking. Niagara-quality rain, wet-road materials, puddles/splashes, thunder/lightning and handling/visibility gameplay effects remain.
+Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected weather/time exist; a procedural instanced-rain actor is connected to Rain/Monsoon intensity in source; vehicle steering/braking grip and pedestrian walking pace respond to weather, and vehicle headlights/brake lights react to time/braking. Niagara-quality rain, wet-road materials, puddles/splashes, thunder/lightning and handling/visibility gameplay effects remain.
 
 ## Part 12 — Sound
 - [ ] Engines, horns, rickshaw bells, motorcycles, buses, traffic, pedestrians/vendors/markets, construction, rain/thunder, river/boats and indoor/outdoor ambience.
