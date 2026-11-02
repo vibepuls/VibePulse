@@ -21,6 +21,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimSequence.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -37,6 +38,9 @@ ADhakaPlayerCharacter::ADhakaPlayerCharacter()
     // scripts have been run in Blender and Unreal Editor.
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> PlayerSkeletalMesh(TEXT("/Game/Characters/Player/SK_DhakaHuman.SK_DhakaHuman"));
     static ConstructorHelpers::FClassFinder<UDhakaCharacterAnimInstance> PlayerAnimationBlueprint(TEXT("/Game/Characters/Player/ABP_PlayerDhaka"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> PlayerIdleAnimation(TEXT("/Game/Characters/Player/A_Dhaka_Idle.A_Dhaka_Idle"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> PlayerWalkAnimation(TEXT("/Game/Characters/Player/A_Dhaka_Walk.A_Dhaka_Walk"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> PlayerRunAnimation(TEXT("/Game/Characters/Player/A_Dhaka_Run.A_Dhaka_Run"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyCube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     UMaterialInterface* BaseMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
     auto MakeBodyPart=[this,&BodyCube,BaseMaterial](const TCHAR* Name,const FVector& Scale,const FVector& Location,const FLinearColor& Color)->UStaticMeshComponent*
@@ -60,16 +64,17 @@ ADhakaPlayerCharacter::ADhakaPlayerCharacter()
     ProceduralRightArm=MakeBodyPart(TEXT("PlayerProceduralRightArm"),FVector(.12f,.13f,.34f),FVector(0,30,0),FLinearColor(.62f,.39f,.25f));
     ProceduralLeftLeg=MakeBodyPart(TEXT("PlayerProceduralLeftLeg"),FVector(.14f,.15f,.42f),FVector(0,-14,-43),FLinearColor(.055f,.065f,.08f));
     ProceduralRightLeg=MakeBodyPart(TEXT("PlayerProceduralRightLeg"),FVector(.14f,.15f,.42f),FVector(0,14,-43),FLinearColor(.055f,.065f,.08f));
-    if(PlayerSkeletalMesh.Succeeded())
+    if(PlayerIdleAnimation.Succeeded())IdleAnimation=PlayerIdleAnimation.Object;
+    if(PlayerWalkAnimation.Succeeded())WalkAnimation=PlayerWalkAnimation.Object;
+    if(PlayerRunAnimation.Succeeded())RunAnimation=PlayerRunAnimation.Object;
+    if(PlayerSkeletalMesh.Succeeded() && IdleAnimation)
     {
         GetMesh()->SetSkeletalMesh(PlayerSkeletalMesh.Object);
         GetMesh()->SetRelativeLocation(FVector(0.f,0.f,-90.f));
         GetMesh()->SetRelativeRotation(FRotator(0.f,-90.f,0.f));
-        if(PlayerAnimationBlueprint.Succeeded())
-        {
-            GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-            GetMesh()->SetAnimInstanceClass(PlayerAnimationBlueprint.Class);
-        }
+        GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+        GetMesh()->PlayAnimation(IdleAnimation,true);
+        ActiveLocomotionAnimation=IdleAnimation;
         // Avoid drawing the block mannequin over the skinned mesh.
         if(ProceduralTorso)ProceduralTorso->SetVisibility(false,true);
         if(ProceduralHead)ProceduralHead->SetVisibility(false,true);
@@ -115,6 +120,7 @@ void ADhakaPlayerCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
     const float MovementSpeed=GetVelocity().Size2D();
+    UpdateSkeletalLocomotion(MovementSpeed);
     if(MovementSpeed>8.f)
     {
         ProceduralAnimationTime+=DeltaSeconds*FMath::Clamp(MovementSpeed/NormalWalkSpeed,0.7f,1.8f)*8.f;
@@ -144,6 +150,19 @@ void ADhakaPlayerCharacter::Tick(float DeltaSeconds)
         const FRotator Yaw(0.f,Controller->GetControlRotation().Yaw,0.f);
         AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),TouchMoveForward);
         AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y),TouchMoveRight);
+    }
+}
+void ADhakaPlayerCharacter::UpdateSkeletalLocomotion(float MovementSpeed)
+{
+    if(!GetMesh() || !IdleAnimation) return;
+    UAnimSequence* Desired=IdleAnimation;
+    if(MovementSpeed>520.f && RunAnimation) Desired=RunAnimation;
+    else if(MovementSpeed>8.f && WalkAnimation) Desired=WalkAnimation;
+    if(Desired && Desired!=ActiveLocomotionAnimation)
+    {
+        ActiveLocomotionAnimation=Desired;
+        GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+        GetMesh()->PlayAnimation(Desired,true);
     }
 }
 void ADhakaPlayerCharacter::UseFirstAidInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("first_aid"),this);}
