@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "DhakaSaveGame.h"
 #include "DhakaMissionSubsystem.h"
+#include "DhakaEconomySubsystem.h"
 #include "DhakaWeatherController.h"
 #include "DhakaAudioDirector.h"
 #include "EngineUtils.h"
@@ -89,6 +90,7 @@ ADhakaVehiclePawn::ADhakaVehiclePawn()
     MakePart(TEXT("GearSelector"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.08f,.08f,.18f),FVector(30,0,49));
     MakePart(TEXT("InteriorMirror"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.16f,.035f,.045f),FVector(63,0,91));
     MakePart(TEXT("InteriorLight"),Cube.Succeeded()?Cube.Object:nullptr,FVector(.12f,.12f,.035f),FVector(-12,0,96));
+    for(UStaticMeshComponent* Part:VisualParts){if(Part){DefaultVisualScales.Add(Part->GetRelativeScale3D());DefaultVisualLocations.Add(Part->GetRelativeLocation());}}
     SpringArm=CreateDefaultSubobject<USpringArmComponent>(TEXT("ChaseArm")); SpringArm->SetupAttachment(PhysicsBody); SpringArm->TargetArmLength=650.f; SpringArm->SetRelativeLocation(FVector(-20,0,190)); SpringArm->bEnableCameraLag=true;
     Camera=CreateDefaultSubobject<UCameraComponent>(TEXT("ChaseCamera")); Camera->SetupAttachment(SpringArm);
     AutoPossessPlayer=EAutoReceiveInput::Player0;
@@ -105,6 +107,7 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaVehiclePawn::CycleCamera);
     Input->BindAction("Horn",IE_Pressed,this,&ADhakaVehiclePawn::PlayHornInput);
     Input->BindAction("RickshawBell",IE_Pressed,this,&ADhakaVehiclePawn::PlayRickshawBellInput);
+    Input->BindAction("CycleVehicleType",IE_Pressed,this,&ADhakaVehiclePawn::CycleVehicleType);
     Input->BindAxis("MissionSlot",this,&ADhakaVehiclePawn::SelectMissionSlot);
     // Mobile: left-side touch steers; upper-right accelerates; lower-right brakes.
     Input->BindTouch(IE_Pressed,this,&ADhakaVehiclePawn::HandleTouchPressed);
@@ -125,6 +128,47 @@ void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputBrake(float V){BrakeInput=FMath::Clamp(V,0.f,1.f);}
 void ADhakaVehiclePawn::SetPaintColor(FLinearColor NewColor){PaintColor=NewColor;if(BodyMaterial)BodyMaterial->SetVectorParameterValue(TEXT("BaseColor"),PaintColor);}
+void ADhakaVehiclePawn::CycleVehicleType()
+{
+    const int32 Next=(static_cast<int32>(VehicleType)+1)%5;
+    ConfigureVehicleType(static_cast<EDhakaPlayerVehicleType>(Next));
+}
+void ADhakaVehiclePawn::ConfigureVehicleType(EDhakaPlayerVehicleType NewType)
+{
+    VehicleType=NewType;
+    FVector Factor(1.f,1.f,1.f);
+    float Mass=1250.f,NewMaxSpeed=4200.f,NewAcceleration=2400.f,NewBrake=3600.f,NewSteering=68.f;
+    FLinearColor Color(.72f,.08f,.07f,1.f);
+    const TCHAR* Label=TEXT("Sedan");
+    switch(VehicleType)
+    {
+        case EDhakaPlayerVehicleType::CNG: Factor=FVector(.72f,.76f,.88f);Mass=580.f;NewMaxSpeed=2300.f;NewAcceleration=1700.f;NewBrake=3000.f;NewSteering=88.f;Color=FLinearColor(.05f,.55f,.28f);Label=TEXT("CNG");break;
+        case EDhakaPlayerVehicleType::Rickshaw: Factor=FVector(.58f,.72f,.72f);Mass=190.f;NewMaxSpeed=1050.f;NewAcceleration=850.f;NewBrake=1700.f;NewSteering=105.f;Color=FLinearColor(.88f,.22f,.08f);Label=TEXT("Rickshaw");break;
+        case EDhakaPlayerVehicleType::Bus: Factor=FVector(1.62f,1.28f,1.45f);Mass=7600.f;NewMaxSpeed=2200.f;NewAcceleration=950.f;NewBrake=4200.f;NewSteering=34.f;Color=FLinearColor(.83f,.56f,.08f);Label=TEXT("Bus");break;
+        case EDhakaPlayerVehicleType::Motorcycle: Factor=FVector(.42f,.42f,.58f);Mass=210.f;NewMaxSpeed=5200.f;NewAcceleration=2850.f;NewBrake=3200.f;NewSteering=92.f;Color=FLinearColor(.08f,.09f,.1f);Label=TEXT("Motorcycle");break;
+        default: break;
+    }
+    if(PhysicsBody){PhysicsBody->SetBoxExtent(FVector(220.f*Factor.X,100.f*Factor.Y,45.f*Factor.Z));PhysicsBody->SetMassOverrideInKg(NAME_None,Mass,true);}
+    if(Body)Body->SetRelativeScale3D(FVector(4.4f*Factor.X,2.f*Factor.Y,.9f*Factor.Z));
+    for(int32 I=0;I<VisualParts.Num();++I)
+    {
+        UStaticMeshComponent* Part=VisualParts[I];if(!Part)continue;
+        if(DefaultVisualScales.IsValidIndex(I))Part->SetRelativeScale3D(DefaultVisualScales[I]*Factor);
+        if(DefaultVisualLocations.IsValidIndex(I))Part->SetRelativeLocation(DefaultVisualLocations[I]*Factor);
+        const FString Name=Part->GetName();
+        bool bVisible=true;
+        if(VehicleType==EDhakaPlayerVehicleType::Motorcycle)
+        {
+            bVisible=!(Name.Contains(TEXT("Roof"))||Name.Contains(TEXT("Pillar"))||Name.Contains(TEXT("Window"))||Name.Contains(TEXT("Door"))||Name.Contains(TEXT("Trunk"))||Name.Contains(TEXT("Hood"))||Name.Contains(TEXT("Bumper"))||Name.Contains(TEXT("Grille"))||Name.Contains(TEXT("Seat"))||Name.Contains(TEXT("Dashboard"))||Name.Contains(TEXT("Instrument"))||Name.Contains(TEXT("Console"))||Name.Contains(TEXT("Gear"))||Name.Contains(TEXT("Interior"))||Name.Contains(TEXT("Mirror"))||Name.Contains(TEXT("RightFrontWheel"))||Name.Contains(TEXT("RightRearWheel"))||Name.Contains(TEXT("RightFrontWheelRim"))||Name.Contains(TEXT("RightRearWheelRim")));
+        }
+        Part->SetVisibility(bVisible,true);
+    }
+    MaxSpeed=NewMaxSpeed;Acceleration=NewAcceleration;BrakeStrength=NewBrake;SteeringRate=NewSteering;
+    SetPaintColor(Color);
+    if(SpringArm)SpringArm->TargetArmLength=VehicleType==EDhakaPlayerVehicleType::Bus?820.f:(VehicleType==EDhakaPlayerVehicleType::Motorcycle?480.f:620.f);
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* Economy=GI->GetSubsystem<UDhakaEconomySubsystem>())
+        Economy->LastTransactionMessage=FText::FromString(FString::Printf(TEXT("Vehicle switched: %s"),Label));
+}
 void ADhakaVehiclePawn::Tick(float Dt)
 {
     Super::Tick(Dt); if(!PhysicsBody || Dt<=0.f) return;
@@ -205,6 +249,7 @@ void ADhakaVehiclePawn::LoadProgress()
     UDhakaSaveGame* Save=Cast<UDhakaSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("DhakaOpenWorldSave"),0));
     if(!Save)return;
     SetActorLocation(Save->PlayerLocation,false,nullptr,ETeleportType::TeleportPhysics);SetActorRotation(Save->PlayerRotation);TravelDistanceKm=FMath::Max(0.f,Save->TravelDistanceKm);
+    ConfigureVehicleType(static_cast<EDhakaPlayerVehicleType>(FMath::Clamp(Save->PlayerVehicleType,0,4)));
     if(PhysicsBody)PhysicsBody->SetPhysicsLinearVelocity(FVector::ZeroVector);
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())
     {
