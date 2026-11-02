@@ -1,5 +1,6 @@
 #include "DhakaTrafficVehicle.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/SceneComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
@@ -11,7 +12,8 @@
 ADhakaTrafficVehicle::ADhakaTrafficVehicle()
 {
     PrimaryActorTick.bCanEverTick=true;
-    TrafficRoot=CreateDefaultSubobject<USceneComponent>(TEXT("TrafficRoot")); SetRootComponent(TrafficRoot);
+    TrafficRoot=CreateDefaultSubobject<UBoxComponent>(TEXT("TrafficRoot")); SetRootComponent(TrafficRoot);
+    TrafficRoot->SetBoxExtent(FVector(205.f,100.f,55.f)); TrafficRoot->SetCollisionProfileName(TEXT("BlockAll")); TrafficRoot->SetSimulatePhysics(false);
     Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrafficBody")); Body->SetupAttachment(TrafficRoot);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if(Cube.Succeeded()) Body->SetStaticMesh(Cube.Object);
@@ -44,6 +46,7 @@ void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType
         default: break;
     }
     Body->SetRelativeScale3D(Dimensions);
+    TrafficRoot->SetBoxExtent(FVector(Dimensions.X*50.f,Dimensions.Y*50.f,Dimensions.Z*50.f));
     if(UMaterialInterface* BaseMaterial=Body->GetMaterial(0))
     {
         UMaterialInstanceDynamic* DynamicMaterial=UMaterialInstanceDynamic::Create(BaseMaterial,this);
