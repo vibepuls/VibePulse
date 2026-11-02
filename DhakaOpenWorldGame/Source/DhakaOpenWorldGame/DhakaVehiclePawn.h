@@ -1,10 +1,10 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "DhakaVehiclePawn.generated.h"
 
 UENUM(BlueprintType)
 enum class EDhakaPlayerVehicleType : uint8 { Sedan, CNG, Rickshaw, Bus, Motorcycle };
-#include "DhakaVehiclePawn.generated.h"
 
 UCLASS()
 class DHAKAOPENWORLDGAME_API ADhakaVehiclePawn : public APawn
