@@ -60,6 +60,15 @@ bool UDhakaMissionSubsystem::StartMission(FName MissionId)
     return false;
 }
 
+bool UDhakaMissionSubsystem::StartMissionBySlot(int32 Slot)
+{
+    if(Slot==10)Slot=0;
+    const int32 Index=Slot==0?9:Slot-1;
+    if(!Missions.IsValidIndex(Index)||Missions[Index].bCompleted)return false;
+    if(Missions[Index].bFailed)Missions[Index].bFailed=false;
+    return StartMission(Missions[Index].Id);
+}
+
 void UDhakaMissionSubsystem::StartMissionMonitor()
 {
     if (UWorld* World=GetWorld())
