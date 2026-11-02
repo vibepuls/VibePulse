@@ -11,7 +11,7 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 - Procedural street-life and citizen generators, clothing-style variants, and lightweight wandering/walk-cycle motion.
 - Timed traffic signals, basic traffic following/red-light stopping, randomized grid turns, lane offsets and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components and flashing emergency lights.
 - Platform-aware crowd/traffic caps reduce spawned agents on mobile compared with PC.
-- Blueprint-callable economy subsystem for shop purchase/sale, inventory records, property ownership/income and XP progression; interactive tea/fuchka/jhalmuri/fruit/general-shop stalls can be used with **E** when standing nearby and show transaction feedback in the HUD.
+- Blueprint-callable economy subsystem for shop purchase/sale, inventory records, property ownership/income and XP progression; interactive tea/fuchka/jhalmuri/fruit/general-shop stalls can be used with **E** when standing nearby and show transaction feedback in the HUD; **F** near a property sign buys that investment and **P** claims eligible 24-hour property income.
 - Procedural instanced rain and puddle instances shown during rain/monsoon; vehicle grip and pedestrian pace respond to weather; pedestrians use swept collision checks and distance-based tick-rate/visual LOD.
 - Native audio director with assignable city-traffic, market, rain, riverfront and engine loops, plus horn/rickshaw-bell/vendor one-shot events. No audio assets are bundled; assign original/licensed files in Unreal Editor.
 - GameMode spawns city, landmarks, street-life, signals, traffic, pedestrians, weather and audio routing. Basic touch-driving zones and PC controls are present.
