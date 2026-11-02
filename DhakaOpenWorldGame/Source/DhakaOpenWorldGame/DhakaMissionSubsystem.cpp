@@ -49,8 +49,6 @@ bool UDhakaMissionSubsystem::StartMission(FName MissionId)
     {
         if (Missions[I].Id==MissionId && !Missions[I].bCompleted && !Missions[I].bFailed)
         {
-            if (ActiveMissionIndex != INDEX_NONE && ActiveMissionIndex != I && Missions.IsValidIndex(ActiveMissionIndex))
-                Missions[ActiveMissionIndex].bFailed=true;
             ActiveMissionIndex=I;
             ActiveMissionTimeRemaining=Missions[I].TimeLimitSeconds;
             LastMissionResult.Reset();
@@ -87,6 +85,8 @@ void UDhakaMissionSubsystem::UpdateActiveMission()
     if (Mission.TimeLimitSeconds>0.f)
     {
         ActiveMissionTimeRemaining=FMath::Max(0.f,ActiveMissionTimeRemaining-0.25f);
+        MissionAutosaveTimer+=0.25f;
+        if(MissionAutosaveTimer>=10.f){MissionAutosaveTimer=0.f;SaveProgress();}
         if (ActiveMissionTimeRemaining<=0.f) { FailActiveMission(); return; }
     }
     APawn* Player=UGameplayStatics::GetPlayerPawn(this,0);
@@ -153,6 +153,8 @@ bool UDhakaMissionSubsystem::SaveProgress()
     Save->Wallet=Wallet;
     Save->Missions=Missions;
     Save->ActiveMissionId=Missions.IsValidIndex(ActiveMissionIndex)?Missions[ActiveMissionIndex].Id:NAME_None;
+    Save->ActiveMissionTimeRemaining=ActiveMissionTimeRemaining;
+    Save->Version=2;
     return UGameplayStatics::SaveGameToSlot(Save,DhakaProgressSlot,DhakaProgressUserIndex);
 }
 
@@ -160,7 +162,7 @@ bool UDhakaMissionSubsystem::LoadProgress()
 {
     if (!UGameplayStatics::DoesSaveGameExist(DhakaProgressSlot,DhakaProgressUserIndex)) return false;
     UDhakaProgressSaveGame* Save=Cast<UDhakaProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(DhakaProgressSlot,DhakaProgressUserIndex));
-    if (!Save || Save->Version!=1) return false;
+    if (!Save || (Save->Version<1 || Save->Version>2)) return false;
     Wallet=FMath::Max<int64>(0,Save->Wallet);
     for (FDhakaMission& Mission:Missions)
     {
@@ -176,7 +178,8 @@ bool UDhakaMissionSubsystem::LoadProgress()
     }
     if (Missions.IsValidIndex(ActiveMissionIndex))
     {
-        ActiveMissionTimeRemaining=Missions[ActiveMissionIndex].TimeLimitSeconds;
+        ActiveMissionTimeRemaining=Save->Version>=2?FMath::Clamp(Save->ActiveMissionTimeRemaining,0.f,Missions[ActiveMissionIndex].TimeLimitSeconds>0.f?Missions[ActiveMissionIndex].TimeLimitSeconds:Save->ActiveMissionTimeRemaining):Missions[ActiveMissionIndex].TimeLimitSeconds;
+        if(Missions[ActiveMissionIndex].TimeLimitSeconds>0.f&&ActiveMissionTimeRemaining<=0.f)ActiveMissionTimeRemaining=Missions[ActiveMissionIndex].TimeLimitSeconds;
         StartMissionMonitor();
     }
     return true;
