@@ -13,6 +13,7 @@
 #include "DhakaTrafficSignal.h"
 #include "DhakaAudioDirector.h"
 #include "Engine/World.h"
+#include "HAL/PlatformProperties.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/SkyLight.h"
@@ -61,8 +62,13 @@ void ADhakaGameMode::BeginPlay()
             Signal->MainRoadDirection=FVector(1,0,0);UGameplayStatics::FinishSpawningActor(Signal,SignalTransform);
         }
     }
+    // Scale the simulated population down on mobile to protect frame time and memory.
+    const bool bMobileTarget=FPlatformProperties::SupportsMobileRendering();
+    const int32 TrafficCount=bMobileTarget?18:42;
+    const int32 CitizenCount=bMobileTarget?8:18;
+    const int32 PedestrianCount=bMobileTarget?24:64;
     // Bounded ambient traffic pool; directions follow the procedural street grid.
-    for(int32 I=0;I<42;++I){
+    for(int32 I=0;I<TrafficCount;++I){
         const bool bHorizontal=(I%2)==0;
         const float Road=-160000.f+FMath::RoundToFloat(FMath::FRandRange(0.f,18.f))*17777.f;
         const float Along=FMath::FRandRange(-145000.f,145000.f);
