@@ -130,6 +130,26 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
       tail.position.set(side*bodyWidth*.37,body.position.y-bodyHeight*.12,bodyLength*.50); group.add(tail);
     }
   }
+  // Front/rear details for public transport, CNGs and commercial vehicles too.
+  if (!['car','hatchback','suv','luxury','van','deliveryVan','ambulance','police'].includes(type) && !['motorcycle','scooter','bicycle','rickshaw','batteryRickshaw','handcart','boat','riverLaunch'].includes(type)) {
+    const grilleMat=new THREE.MeshStandardMaterial({color:0x20252a,metalness:.45,roughness:.4});
+    const lampFront=new THREE.MeshStandardMaterial({color:0xffedbd,emissive:0x665022,roughness:.25});
+    const lampRear=new THREE.MeshStandardMaterial({color:0xb51f20,emissive:0x380000,roughness:.35});
+    const plateMat=new THREE.MeshStandardMaterial({color:0xf0eee5,roughness:.7});
+    const frontZ=-bodyLength*.505,rearZ=bodyLength*.505;
+    const grille=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.34,.22,.045),grilleMat);
+    grille.position.set(0,body.position.y-bodyHeight*.13,frontZ);group.add(grille);
+    for(const side of [-1,1]){
+      const head=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.17,.19,.055),lampFront);
+      head.position.set(side*bodyWidth*.34,body.position.y-bodyHeight*.10,frontZ);group.add(head);
+      const tail=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.15,.21,.055),lampRear);
+      tail.position.set(side*bodyWidth*.35,body.position.y-bodyHeight*.10,rearZ);group.add(tail);
+    }
+    for(const z of [frontZ,rearZ]){
+      const plate=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.27,.105,.035),plateMat);
+      plate.position.set(0,body.position.y-bodyHeight*.30,z);group.add(plate);
+    }
+  }
   if (player) {
     const bumper = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth * 0.9, 0.14, 0.2), new THREE.MeshStandardMaterial({ color: 0xe7e9e8, metalness: 0.55 }));
     bumper.position.set(0, 0.52, -bodyLength / 2 - 0.05); group.add(bumper);
@@ -398,15 +418,24 @@ export default function DhakaDrive() {
         const pothole=new THREE.Mesh(new THREE.CircleGeometry(.45+Math.random()*.8,9),new THREE.MeshStandardMaterial({color:0x25292b,roughness:1}));
         pothole.rotation.x=-Math.PI/2;pothole.scale.set(1.3,.72,1);pothole.position.set((Math.floor(Math.random()*25)-12)*block+.3,.035,(Math.floor(Math.random()*25)-12)*block+.6);scene.add(pothole);
       }
-      const trafficColors=[0xf0c53e,0xe9e6df,0xc84a3b,0x286e9d,0x242b33,0x23825b,0xc4c9c9];
-      for(let i=0;i<140;i++){
-        const horizontal=Math.random()<.5, lane=(Math.random()<.5?-1:1)*4.7, road= Math.round((Math.random()*28-14))*block;
+      const trafficColors=[0xf0c53e,0xe9e6df,0xc84a3b,0x286e9d,0x242b33,0x23825b,0xc4c9c9,0x8b4b32,0xeeeeee,0x1f2937,0xd5a64a,0x526c7a,0x9c2f35,0x6b7280,0x34765b];
+      // Dense two-way traffic on every city road. Keep cars in proper lanes and
+      // recycle them at the map edge so roads stay populated during long drives.
+      for(let i=0;i<360;i++){
+        const horizontal=Math.random()<.5;
+        const road=Math.round((Math.random()*30-15))*block;
+        const dir=Math.random()<.5?-1:1;
+        const laneOffset=dir>0?-4.6:4.6;
+        const lane=road+laneOffset;
         const typeRoll=Math.random();
-        const type=typeRoll<0.08?'bus':typeRoll<0.15?'truck':typeRoll<0.30?'cng':typeRoll<0.47?'rickshaw':typeRoll<0.62?'motorcycle':'car';
+        const type=typeRoll<0.075?'bus':typeRoll<0.13?'truck':typeRoll<0.18?'van':typeRoll<0.23?'suv':typeRoll<0.29?'cng':typeRoll<0.39?'rickshaw':typeRoll<0.51?'motorcycle':typeRoll<0.56?'pickup':'car';
         const v=makeVehicle(THREE,pick(trafficColors),type);
-        v.position.set(horizontal?(Math.random()*3000-1500):road,0,horizontal?road:(Math.random()*3000-1500));
-        v.rotation.y=horizontal?(Math.random()<.5?0:Math.PI):(Math.random()<.5?Math.PI/2:-Math.PI/2);
-        scene.add(v);const dir=Math.random()<.5?-1:1;const desiredSpeed=3+Math.random()*9;world.cars.push({mesh:v,horizontal,axis:horizontal?'x':'z',road,lane:road,speed:3+Math.random()*9,desiredSpeed,baseDesiredSpeed:desiredSpeed,dir,type});
+        const along=Math.random()*3300-1650;
+        v.position.set(horizontal?along:lane,0,horizontal?lane:along);
+        v.rotation.y=horizontal?(dir>0?-Math.PI/2:Math.PI/2):(dir>0?Math.PI:0);
+        scene.add(v);
+        const desiredSpeed=type==='bus'||type==='truck'?5+Math.random()*4:type==='motorcycle'?7+Math.random()*8:5+Math.random()*8;
+        world.cars.push({mesh:v,horizontal,axis:horizontal?'x':'z',road,lane,speed:desiredSpeed,desiredSpeed,baseDesiredSpeed:desiredSpeed,dir,type,laneChangeRemaining:Math.random()*2});
       }
       for(let i=0;i<90;i++){
         const p=makePedestrian(THREE);p.position.set((Math.random()*3000-1500),0,(Math.random()*3000-1500));scene.add(p);
