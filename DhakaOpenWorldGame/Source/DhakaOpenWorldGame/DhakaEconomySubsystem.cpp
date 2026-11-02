@@ -202,7 +202,22 @@ bool UDhakaEconomySubsystem::LoadEconomy()
     if(!UGameplayStatics::DoesSaveGameExist(DhakaEconomySlot,DhakaEconomyUser))return false;
     UDhakaEconomySaveGame* Save=Cast<UDhakaEconomySaveGame>(UGameplayStatics::LoadGameFromSlot(DhakaEconomySlot,DhakaEconomyUser));
     if(!Save||Save->Version!=2)return false;
-    Inventory=Save->Inventory;OwnedProperties=Save->OwnedProperties;
-    PlayerLevel=FMath::Clamp(Save->PlayerLevel,1,1000);Experience=FMath::Max<int64>(0,Save->Experience);LastIncomeClaimUtc=Save->LastIncomeClaimUtc;
+    Inventory.Reset();
+    for(const TPair<FName,int32>& SavedEntry:Save->Inventory)
+    {
+        if(SavedEntry.Key.IsNone()||SavedEntry.Value<=0)continue;
+        const bool bKnownItem=ShopCatalog.ContainsByPredicate([&SavedEntry](const FDhakaShopItem& Item){return Item.Id==SavedEntry.Key;});
+        if(!bKnownItem)continue;
+        Inventory.Add(SavedEntry.Key,FMath::Clamp(SavedEntry.Value,0,999));
+    }
+    OwnedProperties.Reset();
+    for(const FName SavedProperty:Save->OwnedProperties)
+    {
+        const bool bKnownProperty=PropertyCatalog.ContainsByPredicate([SavedProperty](const FDhakaPropertyOffer& Offer){return Offer.Id==SavedProperty;});
+        if(bKnownProperty)OwnedProperties.AddUnique(SavedProperty);
+    }
+    PlayerLevel=FMath::Clamp(Save->PlayerLevel,1,1000);
+    Experience=FMath::Max<int64>(0,Save->Experience);
+    LastIncomeClaimUtc=Save->LastIncomeClaimUtc;
     return true;
 }
