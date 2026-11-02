@@ -40,6 +40,8 @@ private:
     void SaveProgress();
     void LoadProgress();
     void CycleCamera();
+    void PlayHornInput();
+    void PlayRickshawBellInput();
     void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
     void HandleTouchMoved(ETouchIndex::Type FingerIndex, FVector Location);
     void HandleTouchReleased(ETouchIndex::Type FingerIndex, FVector Location);
