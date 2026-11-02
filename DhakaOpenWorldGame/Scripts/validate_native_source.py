@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Lightweight source sanity checks for DhakaOpenWorldGame (not an Unreal build)."""
 from pathlib import Path
+import ast
 import re
 import sys
 
@@ -192,6 +193,29 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaAudioDirector.cpp", [
     "EmergencySirenLoop", "bEmergencyNearby", "PlayThunder"
 ])
+
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaCharacterAnimInstance.h", [
+    "UDhakaCharacterAnimInstance", "GroundSpeed", "Direction", "VerticalSpeed", "bIsMoving", "bIsInAir", "bIsSprinting"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaCharacterAnimInstance.cpp", [
+    "NativeInitializeAnimation", "NativeUpdateAnimation", "UKismetAnimationLibrary::CalculateDirection", "Move->IsFalling()"
+])
+require_tokens("Scripts/build_character_rig_blender.py", [
+    "SK_DhakaHuman", "A_Dhaka_Idle", "A_Dhaka_Walk", "A_Dhaka_Run", "ik_foot_l", "ik_foot_r", "ik_hand_l", "ik_hand_r", "vertex_groups", "bake_anim"
+])
+require_tokens("Scripts/import_character_rig_unreal.py", [
+    "SK_DhakaHuman", "ABP_PlayerDhaka", "IK_DhakaHuman", "CR_DhakaHuman",
+    "apply_auto_generated_retarget_definition", "apply_auto_fbik", "create_control_rig_from_skeletal_mesh_or_skeleton",
+    "GroundSpeed", "RigControlType.EULER_TRANSFORM"
+])
+
+# Parse Python automation scripts without importing Blender/Unreal modules.
+for script in sorted((ROOT / "Scripts").glob("*.py")):
+    try:
+        ast.parse(script.read_text(encoding="utf-8"), filename=str(script.relative_to(ROOT)))
+    except SyntaxError as exc:
+        errors.append(f"{script.relative_to(ROOT)}: Python syntax error at line {exc.lineno}: {exc.msg}")
 
 
 print(f"Checked {checked} C++ header/source files and cross-file gameplay wiring.")
