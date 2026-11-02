@@ -13,6 +13,7 @@
 #include "DhakaAudioDirector.h"
 #include "EngineUtils.h"
 #include "DhakaPlayerCharacter.h"
+#include "DhakaPedestrian.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Controller.h"
 #include "Engine/GameInstance.h"
@@ -131,6 +132,8 @@ void ADhakaVehiclePawn::PlayRickshawBellInput(){for(TActorIterator<ADhakaAudioDi
 void ADhakaVehiclePawn::HandleVehicleHit(UPrimitiveComponent* HitComponent,AActor* OtherActor,UPrimitiveComponent* OtherComp,FVector NormalImpulse,const FHitResult& Hit)
 {
     const float Impact=NormalImpulse.Size();
+    if(ADhakaPedestrian* Pedestrian=Cast<ADhakaPedestrian>(OtherActor))
+        Pedestrian->ReactToVehicleImpact(GetActorForwardVector(),FMath::Clamp(Impact/45000.f,0.15f,1.f));
     if(Impact<18000.f)return;
     if(ADhakaPlayerCharacter* Character=Cast<ADhakaPlayerCharacter>(OtherActor))
         UGameplayStatics::ApplyDamage(Character,FMath::Clamp((Impact-12000.f)/1600.f,5.f,40.f),GetController(),this,UDamageType::StaticClass());
