@@ -231,9 +231,16 @@ void ADhakaVehiclePawn::Tick(float Dt)
     if(BrakeInput>0.f) PhysicsBody->AddForce(-Velocity.GetSafeNormal()*BrakeStrength*EffectiveGrip*ConditionFactor*PhysicsBody->GetMass()*BrakeInput);
     else if(FMath::IsNearlyZero(ThrottleInput)) PhysicsBody->AddForce(-ForwardVelocity*PhysicsBody->GetMass()*.22f);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
-    PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*EffectiveGrip*ConditionFactor*PhysicsBody->GetMass()*4.f));
-    // Reduce excessive lateral slide and high-speed steering response for heavier, wet-road handling.
-    if(FMath::Abs(Speed)>MaxSpeed*.72f) PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,-PhysicsBody->GetPhysicsAngularVelocityInRadians().Z*PhysicsBody->GetMass()*0.35f));
+    // D is positive and A is negative in the input map; with +X as the vehicle nose,
+    // positive yaw turns left, so invert the steering torque. Reverse driving naturally
+    // reverses the steering response, as it does in a real car.
+    const float SteeringDirection=FMath::IsNearlyZero(Speed)?1.f:FMath::Sign(Speed);
+    PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,-SteeringInput*SteeringRate*SpeedFactor*EffectiveGrip*ConditionFactor*PhysicsBody->GetMass()*4.f*SteeringDirection));
+    // Keep the chassis upright and damp yaw oscillation without locking the suspension-like movement.
+    const FVector AngularVelocity=PhysicsBody->GetPhysicsAngularVelocityInRadians();
+    PhysicsBody->AddTorqueInRadians(FVector(-AngularVelocity.X,-AngularVelocity.Y,0.f)*PhysicsBody->GetMass()*0.42f);
+    // Reduce excessive high-speed yaw response for heavier, wet-road handling.
+    if(FMath::Abs(Speed)>MaxSpeed*.72f) PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,-AngularVelocity.Z*PhysicsBody->GetMass()*0.35f));
     const float ConditionSpeedLimit=FMath::Lerp(.58f,1.f,ConditionPercent/100.f)*MaxSpeed;
     if(PhysicsBody->GetPhysicsLinearVelocity().Size()>ConditionSpeedLimit) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*ConditionSpeedLimit);
     const float WheelSpin=Speed*Dt/32.f;

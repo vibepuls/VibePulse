@@ -22,7 +22,43 @@ ADhakaTrafficVehicle::ADhakaTrafficVehicle()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if(Cube.Succeeded()) Body->SetStaticMesh(Cube.Object);
     Body->SetRelativeScale3D(FVector(4.1f,2.0f,1.1f)); Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    if(UMaterialInterface* BaseMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"))) Body->SetMaterial(0,BaseMaterial);
+    UMaterialInterface* TrafficBaseMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    if(TrafficBaseMaterial) Body->SetMaterial(0,TrafficBaseMaterial);
+    // Add readable vehicle silhouettes and front/rear details instead of a single box.
+    // All detail parts are non-colliding; the root remains the traffic collision proxy.
+    auto MakeDetail=[this,&Cube,TrafficBaseMaterial](const TCHAR* Name,FVector Location,FVector Scale,FLinearColor Tint,bool bGlass=false)->UStaticMeshComponent*
+    {
+        UStaticMeshComponent* Part=CreateDefaultSubobject<UStaticMeshComponent>(Name);
+        if(Cube.Succeeded()) Part->SetStaticMesh(Cube.Object);
+        Part->SetupAttachment(TrafficRoot);
+        Part->SetRelativeLocation(Location);
+        Part->SetRelativeScale3D(Scale);
+        Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        if(TrafficBaseMaterial)
+        {
+            UMaterialInstanceDynamic* Mat=UMaterialInstanceDynamic::Create(TrafficBaseMaterial,this);
+            if(Mat)
+            {
+                Mat->SetVectorParameterValue(TEXT("BaseColor"),Tint);
+                Mat->SetVectorParameterValue(TEXT("Color"),Tint);
+                if(bGlass) Mat->SetScalarParameterValue(TEXT("Roughness"),.16f);
+                Part->SetMaterial(0,Mat);
+            }
+        }
+        return Part;
+    };
+    MakeDetail(TEXT("TrafficCabinRoof"),FVector(-12.f,0.f,61.f),FVector(1.95f,1.48f,.15f),FLinearColor(.12f,.15f,.17f));
+    MakeDetail(TEXT("TrafficFrontGlass"),FVector(79.f,0.f,53.f),FVector(.055f,1.40f,.43f),FLinearColor(.10f,.28f,.34f),true);
+    MakeDetail(TEXT("TrafficRearGlass"),FVector(-82.f,0.f,53.f),FVector(.055f,1.34f,.38f),FLinearColor(.10f,.25f,.30f),true);
+    MakeDetail(TEXT("TrafficLeftSideGlass"),FVector(-8.f,-73.f,54.f),FVector(1.30f,.035f,.34f),FLinearColor(.10f,.27f,.33f),true);
+    MakeDetail(TEXT("TrafficRightSideGlass"),FVector(-8.f,73.f,54.f),FVector(1.30f,.035f,.34f),FLinearColor(.10f,.27f,.33f),true);
+    MakeDetail(TEXT("TrafficFrontBumper"),FVector(202.f,0.f,-18.f),FVector(.12f,1.92f,.13f),FLinearColor(.22f,.23f,.24f));
+    MakeDetail(TEXT("TrafficRearBumper"),FVector(-202.f,0.f,-18.f),FVector(.12f,1.92f,.13f),FLinearColor(.22f,.23f,.24f));
+    MakeDetail(TEXT("TrafficFrontGrille"),FVector(207.f,0.f,0.f),FVector(.035f,.48f,.20f),FLinearColor(.035f,.04f,.045f));
+    MakeDetail(TEXT("TrafficHeadlightLeft"),FVector(205.f,-65.f,9.f),FVector(.055f,.22f,.10f),FLinearColor(1.f,.90f,.62f));
+    MakeDetail(TEXT("TrafficHeadlightRight"),FVector(205.f,65.f,9.f),FVector(.055f,.22f,.10f),FLinearColor(1.f,.90f,.62f));
+    MakeDetail(TEXT("TrafficTailLightLeft"),FVector(-205.f,-65.f,8.f),FVector(.055f,.20f,.13f),FLinearColor(.72f,.015f,.01f));
+    MakeDetail(TEXT("TrafficTailLightRight"),FVector(-205.f,65.f,8.f),FVector(.055f,.20f,.13f),FLinearColor(.72f,.015f,.01f));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     auto MakeWheel=[this](const TCHAR* Name)->UStaticMeshComponent* {
         UStaticMeshComponent* Wheel=CreateDefaultSubobject<UStaticMeshComponent>(Name);
@@ -56,6 +92,41 @@ void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType
     }
     Body->SetRelativeScale3D(Dimensions);
     TrafficRoot->SetBoxExtent(FVector(Dimensions.X*50.f,Dimensions.Y*50.f,Dimensions.Z*50.f));
+    // Keep added bodywork proportional as the traffic type changes (sedan, bus, truck, CNG, etc.).
+    const FVector DetailRatio(Dimensions.X/4.1f,Dimensions.Y/2.0f,Dimensions.Z/1.1f);
+    TArray<UActorComponent*> AllComponents;
+    GetComponents(UActorComponent::StaticClass(),AllComponents);
+    for(UActorComponent* Component:AllComponents)
+    {
+        UStaticMeshComponent* Part=Cast<UStaticMeshComponent>(Component);
+        if(!Part||Part==Body||Part==WheelFrontLeft||Part==WheelFrontRight||Part==WheelRearLeft||Part==WheelRearRight||
+           Part==EmergencyLightRed||Part==EmergencyLightBlue) continue;
+        const FString PartName=Part->GetName();
+        if(!PartName.StartsWith(TEXT("Traffic"))) continue;
+        const FVector BaseLocation=PartName.Contains(TEXT("Roof"))?FVector(-12.f,0.f,61.f):
+            PartName.Contains(TEXT("FrontGlass"))?FVector(79.f,0.f,53.f):
+            PartName.Contains(TEXT("RearGlass"))?FVector(-82.f,0.f,53.f):
+            PartName.Contains(TEXT("LeftSideGlass"))?FVector(-8.f,-73.f,54.f):
+            PartName.Contains(TEXT("RightSideGlass"))?FVector(-8.f,73.f,54.f):
+            PartName.Contains(TEXT("FrontBumper"))?FVector(202.f,0.f,-18.f):
+            PartName.Contains(TEXT("RearBumper"))?FVector(-202.f,0.f,-18.f):
+            PartName.Contains(TEXT("FrontGrille"))?FVector(207.f,0.f,0.f):
+            PartName.Contains(TEXT("HeadlightLeft"))?FVector(205.f,-65.f,9.f):
+            PartName.Contains(TEXT("HeadlightRight"))?FVector(205.f,65.f,9.f):
+            PartName.Contains(TEXT("TailLightLeft"))?FVector(-205.f,-65.f,8.f):FVector(-205.f,65.f,8.f);
+        const FVector BaseScale=PartName.Contains(TEXT("Roof"))?FVector(1.95f,1.48f,.15f):
+            PartName.Contains(TEXT("FrontGlass"))?FVector(.055f,1.40f,.43f):
+            PartName.Contains(TEXT("RearGlass"))?FVector(.055f,1.34f,.38f):
+            PartName.Contains(TEXT("SideGlass"))?FVector(1.30f,.035f,.34f):
+            PartName.Contains(TEXT("FrontBumper"))||PartName.Contains(TEXT("RearBumper"))?FVector(.12f,1.92f,.13f):
+            PartName.Contains(TEXT("FrontGrille"))?FVector(.035f,.48f,.20f):
+            PartName.Contains(TEXT("Headlight"))?FVector(.055f,.22f,.10f):
+            PartName.Contains(TEXT("TailLight"))?FVector(.055f,.20f,.13f):Part->GetRelativeScale3D();
+        Part->SetRelativeLocation(BaseLocation*DetailRatio);
+        Part->SetRelativeScale3D(BaseScale*DetailRatio);
+        if(VehicleType==EDhakaTrafficVehicleType::Motorcycle)
+            Part->SetVisibility(PartName.Contains(TEXT("Headlight"))||PartName.Contains(TEXT("TailLight")),true);
+    }
     if(UMaterialInterface* BaseMaterial=Body->GetMaterial(0))
     {
         UMaterialInstanceDynamic* DynamicMaterial=UMaterialInstanceDynamic::Create(BaseMaterial,this);
