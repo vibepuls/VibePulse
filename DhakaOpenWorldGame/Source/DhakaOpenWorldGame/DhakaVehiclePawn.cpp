@@ -295,6 +295,8 @@ void ADhakaVehiclePawn::LoadProgress()
     ConfigureVehicleType(static_cast<EDhakaPlayerVehicleType>(FMath::Clamp(Save->PlayerVehicleType,0,4)));
     FuelPercent=FMath::IsFinite(Save->VehicleFuelPercent)?FMath::Clamp(Save->VehicleFuelPercent,0.f,100.f):100.f;
     ConditionPercent=FMath::IsFinite(Save->VehicleConditionPercent)?FMath::Clamp(Save->VehicleConditionPercent,0.f,100.f):100.f;
+    // Reapply the saved condition visually after the base vehicle paint/type has been configured.
+    RepairVehicle(0.f);
     if(PhysicsBody)PhysicsBody->SetPhysicsLinearVelocity(FVector::ZeroVector);
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())
     {
