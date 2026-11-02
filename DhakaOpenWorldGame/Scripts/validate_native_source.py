@@ -145,7 +145,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaPedestrian.cpp", [
     "Animate limbs around their forward/backward pitch axis", "FRotator(Swing*28.f,0.f,0.f)", "FRotator(-Swing*20.f,0.f,0.f)", "100.f+FMath::Abs(Swing)*2.5f",
     "bWalkingToCrosswalk", "bCrossingRoad", "StreetGridOrigin=-160000.f", "State=EDhakaPedestrianState::Cross",
     "CrosswalkTravelDirection=Forward", "SetActorRotation(CrosswalkTravelDirection.Rotation())", "DhakaTrafficVehicle.h", "bVehicleApproaching", "Distance>1050.f", "WaitRemaining=FMath::FRandRange(.65f,1.15f)",
-    "DhakaVendorStall.h", "EDhakaPedestrianState::Shop", "WaitRemaining=FMath::FRandRange(2.5f,7.f)", "NearestStallDistance=850.f"
+    "DhakaVendorStall.h", "EDhakaPedestrianState::Shop", "WaitRemaining=FMath::FRandRange(2.5f,7.f)", "NearestStallDistance=850.f", "bWalkingToVendor", "PostVendorDestination", "NearestStall->GetActorLocation()+AwayFromStall*180.f"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
     "SidewalkOffset=660.f", "StreetGridStep=17777.78f", "SpawnLocation+Ped->GetActorForwardVector()*WalkDistance", "Spawn crowd agents on the procedural sidewalk bands"
