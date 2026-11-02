@@ -155,6 +155,18 @@ void UDhakaMissionSubsystem::FailActiveMission()
     if (UWorld* World=GetWorld()) World->GetTimerManager().ClearTimer(MissionUpdateTimer);
     ActiveMissionIndex=INDEX_NONE;
     ActiveMissionTimeRemaining=0.f;
+    // Keep the activity loop moving after a timeout: offer the next available mission.
+    for (int32 Offset=1; Offset<=Missions.Num(); ++Offset)
+    {
+        const int32 Candidate=(FailedIndex+Offset)%Missions.Num();
+        if (!Missions[Candidate].bCompleted && !Missions[Candidate].bFailed)
+        {
+            ActiveMissionIndex=Candidate;
+            ActiveMissionTimeRemaining=Missions[Candidate].TimeLimitSeconds;
+            StartMissionMonitor();
+            break;
+        }
+    }
     SaveProgress();
 }
 
