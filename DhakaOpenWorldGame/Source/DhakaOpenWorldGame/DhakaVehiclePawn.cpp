@@ -14,6 +14,8 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Controller.h"
 #include "Engine/GameInstance.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
 
 ADhakaVehiclePawn::ADhakaVehiclePawn()
 {
@@ -100,6 +102,10 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("LoadGame",IE_Pressed,this,&ADhakaVehiclePawn::LoadProgress);
     Input->BindAction("ToggleVehicle",IE_Pressed,this,&ADhakaVehiclePawn::ToggleVehicleMode);
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaVehiclePawn::CycleCamera);
+    // Mobile: left-side touch steers; upper-right accelerates; lower-right brakes.
+    Input->BindTouch(IE_Pressed,this,&ADhakaVehiclePawn::HandleTouchPressed);
+    Input->BindTouch(IE_Repeat,this,&ADhakaVehiclePawn::HandleTouchMoved);
+    Input->BindTouch(IE_Released,this,&ADhakaVehiclePawn::HandleTouchReleased);
 }
 void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
@@ -164,4 +170,35 @@ void ADhakaVehiclePawn::CycleCamera()
     if(CameraModeIndex==0){SpringArm->TargetArmLength=650.f;SpringArm->SetRelativeLocation(FVector(-20,0,190));}
     else if(CameraModeIndex==1){SpringArm->TargetArmLength=260.f;SpringArm->SetRelativeLocation(FVector(-10,0,145));}
     else{SpringArm->TargetArmLength=0.f;SpringArm->SetRelativeLocation(FVector(92,0,82));}
+}
+
+void ADhakaVehiclePawn::UpdateTouchControls(FVector Location)
+{
+    if(!GEngine||!GEngine->GameViewport)return;
+    FVector2D ViewSize;GEngine->GameViewport->GetViewportSize(ViewSize);
+    if(ViewSize.X<=0.f||ViewSize.Y<=0.f)return;
+    const float X=Location.X/ViewSize.X,Y=Location.Y/ViewSize.Y;
+    if(X<.48f)
+    {
+        bTouchSteeringActive=true;
+        SteeringInput=FMath::Clamp((X-.24f)/.20f,-1.f,1.f);
+    }
+    else if(Y<.72f)
+    {
+        bTouchThrottleActive=true;bTouchBrakeActive=false;
+        ThrottleInput=FMath::Clamp((.72f-Y)/.45f,.15f,1.f);BrakeInput=0.f;
+    }
+    else
+    {
+        bTouchBrakeActive=true;bTouchThrottleActive=false;
+        BrakeInput=FMath::Clamp((Y-.65f)/.35f,.2f,1.f);ThrottleInput=0.f;
+    }
+}
+void ADhakaVehiclePawn::HandleTouchPressed(ETouchIndex::Type FingerIndex,FVector Location){UpdateTouchControls(Location);}
+void ADhakaVehiclePawn::HandleTouchMoved(ETouchIndex::Type FingerIndex,FVector Location){UpdateTouchControls(Location);}
+void ADhakaVehiclePawn::HandleTouchReleased(ETouchIndex::Type FingerIndex,FVector Location)
+{
+    if(bTouchSteeringActive){SteeringInput=0.f;bTouchSteeringActive=false;}
+    if(bTouchThrottleActive){ThrottleInput=0.f;bTouchThrottleActive=false;}
+    if(bTouchBrakeActive){BrakeInput=0.f;bTouchBrakeActive=false;}
 }
