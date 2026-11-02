@@ -131,7 +131,10 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaPedestrian.cpp", [
-    "ReactToVehicleImpact", "FleeRemaining", "BaseWalkSpeed"
+    "ReactToVehicleImpact", "FleeRemaining", "BaseWalkSpeed", "GetActorForwardVector().GetSafeNormal2D()", "FMath::FRandRange(-70.f,70.f)"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
+    "SidewalkOffset=660.f", "StreetGridStep=17777.78f", "SpawnLocation+Ped->GetActorForwardVector()*WalkDistance", "Spawn ambient pedestrians on sidewalk bands"
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
