@@ -123,18 +123,30 @@ void ADhakaTrafficVehicle::Tick(float Dt)
                     const float CandidateShift=SideChoice*125.f;
                     const FVector CandidateLocation=GetActorLocation()+Right*CandidateShift;
                     bool bClear=true;
-                    for(TActorIterator<ADhakaTrafficVehicle> OtherIt(GetWorld());OtherIt;++OtherIt)
+                    // Check the whole near-future lane corridor, not only the
+                    // vehicle's current side point, before committing to a shift.
+                    for(const float LookAhead : {0.f,260.f,520.f})
                     {
-                        if(*OtherIt==this)continue;
-                        if(FVector::Dist2D(CandidateLocation,OtherIt->GetActorLocation())<420.f){bClear=false;break;}
-                    }
-                    // Do not sidestep a blocked car into a pedestrian.
-                    if(bClear)
-                    {
+                        const FVector Probe=CandidateLocation+Direction*LookAhead;
+                        for(TActorIterator<ADhakaTrafficVehicle> OtherIt(GetWorld());OtherIt;++OtherIt)
+                        {
+                            const ADhakaTrafficVehicle* Other=*OtherIt;
+                            if(!Other||Other==this)continue;
+                            const FVector Separation=Other->GetActorLocation()-Probe;
+                            if(FMath::Abs(Separation.Z)<180.f&&Separation.Size2D()<360.f)
+                            {bClear=false;break;}
+                        }
+                        if(!bClear)break;
+                        // Do not sidestep a blocked car into a pedestrian's path.
                         for(TActorIterator<ADhakaPedestrian> PedIt(GetWorld());PedIt;++PedIt)
                         {
-                            if(FVector::Dist2D(CandidateLocation,PedIt->GetActorLocation())<300.f){bClear=false;break;}
+                            const ADhakaPedestrian* Pedestrian=*PedIt;
+                            if(!Pedestrian)continue;
+                            const FVector Separation=Pedestrian->GetActorLocation()-Probe;
+                            if(FMath::Abs(Separation.Z)<180.f&&Separation.Size2D()<280.f)
+                            {bClear=false;break;}
                         }
+                        if(!bClear)break;
                     }
                     if(bClear){TargetLaneShift=CandidateShift;LaneChangeCooldown=4.f;bFoundLane=true;break;}
                 }
