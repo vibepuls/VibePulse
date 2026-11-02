@@ -123,3 +123,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection"
 ])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
+    "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth"
+])
