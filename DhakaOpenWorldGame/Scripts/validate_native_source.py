@@ -131,7 +131,8 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaPedestrian.cpp", [
-    "ReactToVehicleImpact", "FleeRemaining", "BaseWalkSpeed", "GetActorForwardVector().GetSafeNormal2D()", "FMath::FRandRange(-70.f,70.f)"
+    "ReactToVehicleImpact", "FleeRemaining", "BaseWalkSpeed", "GetActorForwardVector().GetSafeNormal2D()", "FMath::FRandRange(-70.f,70.f)",
+    "Animate limbs around their forward/backward pitch axis", "FRotator(Swing*28.f,0.f,0.f)", "FRotator(-Swing*20.f,0.f,0.f)", "100.f+FMath::Abs(Swing)*2.5f"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
     "SidewalkOffset=660.f", "StreetGridStep=17777.78f", "SpawnLocation+Ped->GetActorForwardVector()*WalkDistance", "Spawn crowd agents on the procedural sidewalk bands"
