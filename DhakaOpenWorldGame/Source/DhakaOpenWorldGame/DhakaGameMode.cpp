@@ -108,9 +108,12 @@ void ADhakaGameMode::BeginPlay()
     {
         if(ADhakaVendorStall* Vendor=World->SpawnActor<ADhakaVendorStall>(ADhakaVendorStall::StaticClass(),VendorLocations[I],FRotator(0.f,FMath::FRandRange(0.f,360.f),0.f)))
         {
-            Vendor->VendorType=static_cast<EDhakaVendorType>(I%5);
-            static const TCHAR* VendorNames[]={TEXT("Cha Stall"),TEXT("Fuchka Stall"),TEXT("Jhalmuri Cart"),TEXT("Fruit Seller"),TEXT("General Shop")};
-            Vendor->StallName=FText::FromString(VendorNames[I%5]);
+            Vendor->VendorType=static_cast<EDhakaVendorType>(I%8);
+            static const TCHAR* VendorNames[]={
+                TEXT("Cha Stall"),TEXT("Fuchka Stall"),TEXT("Jhalmuri Cart"),TEXT("Fruit Seller"),
+                TEXT("General Shop"),TEXT("Chotpoti Stall"),TEXT("Vegetable Seller"),TEXT("Clothing Stall")
+            };
+            Vendor->StallName=FText::FromString(VendorNames[I%8]);
         }
     }
     // Property signs create a simple on-foot purchase loop for the four available investments.
