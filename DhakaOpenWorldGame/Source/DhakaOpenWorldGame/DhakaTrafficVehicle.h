@@ -13,7 +13,7 @@ class DHAKAOPENWORLDGAME_API ADhakaTrafficVehicle : public AActor
 public:
     ADhakaTrafficVehicle();
     virtual void Tick(float DeltaSeconds) override;
-    UPROPERTY(VisibleAnywhere) TObjectPtr<class USceneComponent> TrafficRoot;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UBoxComponent> TrafficRoot;
     UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> Body;
     UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelFrontLeft;
     UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelFrontRight;
