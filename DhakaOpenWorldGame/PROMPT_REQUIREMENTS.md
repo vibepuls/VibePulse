@@ -58,12 +58,12 @@ Status: **PARTIAL** — procedural stalls/furniture exist; functional vendor int
 ## Part 8 — Traffic
 - [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
 - [ ] Road/time/density-based traffic rules and Dhaka-specific behavior.
-Status: **PARTIAL** — timed signals and basic following/red-light stop logic exist; lane graph, intersection reservations, lane changes/overtaking, bus/emergency behavior and robust avoidance remain.
+Status: **PARTIAL** — timed signals and basic following/red-light stop logic exist; traffic vehicle dimensions now align to route direction. Lane graph, intersection reservations, lane changes/overtaking, bus/emergency behavior and robust avoidance remain.
 
 ## Part 9 — Pedestrian AI/crowds
 - [ ] Sidewalk walking, crossing, obstacle/vendor/vehicle avoidance, gathering, bus-stop waiting, boarding/exiting, shopping, talking and reactions to weather/events/player.
 - [ ] Personality profiles, distance-based updates and low-detail distant crowds.
-Status: **PARTIAL** — simple walkers and local wanderers exist; Behavior Tree/NavMesh interactions, boarding, personality and scalable crowd LOD remain.
+Status: **PARTIAL** — simple walkers/local wanderers now use swept collision checks to sidestep or briefly wait around blocked paths; Behavior Tree/NavMesh routing, crossing logic, boarding, personality and scalable crowd LOD remain.
 
 ## Part 10 — Player gameplay
 - [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
@@ -73,7 +73,7 @@ Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations
 ## Part 11 — Weather/environment
 - [ ] Day/night, sunrise/sunset, dynamic light, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
 - [ ] Weather affects visibility, handling, pedestrian behavior and visuals.
-Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected weather/time exist; Niagara rain, wet-road materials, puddles/splashes and gameplay effects remain.
+Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected weather/time exist; a procedural instanced-rain actor is connected to Rain/Monsoon intensity in source. Niagara-quality rain, wet-road materials, puddles/splashes, thunder/lightning and handling/visibility gameplay effects remain.
 
 ## Part 12 — Sound
 - [ ] Engines, horns, rickshaw bells, motorcycles, buses, traffic, pedestrians/vendors/markets, construction, rain/thunder, river/boats and indoor/outdoor ambience.
@@ -99,7 +99,7 @@ Status: **PARTIAL** — keyboard/mouse/controller mappings and basic touch drivi
 ## Part 16 — Project output
 - [ ] Complete connected C++ source for world, traffic, pedestrian, missions, UI, input, multiplayer, save/audio/material/platform/backend systems.
 - [ ] No missing dependencies or placeholders; automated tests and packaging instructions.
-Status: **PARTIAL** — source/build instructions exist; no successful UE5 compile, automated gameplay test or packaged build has been verified.
+Status: **PARTIAL** — source/build instructions exist, with mission HUD/persistence and procedural rain/obstacle-avoidance additions; no successful UE5 compile, automated gameplay test or packaged build has been verified.
 
 ## Part 17 — Final delivery
 - [ ] Open, compile, test and package in UE5.
