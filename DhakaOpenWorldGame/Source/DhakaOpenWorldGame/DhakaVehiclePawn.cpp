@@ -136,10 +136,18 @@ void ADhakaVehiclePawn::Tick(float Dt)
         }
     }
     // Mission completion is owned by UDhakaMissionSubsystem so every mission uses its configured radius and timer.
+    const FVector Velocity=PhysicsBody->GetPhysicsLinearVelocity();
+    const FVector ForwardVelocity=Forward*FVector::DotProduct(Velocity,Forward);
+    const FVector LateralVelocity=Velocity-ForwardVelocity;
     PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*PhysicsBody->GetMass());
-    if(BrakeInput>0.f) PhysicsBody->AddForce(-PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*BrakeStrength*CachedWeatherGrip*PhysicsBody->GetMass()*BrakeInput);
+    // Tire-like lateral grip: damp side-slip without hard teleporting velocity; wet weather lowers the grip.
+    PhysicsBody->AddForce(-LateralVelocity*PhysicsBody->GetMass()*FMath::Lerp(2.2f,8.5f,CachedWeatherGrip));
+    if(BrakeInput>0.f) PhysicsBody->AddForce(-Velocity.GetSafeNormal()*BrakeStrength*CachedWeatherGrip*PhysicsBody->GetMass()*BrakeInput);
+    else if(FMath::IsNearlyZero(ThrottleInput)) PhysicsBody->AddForce(-ForwardVelocity*PhysicsBody->GetMass()*.22f);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
     PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*CachedWeatherGrip*PhysicsBody->GetMass()*4.f));
+    // Reduce excessive lateral slide and high-speed steering response for heavier, wet-road handling.
+    if(FMath::Abs(Speed)>MaxSpeed*.72f) PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,-PhysicsBody->GetPhysicsAngularVelocityInRadians().Z*PhysicsBody->GetMass()*0.35f));
     if(PhysicsBody->GetPhysicsLinearVelocity().Size()>MaxSpeed) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
     const float WheelSpin=Speed*Dt/32.f;
     bool bNight=false;
