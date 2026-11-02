@@ -12,6 +12,7 @@ class DHAKAOPENWORLDGAME_API ADhakaPedestrian : public AActor
     GENERATED_BODY()
 public:
     ADhakaPedestrian();
+    virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class USceneComponent> Root;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UCapsuleComponent> CollisionCapsule;
@@ -37,4 +38,7 @@ public:
 private:
     float WaitRemaining = 0.f;
     float WalkPhase = 0.f;
+    float WeatherRefreshTimer = 0.f;
+    float WeatherWalkMultiplier = 1.f;
+    UPROPERTY() TObjectPtr<class ADhakaWeatherController> WeatherController;
 };
