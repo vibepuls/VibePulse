@@ -119,3 +119,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
     "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid", "BAG", "Mobile: drag left side"
 ])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
+    "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection"
+])
