@@ -55,11 +55,16 @@ bool UDhakaEconomySubsystem::PurchaseItem(FName ItemId,int32 Quantity)
     Quantity=FMath::Clamp(Quantity,1,99);
     const FDhakaShopItem* Item=ShopCatalog.FindByPredicate([ItemId](const FDhakaShopItem& Candidate){return Candidate.Id==ItemId;});
     UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
-    if(!Item||!Missions){LastTransactionMessage=FText::FromString(TEXT("Purchase failed: item or wallet unavailable."));return false;}
+    if(!Item||Item->Price<0||!Missions){LastTransactionMessage=FText::FromString(TEXT("Purchase failed: item or wallet unavailable."));return false;}
+    const int32 CurrentQuantity=FMath::Clamp(Inventory.FindRef(ItemId),0,999);
+    const int32 AvailableCapacity=999-CurrentQuantity;
+    if(AvailableCapacity<=0){LastTransactionMessage=FText::FromString(TEXT("Inventory full: sell or use some items first."));return false;}
+    // Charge only for items that actually fit; never silently discard purchased stock.
+    Quantity=FMath::Min(Quantity,AvailableCapacity);
     const int64 Cost=static_cast<int64>(Item->Price)*Quantity;
     if(Cost<0||Missions->Wallet<Cost){LastTransactionMessage=FText::FromString(TEXT("Not enough money for this purchase."));return false;}
     Missions->AddWallet(-Cost);
-    Inventory.FindOrAdd(ItemId)=FMath::Clamp(Inventory.FindRef(ItemId)+Quantity,0,999);
+    Inventory.FindOrAdd(ItemId)=CurrentQuantity+Quantity;
     LastTransactionMessage=FText::Format(NSLOCTEXT("DhakaEconomy","PurchaseSuccess","Purchased {0} x{1}."),Item->Name,FText::AsNumber(Quantity));
     SaveEconomy();
     return true;
