@@ -4,6 +4,8 @@
 #include "Components/SceneComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Pawn.h"
 #include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
 #include "DhakaVehiclePawn.h"
