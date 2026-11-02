@@ -5,6 +5,7 @@
 #include "Engine/Font.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 void ADhakaOpenWorldHUD::DrawHUD()
 {
@@ -17,7 +18,7 @@ void ADhakaOpenWorldHUD::DrawHUD()
     if (UGameInstance* GI=GetWorld()->GetGameInstance())
         Missions=GI->GetSubsystem<UDhakaMissionSubsystem>();
 
-    const float PanelX=24.f, PanelY=24.f, PanelW=430.f, PanelH=150.f;
+    const float PanelX=24.f, PanelY=24.f, PanelW=460.f, PanelH=178.f;
     Canvas->DrawRect(FLinearColor(0.025f,0.035f,0.055f,0.88f),PanelX,PanelY,PanelW,PanelH);
     Canvas->SetDrawColor(FColor(30,210,190,255));
     Canvas->DrawRect(FLinearColor(0.08f,0.82f,0.72f,1.f),PanelX,PanelY,4.f,PanelH);
@@ -42,6 +43,11 @@ void ADhakaOpenWorldHUD::DrawHUD()
         {
             const int32 Seconds=FMath::CeilToInt(Missions->ActiveMissionTimeRemaining);
             Canvas->DrawText(Font,FString::Printf(TEXT("TIME LEFT  %02d:%02d"),Seconds/60,Seconds%60),PanelX+18.f,PanelY+123.f,0.78f,0.78f);
+        }
+        if (APawn* Player=UGameplayStatics::GetPlayerPawn(this,0))
+        {
+            const float DistanceMeters=FVector::Dist2D(Player->GetActorLocation(),Mission.Target)/100.f;
+            Canvas->DrawText(Font,FString::Printf(TEXT("DESTINATION  %.0f m"),DistanceMeters),PanelX+18.f,PanelY+147.f,0.78f,0.78f);
         }
     }
     else if (!Missions->LastMissionResult.IsEmpty())
