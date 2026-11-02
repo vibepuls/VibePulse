@@ -231,7 +231,8 @@ void ADhakaVehiclePawn::Tick(float Dt)
     PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*EffectiveGrip*ConditionFactor*PhysicsBody->GetMass()*4.f));
     // Reduce excessive lateral slide and high-speed steering response for heavier, wet-road handling.
     if(FMath::Abs(Speed)>MaxSpeed*.72f) PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,-PhysicsBody->GetPhysicsAngularVelocityInRadians().Z*PhysicsBody->GetMass()*0.35f));
-    const float ConditionSpeedLimit=FMath::Lerp(.58f,1.f,ConditionPercent/100.f)*MaxSpeed;\n    if(PhysicsBody->GetPhysicsLinearVelocity().Size()>ConditionSpeedLimit) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*ConditionSpeedLimit);
+    const float ConditionSpeedLimit=FMath::Lerp(.58f,1.f,ConditionPercent/100.f)*MaxSpeed;
+    if(PhysicsBody->GetPhysicsLinearVelocity().Size()>ConditionSpeedLimit) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*ConditionSpeedLimit);
     const float WheelSpin=Speed*Dt/32.f;
     bool bNight=false;
     for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
