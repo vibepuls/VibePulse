@@ -100,7 +100,37 @@ def create_optional_rig_asset(factory_name, asset_class_name, asset_name):
     except Exception as e:
         unreal.log_warning("Could not create "+asset_name+" through this UE Python API: "+str(e))
 
-create_optional_rig_asset("IKRigDefinitionFactory","IKRigDefinition","IK_DhakaHuman")
-create_optional_rig_asset("ControlRigBlueprintFactory","ControlRigBlueprint","CR_DhakaHuman")
+# Build a configured IK Rig: skeletal mesh, retarget chains, full-body solver and goals.
+try:
+    ikr=unreal.EditorAssetLibrary.load_asset(IKRIG_PATH)
+    if not ikr:
+        ikr=unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+            asset_name="IK_DhakaHuman",package_path=ROOT,
+            asset_class=unreal.IKRigDefinition,factory=unreal.IKRigDefinitionFactory())
+    if ikr:
+        ik_controller=unreal.IKRigController.get_controller(ikr)
+        ik_controller.set_skeletal_mesh(skeletal_mesh)
+        ik_controller.apply_auto_generated_retarget_definition()
+        ik_controller.apply_auto_fbik()
+        unreal.EditorAssetLibrary.save_loaded_asset(ikr)
+        unreal.log("Configured IK_DhakaHuman with auto retarget chains and Full Body IK.")
+except Exception as e:
+    unreal.log_warning("IK Rig setup needs review in this UE version: "+str(e))
 
-unreal.log("Character import pass finished. Confirm the skeleton preview, animation clips, IK goals and Control Rig controls in Unreal Editor before shipping.")
+# Create a Control Rig based on the imported skeleton (not an empty generic asset).
+try:
+    cr=unreal.EditorAssetLibrary.load_asset(CONTROLRIG_PATH)
+    if not cr:
+        cr=unreal.ControlRigBlueprintFactory.create_control_rig_from_skeletal_mesh_or_skeleton(selected_object=skeletal_mesh)
+        if cr:
+            unreal.EditorAssetLibrary.rename_asset(cr.get_path_name(),CONTROLRIG_PATH)
+    if cr:
+        cr.set_preview_mesh(skeletal_mesh)
+        cr.recompile_vm_if_required()
+        unreal.BlueprintEditorLibrary.compile_blueprint(cr)
+        unreal.EditorAssetLibrary.save_loaded_asset(cr)
+        unreal.log("Created and compiled CR_DhakaHuman from the imported skeletal mesh. Verify FK controls and add IK control-to-bone graph nodes in the Control Rig editor.")
+except Exception as e:
+    unreal.log_warning("Control Rig setup needs review in this UE version: "+str(e))
+
+unreal.log("Character import pass finished. Validate imported mesh, animation clips, IK solver/goals and Control Rig graph in Unreal Editor before shipping.")
