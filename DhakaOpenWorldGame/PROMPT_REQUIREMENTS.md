@@ -94,7 +94,7 @@ Status: **NOT DONE for native UE5** — browser backend APIs do not automaticall
 - [ ] Android/iOS touch joystick, driving/camera controls, graphics settings, memory/performance optimization and LOD/crowd/traffic scaling.
 - [ ] Windows keyboard/mouse/controller, resolution/graphics/draw-distance settings.
 - [ ] Playable builds tested on supported devices.
-Status: **PARTIAL** — keyboard/mouse/controller mappings, basic touch driving zones and platform-aware traffic/crowd caps exist; graphics settings UI, full scalability, iOS setup and packaged device QA remain.
+Status: **PARTIAL** — keyboard/mouse/controller mappings, touch steering/throttle/brake zones, right-side camera drag and platform-aware traffic/crowd caps exist; graphics settings UI, full scalability, iOS setup and packaged device QA remain.
 
 ## Part 16 — Project output
 - [ ] Complete connected C++ source for world, traffic, pedestrian, missions, UI, input, multiplayer, save/audio/material/platform/backend systems.
