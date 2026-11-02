@@ -3,7 +3,8 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
-#include "DhakaVehiclePawn.h"\n#include "DhakaTrafficSignal.h"
+#include "DhakaVehiclePawn.h"
+#include "DhakaTrafficSignal.h"
 
 ADhakaTrafficVehicle::ADhakaTrafficVehicle()
 {
