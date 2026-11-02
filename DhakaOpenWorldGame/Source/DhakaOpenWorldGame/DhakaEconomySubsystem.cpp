@@ -89,7 +89,7 @@ bool UDhakaEconomySubsystem::OwnsProperty(FName PropertyId) const
 void UDhakaEconomySubsystem::AwardExperience(int64 Amount)
 {
     if(Amount<=0)return;
-    Experience=FMath::Min<int64>(MAX_int64,Experience+Amount);
+    Experience=Experience>MAX_int64-Amount?MAX_int64:Experience+Amount;
     while(PlayerLevel<1000&&Experience>=static_cast<int64>(PlayerLevel)*500)
     {
         Experience-=static_cast<int64>(PlayerLevel)*500;
@@ -106,7 +106,7 @@ int64 UDhakaEconomySubsystem::ClaimPropertyIncome()
     for(const FName PropertyId:OwnedProperties)
     {
         const FDhakaPropertyOffer* Offer=PropertyCatalog.FindByPredicate([PropertyId](const FDhakaPropertyOffer& Candidate){return Candidate.Id==PropertyId;});
-        if(Offer)Income=FMath::Min<int64>(MAX_int64,Income+FMath::Max<int64>(0,Offer->DailyIncome));
+        if(Offer){const int64 PropertyIncome=FMath::Max<int64>(0,Offer->DailyIncome);Income=Income>MAX_int64-PropertyIncome?MAX_int64:Income+PropertyIncome;}
     }
     if(Income<=0)return 0;
     UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
