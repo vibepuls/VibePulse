@@ -88,12 +88,14 @@ void ADhakaTrafficVehicle::Tick(float Dt)
     Super::Tick(Dt);
     if(!GetWorld()||Dt<=0.f)return;
     if(VehicleType==EDhakaTrafficVehicleType::Emergency){EmergencyLightTimer-=Dt;if(EmergencyLightTimer<=0.f){EmergencyLightTimer=.22f;bEmergencyLightPhase=!bEmergencyLightPhase;if(EmergencyLightRed)EmergencyLightRed->SetVisibility(bEmergencyLightPhase,true);if(EmergencyLightBlue)EmergencyLightBlue->SetVisibility(!bEmergencyLightPhase,true);}}
+    LaneChangeCooldown=FMath::Max(0.f,LaneChangeCooldown-Dt);
     AIUpdateTimer-=Dt;
     if(AIUpdateTimer<=0.f)
     {
         AIUpdateTimer=.30f;
         bRedSignalAhead=false;
         CachedFollowingSpeedLimit=CruiseSpeed;
+        bool bBlockedAhead=false;
         const FVector Direction=RouteDirection.GetSafeNormal2D();
         for(TActorIterator<ADhakaTrafficVehicle> It(GetWorld());It;++It)
         {
@@ -106,7 +108,30 @@ void ADhakaTrafficVehicle::Tick(float Dt)
             {
                 const float Target=FMath::Clamp((Ahead-170.f)/FMath::Max(1.f,BrakeDistance-170.f),0.f,1.f);
                 if(Target<.96f)CachedFollowingSpeedLimit=FMath::Min(CachedFollowingSpeedLimit,CruiseSpeed*Target);
+                if(Ahead<FMath::Max(420.f,BrakeDistance*.82f)&&Target<.78f)bBlockedAhead=true;
             }
+        }
+        if(LaneChangeCooldown<=0.f)
+        {
+            if(bBlockedAhead)
+            {
+                const FVector Right(-Direction.Y,Direction.X,0.f);
+                bool bFoundLane=false;
+                for(const float SideChoice : {1.f,-1.f})
+                {
+                    const float CandidateShift=SideChoice*125.f;
+                    const FVector CandidateLocation=GetActorLocation()+Right*CandidateShift;
+                    bool bClear=true;
+                    for(TActorIterator<ADhakaTrafficVehicle> OtherIt(GetWorld());OtherIt;++OtherIt)
+                    {
+                        if(*OtherIt==this)continue;
+                        if(FVector::Dist2D(CandidateLocation,OtherIt->GetActorLocation())<420.f){bClear=false;break;}
+                    }
+                    if(bClear){TargetLaneShift=CandidateShift;LaneChangeCooldown=4.f;bFoundLane=true;break;}
+                }
+                if(!bFoundLane)TargetLaneShift=0.f;
+            }
+            else TargetLaneShift=0.f;
         }
         for(TActorIterator<ADhakaTrafficSignal> It(GetWorld());It;++It)
         {
@@ -163,6 +188,10 @@ void ADhakaTrafficVehicle::Tick(float Dt)
         }
     }
     CurrentSpeed=FMath::FInterpTo(CurrentSpeed,Desired,Dt,Desired<CurrentSpeed?3.8f:1.5f);
+    const float PreviousLaneShift=CurrentLaneShift;
+    CurrentLaneShift=FMath::FInterpTo(CurrentLaneShift,TargetLaneShift,Dt,2.4f);
+    const FVector Right(-RouteDirection.GetSafeNormal2D().Y,RouteDirection.GetSafeNormal2D().X,0.f);
+    AddActorWorldOffset(Right*(CurrentLaneShift-PreviousLaneShift),true);
     const float WheelDegrees=FMath::RadiansToDegrees(CurrentSpeed*Dt/17.f);
     for(UStaticMeshComponent* Wheel : {WheelFrontLeft.Get(),WheelFrontRight.Get(),WheelRearLeft.Get(),WheelRearRight.Get()})
         if(Wheel && Wheel->IsVisible()) Wheel->AddLocalRotation(FRotator(0.f,0.f,WheelDegrees));
