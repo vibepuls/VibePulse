@@ -10,6 +10,7 @@
 #include "Engine/Font.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "GameFramework/GameUserSettings.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -44,7 +45,9 @@ void ADhakaOpenWorldHUD::DrawHUD()
     Canvas->DrawRect(FLinearColor(0.08f,0.82f,0.72f,1.f),PanelX,PanelY,4.f,PanelH);
 
     Canvas->SetDrawColor(FColor::White);
-    Canvas->DrawText(Font,TEXT("DHAKA OPEN WORLD  |  F6 WEATHER  F7 TIME  F8 GRAPHICS"),PanelX+18.f,PanelY+12.f,1.0f,1.0f);
+    const int32 QualityLevel=UGameUserSettings::GetGameUserSettings()?FMath::Clamp(UGameUserSettings::GetGameUserSettings()->GetOverallScalabilityLevel(),0,3):1;
+    static const TCHAR* QualityNames[]={TEXT("LOW"),TEXT("MEDIUM"),TEXT("HIGH"),TEXT("EPIC")};
+    Canvas->DrawText(Font,FString::Printf(TEXT("DHAKA OPEN WORLD  |  F6 WEATHER  F7 TIME  F8 GRAPHICS: %s"),QualityNames[QualityLevel]),PanelX+18.f,PanelY+12.f,1.0f,1.0f);
     if (!Missions)
     {
         Canvas->DrawText(Font,TEXT("Progress system unavailable"),PanelX+18.f,PanelY+52.f,0.85f,0.85f);
