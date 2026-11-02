@@ -29,7 +29,7 @@ void ADhakaOpenWorldHUD::DrawHUD()
     Canvas->DrawRect(FLinearColor(0.08f,0.82f,0.72f,1.f),PanelX,PanelY,4.f,PanelH);
 
     Canvas->SetDrawColor(FColor::White);
-    Canvas->DrawText(Font,TEXT("DHAKA OPEN WORLD"),PanelX+18.f,PanelY+12.f,1.0f,1.0f);
+    Canvas->DrawText(Font,TEXT("DHAKA OPEN WORLD  |  F6 WEATHER  F7 TIME"),PanelX+18.f,PanelY+12.f,1.0f,1.0f);
     if (!Missions)
     {
         Canvas->DrawText(Font,TEXT("Progress system unavailable"),PanelX+18.f,PanelY+52.f,0.85f,0.85f);
