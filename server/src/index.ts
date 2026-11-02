@@ -949,7 +949,6 @@ app.post('/api/dhaka-game/sessions/:sessionId/missions/:missionId/start',auth,as
   const mission=dhakaMissions[String(req.params.missionId)]; if(!mission)return res.status(400).json({error:'Unknown mission.'});
   const idx=Math.max(0,Math.min(dhakaLandmarks.length-1,Number(req.body?.targetIndex)||0));
   const target=req.params.missionId==='explore'?dhakaLandmarks[idx]:mission.target;
-  const updated=await prisma.$executeRawUnsafe("UPDATE social_gaming.dhaka_game_sessions SET active_mission_id=$3,mission_started_at=NOW(),mission_target_x=$4,mission_target_z=$5 WHERE id=$1 AND user_id=$2 AND status='active'",req.params.sessionId,req.user.id,req.params.missionId,target[0],target[1]);
   const session:any[]=await prisma.$queryRawUnsafe('SELECT id,active_mission_id,mission_started_at,mission_target_x,mission_target_z FROM social_gaming.dhaka_game_sessions WHERE id=$1 AND user_id=$2 AND status=\'active\'',req.params.sessionId,req.user.id);
   if(!session.length)return res.status(404).json({error:'Active game session not found.'});
   res.json({session:session[0],reward:mission.reward,minimumSeconds:mission.minimumSeconds});
@@ -959,7 +958,6 @@ app.post('/api/dhaka-game/sessions/:sessionId/heartbeat',auth,async(req:any,res:
   const allowed=new Set(['car','hatchback','suv','luxury','van','microbus','deliveryVan','pickup','bus','minibus','schoolBus','coach','truck','firetruck','ambulance','police','cng','rickshaw','batteryRickshaw','handcart','motorcycle','scooter','bicycle','boat','riverLaunch']);
   const vehicle=allowed.has(req.body?.vehicleType)?req.body.vehicleType:'car';
   if(!Number.isFinite(x)||!Number.isFinite(z)||!Number.isFinite(heading)||Math.abs(x)>1650||Math.abs(z)>1650)return res.status(400).json({error:'Invalid player position.'});
-  const result=await prisma.$executeRawUnsafe("UPDATE social_gaming.dhaka_game_sessions SET player_x=$3,player_z=$4,player_heading=$5,vehicle_type=$6,last_seen_at=NOW() WHERE id=$1 AND user_id=$2 AND status='active'",req.params.sessionId,req.user.id,x,z,heading,vehicle);
   const rows:any[]=await prisma.$queryRawUnsafe("SELECT id FROM social_gaming.dhaka_game_sessions WHERE id=$1 AND user_id=$2 AND status='active'",req.params.sessionId,req.user.id);
   if(!rows.length)return res.status(404).json({error:'Active game session not found.'});
   res.status(204).end();
