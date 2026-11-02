@@ -1,6 +1,10 @@
 #include "DhakaEconomySubsystem.h"
 #include "DhakaEconomySaveGame.h"
 #include "DhakaMissionSubsystem.h"
+#include "DhakaPlayerCharacter.h"
+#include "DhakaVehiclePawn.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameInstance.h"
 
@@ -71,6 +75,61 @@ bool UDhakaEconomySubsystem::SellItem(FName ItemId,int32 Quantity)
     if(Inventory[ItemId]<=0)Inventory.Remove(ItemId);
     Missions->AddWallet(static_cast<int64>(Item->SellPrice)*Quantity);
     LastTransactionMessage=FText::Format(NSLOCTEXT("DhakaEconomy","SaleSuccess","Sold {0} x{1}."),Item->Name,FText::AsNumber(Quantity));
+    SaveEconomy();
+    return true;
+}
+
+bool UDhakaEconomySubsystem::UseItem(FName ItemId,AActor* User)
+{
+    if(!User||Inventory.FindRef(ItemId)<=0)
+    {
+        LastTransactionMessage=FText::FromString(TEXT("Item unavailable: buy it first."));
+        return false;
+    }
+    ADhakaPlayerCharacter* Character=Cast<ADhakaPlayerCharacter>(User);
+    ADhakaVehiclePawn* Vehicle=Cast<ADhakaVehiclePawn>(User);
+    if(!Vehicle && GetWorld())
+    {
+        float BestDistance=550.f;
+        for(TActorIterator<ADhakaVehiclePawn> It(GetWorld());It;++It)
+        {
+            const float Distance=FVector::Dist2D(User->GetActorLocation(),It->GetActorLocation());
+            if(Distance<BestDistance){BestDistance=Distance;Vehicle=*It;}
+        }
+    }
+    bool bApplied=false;
+    if(ItemId==TEXT("first_aid") && Character && Character->Health<100.f)
+    {
+        Character->Health=FMath::Min(100.f,Character->Health+45.f);
+        LastTransactionMessage=FText::FromString(TEXT("First aid used: health restored."));
+        bApplied=true;
+    }
+    else if((ItemId==TEXT("water_bottle")||ItemId==TEXT("street_snack")||ItemId==TEXT("tea_cup")||ItemId==TEXT("fuchka_plate")||ItemId==TEXT("jhalmuri_packet")||ItemId==TEXT("fruit_bag")) && Character && Character->Stamina<100.f)
+    {
+        const float Restore=ItemId==TEXT("water_bottle")?35.f:ItemId==TEXT("fruit_bag")?28.f:20.f;
+        Character->Stamina=FMath::Min(100.f,Character->Stamina+Restore);
+        LastTransactionMessage=FText::FromString(TEXT("Food/drink used: stamina restored."));
+        bApplied=true;
+    }
+    else if(ItemId==TEXT("fuel_can") && Vehicle && Vehicle->FuelPercent<100.f)
+    {
+        Vehicle->AddFuel(55.f);
+        LastTransactionMessage=FText::FromString(TEXT("Fuel can used: vehicle refuelled."));
+        bApplied=true;
+    }
+    else if(ItemId==TEXT("repair_kit") && Vehicle && Vehicle->ConditionPercent<100.f)
+    {
+        Vehicle->RepairVehicle(40.f);
+        LastTransactionMessage=FText::FromString(TEXT("Repair kit used: vehicle condition improved."));
+        bApplied=true;
+    }
+    if(!bApplied)
+    {
+        LastTransactionMessage=FText::FromString(TEXT("Cannot use this item here or its effect is already full."));
+        return false;
+    }
+    Inventory[ItemId]--;
+    if(Inventory[ItemId]<=0)Inventory.Remove(ItemId);
     SaveEconomy();
     return true;
 }
