@@ -917,5 +917,88 @@ app.patch('/api/admin/reports/:id/status', auth, admin, async (req:any, res) => 
   res.json(updated);
 });
 
+
+const dhakaMissions: Record<string,{reward:number;minimumSeconds:number;target:[number,number]}> = {
+  explore:{reward:500,minimumSeconds:20,target:[-880,1030]},
+  taxi:{reward:850,minimumSeconds:25,target:[-880,1030]},
+  delivery:{reward:700,minimumSeconds:25,target:[-520,-520]},
+  race:{reward:1200,minimumSeconds:30,target:[1200,-930]},
+  rickshaw:{reward:600,minimumSeconds:20,target:[550,320]},
+  bus:{reward:1000,minimumSeconds:30,target:[400,1450]},
+  collection:{reward:450,minimumSeconds:15,target:[-350,-100]}
+};
+const dhakaLandmarks:[number,number][]=[[-880,1030],[180,1300],[400,1450],[-350,-100],[-520,-520],[550,320],[1200,-930]];
+app.get('/api/dhaka-game/profile',auth,async(req:any,res:any)=>{
+  await prisma.$executeRawUnsafe('INSERT INTO social_gaming.dhaka_game_profiles(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING',req.user.id);
+  const rows:any[]=await prisma.$queryRawUnsafe('SELECT score,missions_completed,play_seconds,created_at,updated_at FROM social_gaming.dhaka_game_profiles WHERE user_id=$1',req.user.id);
+  const recentMissions=await prisma.$queryRawUnsafe('SELECT mission_id,reward,completed_at FROM social_gaming.dhaka_game_mission_completions WHERE user_id=$1 ORDER BY completed_at DESC LIMIT 20',req.user.id);
+  res.json({profile:rows[0]||{score:0,missions_completed:0,play_seconds:0},recentMissions});
+});
+app.get('/api/dhaka-game/leaderboard',async(_req:any,res:any)=>{
+  const rows=await prisma.$queryRawUnsafe('SELECT u.id,u.username,u."displayName" AS full_name,u."avatarUrl" AS profile_picture,p.score,p.missions_completed,p.play_seconds FROM social_gaming.dhaka_game_profiles p JOIN social_gaming."User" u ON u.id=p.user_id WHERE u.status=\'ACTIVE\' ORDER BY p.score DESC,p.missions_completed DESC,p.updated_at ASC LIMIT 50');
+  res.json(rows);
+});
+app.post('/api/dhaka-game/sessions',auth,async(req:any,res:any)=>{
+  await prisma.$executeRawUnsafe('INSERT INTO social_gaming.dhaka_game_profiles(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING',req.user.id);
+  await prisma.$executeRawUnsafe("UPDATE social_gaming.dhaka_game_sessions SET status='finished',ended_at=NOW() WHERE user_id=$1 AND status='active'",req.user.id);
+  const id=randomUUID();
+  await prisma.$executeRawUnsafe("INSERT INTO social_gaming.dhaka_game_sessions(id,user_id,active_mission_id,mission_started_at) VALUES($1,$2,'explore',NOW())",id,req.user.id);
+  res.status(201).json({session:{id,active_mission_id:'explore',started_at:new Date().toISOString()}});
+});
+app.post('/api/dhaka-game/sessions/:sessionId/missions/:missionId/start',auth,async(req:any,res:any)=>{
+  const mission=dhakaMissions[String(req.params.missionId)]; if(!mission)return res.status(400).json({error:'Unknown mission.'});
+  const idx=Math.max(0,Math.min(dhakaLandmarks.length-1,Number(req.body?.targetIndex)||0));
+  const target=req.params.missionId==='explore'?dhakaLandmarks[idx]:mission.target;
+  const session:any[]=await prisma.$queryRawUnsafe('SELECT id,active_mission_id,mission_started_at,mission_target_x,mission_target_z FROM social_gaming.dhaka_game_sessions WHERE id=$1 AND user_id=$2 AND status=\'active\'',req.params.sessionId,req.user.id);
+  if(!session.length)return res.status(404).json({error:'Active game session not found.'});
+  res.json({session:session[0],reward:mission.reward,minimumSeconds:mission.minimumSeconds});
+});
+app.post('/api/dhaka-game/sessions/:sessionId/heartbeat',auth,async(req:any,res:any)=>{
+  const x=Number(req.body?.x),z=Number(req.body?.z),heading=Number(req.body?.heading||0);
+  const allowed=new Set(['car','hatchback','suv','luxury','van','microbus','deliveryVan','pickup','bus','minibus','schoolBus','coach','truck','firetruck','ambulance','police','cng','rickshaw','batteryRickshaw','handcart','motorcycle','scooter','bicycle','boat','riverLaunch']);
+  const vehicle=allowed.has(req.body?.vehicleType)?req.body.vehicleType:'car';
+  if(!Number.isFinite(x)||!Number.isFinite(z)||!Number.isFinite(heading)||Math.abs(x)>1650||Math.abs(z)>1650)return res.status(400).json({error:'Invalid player position.'});
+  const rows:any[]=await prisma.$queryRawUnsafe("SELECT id FROM social_gaming.dhaka_game_sessions WHERE id=$1 AND user_id=$2 AND status='active'",req.params.sessionId,req.user.id);
+  if(!rows.length)return res.status(404).json({error:'Active game session not found.'});
+  res.status(204).end();
+});
+app.get('/api/dhaka-game/sessions/nearby',auth,async(req:any,res:any)=>{
+  const x=Number(req.query.x),z=Number(req.query.z);
+  if(!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>1650||Math.abs(z)>1650)return res.status(400).json({error:'Valid player coordinates are required.'});
+  const rows=await prisma.$queryRawUnsafe('SELECT s.id,u.id AS user_id,u.username,s.player_x,s.player_z,s.player_heading,s.vehicle_type FROM social_gaming.dhaka_game_sessions s JOIN social_gaming."User" u ON u.id=s.user_id WHERE s.user_id<>$1 AND s.status=\'active\' AND s.last_seen_at>NOW()-INTERVAL \'20 seconds\' AND s.player_x BETWEEN $2-500 AND $2+500 AND s.player_z BETWEEN $3-500 AND $3+500 ORDER BY s.last_seen_at DESC LIMIT 24',req.user.id,x,z);
+  res.json(rows);
+});
+app.post('/api/dhaka-game/sessions/:sessionId/missions/:missionId/complete',auth,async(req:any,res:any)=>{
+  const mission=dhakaMissions[String(req.params.missionId)];if(!mission)return res.status(400).json({error:'Unknown mission.'});
+  try {
+    const result=await prisma.$transaction(async(tx:any)=>{
+      const rows:any[]=await tx.$queryRawUnsafe('SELECT id,active_mission_id,mission_started_at,started_at,player_x,player_z,mission_target_x,mission_target_z FROM social_gaming.dhaka_game_sessions WHERE id=$1 AND user_id=$2 AND status=\'active\' FOR UPDATE',req.params.sessionId,req.user.id);
+      const s=rows[0];if(!s)throw Object.assign(new Error('Active game session not found.'),{status:404});
+      if(s.active_mission_id!==req.params.missionId)throw Object.assign(new Error('This mission is not active in the server session.'),{status:409});
+      const seconds=(Date.now()-new Date(s.mission_started_at).getTime())/1000;
+      if(seconds<mission.minimumSeconds)throw Object.assign(new Error('Mission duration is too short to validate.'),{status:400});
+      if(!Number.isFinite(Number(s.player_x))||!Number.isFinite(Number(s.player_z))||Math.hypot(Number(s.player_x)-Number(s.mission_target_x),Number(s.player_z)-Number(s.mission_target_z))>50)throw Object.assign(new Error('Reach the mission destination before claiming the reward.'),{status:400});
+      if(seconds>2700||Date.now()-new Date(s.started_at).getTime()>8*60*60*1000)throw Object.assign(new Error('Game session expired. Start a new session.'),{status:410});
+      await tx.$executeRawUnsafe('INSERT INTO social_gaming.dhaka_game_mission_completions(user_id,session_id,mission_id,reward) VALUES($1,$2,$3,$4)',req.user.id,s.id,req.params.missionId,mission.reward);
+      await tx.$executeRawUnsafe('INSERT INTO social_gaming.dhaka_game_profiles(user_id,score,missions_completed) VALUES($1,$2,1) ON CONFLICT(user_id) DO UPDATE SET score=social_gaming.dhaka_game_profiles.score+EXCLUDED.score,missions_completed=social_gaming.dhaka_game_profiles.missions_completed+1,updated_at=NOW()',req.user.id,mission.reward);
+      await tx.$executeRawUnsafe('UPDATE social_gaming.dhaka_game_sessions SET active_mission_id=NULL,mission_started_at=NULL WHERE id=$1',s.id);
+      const profile=await tx.$queryRawUnsafe('SELECT score,missions_completed,play_seconds FROM social_gaming.dhaka_game_profiles WHERE user_id=$1',req.user.id);
+      return profile[0];
+    });
+    res.json({verified:true,reward:mission.reward,profile:result});
+  } catch(error:any) {
+    if(error?.code==='P2002'||error?.code==='23505')return res.status(409).json({error:'This mission reward has already been claimed today.'});
+    if(error?.status)return res.status(error.status).json({error:error.message});
+    throw error;
+  }
+});
+app.post('/api/dhaka-game/sessions/:sessionId/finish',auth,async(req:any,res:any)=>{
+  const rows:any[]=await prisma.$queryRawUnsafe("UPDATE social_gaming.dhaka_game_sessions SET status='finished',ended_at=NOW() WHERE id=$1 AND user_id=$2 AND status='active' RETURNING started_at",req.params.sessionId,req.user.id);
+  if(!rows.length)return res.status(404).json({error:'Active game session not found.'});
+  const seconds=Math.min(14400,Math.max(0,Math.floor((Date.now()-new Date(rows[0].started_at).getTime())/1000)));
+  await prisma.$executeRawUnsafe('INSERT INTO social_gaming.dhaka_game_profiles(user_id,play_seconds) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET play_seconds=social_gaming.dhaka_game_profiles.play_seconds+EXCLUDED.play_seconds,updated_at=NOW()',req.user.id,seconds);
+  res.json({finished:true,playSecondsAdded:seconds});
+});
+
 app.use((err:any,_req:any,res:any,_next:any)=>{console.error(err);res.status(500).json({error:'Internal server error'});});
 app.listen(PORT,()=>console.log(`VibePulse API listening on ${PORT}`));
