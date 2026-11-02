@@ -1,4 +1,5 @@
 #include "DhakaPedestrian.h"
+#include "DhakaTrafficVehicle.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -128,6 +129,30 @@ void ADhakaPedestrian::Tick(float Dt)
         // intersection, then resumes walking along the opposite sidewalk.
         if(bWalkingToCrosswalk)
         {
+            // Wait at the curb while a vehicle is close to the junction. The
+            // wait state retries this same approach point after a short pause.
+            bool bVehicleApproaching=false;
+            for(TActorIterator<ADhakaTrafficVehicle> VehicleIt(GetWorld());VehicleIt;++VehicleIt)
+            {
+                const ADhakaTrafficVehicle* Traffic=*VehicleIt;
+                if(!Traffic)continue;
+                const FVector VehicleDelta=Traffic->GetActorLocation()-Here;
+                const float Distance=VehicleDelta.Size2D();
+                if(Distance>1050.f)continue;
+                const FVector VehicleDirection=Traffic->RouteDirection.GetSafeNormal2D();
+                const float Closing=FVector::DotProduct(-VehicleDelta,VehicleDirection);
+                if(Closing>-250.f)
+                {
+                    bVehicleApproaching=true;
+                    break;
+                }
+            }
+            if(bVehicleApproaching)
+            {
+                State=EDhakaPedestrianState::Wait;
+                WaitRemaining=FMath::FRandRange(.65f,1.15f);
+                return;
+            }
             bWalkingToCrosswalk=false;
             bCrossingRoad=true;
             CrosswalkTravelDirection=Forward;
