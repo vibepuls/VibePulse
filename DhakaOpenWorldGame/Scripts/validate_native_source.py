@@ -73,7 +73,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"',
     '"old_dhaka_shop"', '"dhanmondi_flat"', '"uttara_garage"', '"gulshan_office"',
-    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome"
+    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "UseItem", "first_aid", "fuel_can", "repair_kit"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"water_bottle"'
@@ -90,7 +90,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
 ])
 require_tokens("Config/DefaultInput.ini", [
     'AxisName="MissionSlot"', 'ActionName="CycleVehicleType"', 'ActionName="BuyProperty"',
-    'ActionName="ClaimRent"', 'ActionName="Horn"', 'ActionName="RickshawBell"',
+    'ActionName="ClaimRent"', 'ActionName="UseFirstAid"', 'ActionName="UseFood"', 'ActionName="UseFuel"', 'ActionName="UseRepair"', 'ActionName="Horn"', 'ActionName="RickshawBell"',
     'ActionName="CycleWeather"', 'ActionName="AdvanceTime"'
 ])
 
@@ -99,7 +99,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw",
-    "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent"
+    "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent", "FuelPercent", "ConditionPercent", "HandleVehicleHit"
 ])
 
 print(f"Checked {checked} C++ header/source files and cross-file gameplay wiring.")
@@ -109,3 +109,13 @@ if errors:
         print(f" - {error}")
     sys.exit(1)
 print("PASS: lightweight source sanity checks only. This does NOT replace UnrealHeaderTool, compilation, editor playtesting, or packaging.")
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
+    "Stamina=FMath::Max", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
+    "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
+    "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid"
+])
