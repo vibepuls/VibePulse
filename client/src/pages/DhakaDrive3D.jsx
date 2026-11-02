@@ -87,13 +87,47 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
   }
   const wheelRadius = type === 'motorcycle' || type === 'scooter' || type === 'bicycle' ? 0.38 : type === 'rickshaw' || type === 'batteryRickshaw' || type === 'handcart' ? 0.28 : type === 'cng' ? 0.31 : 0.38;
   const wheelGeo = new THREE.CylinderGeometry(wheelRadius, wheelRadius, 0.22, 12);
+  const vehicleWheels = [];
   if (type === 'motorcycle') {
-    for (const z of [-0.72, 0.72]) { const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI/2; wheel.position.set(0, 0.4, z); group.add(wheel); }
+    for (const z of [-0.72, 0.72]) { const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI/2; wheel.position.set(0, 0.4, z); wheel.userData.radius=wheelRadius; vehicleWheels.push(wheel); group.add(wheel); }
   } else {
     const axles = type === 'rickshaw' ? [-bodyLength * 0.25, bodyLength * 0.28] : [-bodyLength * 0.31, bodyLength * 0.31];
     for (const x of [-bodyWidth / 2 - 0.04, bodyWidth / 2 + 0.04]) for (const z of axles) {
       if (type === 'rickshaw' && x > 0) continue;
-      const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI / 2; wheel.position.set(x, type === 'rickshaw' ? 0.32 : type === 'cng' ? 0.34 : 0.42, z); wheel.castShadow = true; group.add(wheel);
+      const wheel = new THREE.Mesh(wheelGeo, dark); wheel.rotation.z = Math.PI / 2; wheel.position.set(x, type === 'rickshaw' ? 0.32 : type === 'cng' ? 0.34 : 0.42, z); wheel.userData.radius=wheelRadius; vehicleWheels.push(wheel); wheel.castShadow = true; group.add(wheel);
+    }
+  }
+  // Passenger vehicles need a distinct cabin and front/rear identity; without these,
+  // ambient traffic reads as coloured boxes and is hard to orient at speed.
+  if (['car','hatchback','suv','luxury','van','deliveryVan','ambulance','police'].includes(type)) {
+    const cabinLength = bodyLength * (['van','deliveryVan','ambulance'].includes(type) ? 0.58 : 0.48);
+    const cabinHeight = bodyHeight * 0.48;
+    const cabinWidth = bodyWidth * 0.78;
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth,cabinHeight,cabinLength),bodyMat);
+    cabin.position.set(0,body.position.y+bodyHeight*0.40,bodyLength*0.025);
+    cabin.castShadow=true; group.add(cabin);
+    const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth*.88,cabinHeight*.60,.07),glass);
+    frontGlass.position.set(0,body.position.y+bodyHeight*.63,-bodyLength*.16); frontGlass.rotation.x=-.16; group.add(frontGlass);
+    const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth*.82,cabinHeight*.48,.07),glass);
+    rearGlass.position.set(0,body.position.y+bodyHeight*.62,bodyLength*.20); rearGlass.rotation.x=.12; group.add(rearGlass);
+    for(const side of [-1,1]) {
+      const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(.055,cabinHeight*.52,cabinLength*.72),glass);
+      sideWindow.position.set(side*(cabinWidth*.51),body.position.y+bodyHeight*.57,bodyLength*.025); group.add(sideWindow);
+      const mirror = new THREE.Mesh(new THREE.BoxGeometry(.16,.12,.24),dark);
+      mirror.position.set(side*(bodyWidth*.56),body.position.y+bodyHeight*.48,-bodyLength*.23); group.add(mirror);
+    }
+    const bumperMat = new THREE.MeshStandardMaterial({color:0x30363b,metalness:.35,roughness:.48});
+    for(const z of [-bodyLength*.49,bodyLength*.49]) {
+      const bumper = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.92,.16,.18),bumperMat);
+      bumper.position.set(0,.52,z); group.add(bumper);
+    }
+    const headMat = new THREE.MeshStandardMaterial({color:0xfff0bd,emissive:0x665022});
+    const tailMat = new THREE.MeshStandardMaterial({color:0xb51f20,emissive:0x350000});
+    for(const side of [-1,1]) {
+      const head = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.16,.17,.07),headMat);
+      head.position.set(side*bodyWidth*.36,body.position.y-bodyHeight*.12,-bodyLength*.50); group.add(head);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.14,.20,.07),tailMat);
+      tail.position.set(side*bodyWidth*.37,body.position.y-bodyHeight*.12,bodyLength*.50); group.add(tail);
     }
   }
   if (player) {
@@ -103,6 +137,7 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
     for (const x of [-0.62, 0.62]) { const light = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.16, 0.08), lightMat); light.position.set(x, 0.9, -bodyLength / 2 - 0.04); group.add(light); }
   }
   group.userData.length = bodyLength;
+  group.userData.wheels = vehicleWheels;
   return group;
 }
 

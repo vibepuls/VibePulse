@@ -73,6 +73,21 @@ export class TrafficAI {
       const response = Math.min(1, dt * 1.8);
       vehicle.speed += (targetSpeed - vehicle.speed) * response;
       pos[axis] += vehicle.dir * vehicle.speed * dt;
+
+      // The model's nose points along local -Z. Keep its visual heading aligned
+      // with the lane direction instead of leaving cars facing randomly/sideways.
+      if (vehicle.mesh.rotation) {
+        if (axis === 'x') vehicle.mesh.rotation.y = vehicle.dir > 0 ? -Math.PI / 2 : Math.PI / 2;
+        else vehicle.mesh.rotation.y = vehicle.dir > 0 ? Math.PI : 0;
+      }
+      // Roll wheels from actual travel distance so traffic does not look like it is sliding.
+      const wheels = vehicle.mesh.userData?.wheels;
+      if (Array.isArray(wheels)) {
+        const directionSign = vehicle.dir * (axis === 'x' ? 1 : 1);
+        for (const wheel of wheels) {
+          if (wheel) wheel.rotation.x += (vehicle.speed * dt / Math.max(0.2, wheel.userData?.radius || 0.38)) * directionSign;
+        }
+      }
     }
   }
 }
