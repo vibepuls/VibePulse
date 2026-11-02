@@ -42,6 +42,7 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     UFUNCTION(BlueprintCallable) bool PurchaseItem(FName ItemId,int32 Quantity=1);
     UFUNCTION(BlueprintCallable) bool SellItem(FName ItemId,int32 Quantity=1);
+    UFUNCTION(BlueprintCallable) bool UseItem(FName ItemId,AActor* User);
     UFUNCTION(BlueprintCallable) bool PurchaseProperty(FName PropertyId);
     UFUNCTION(BlueprintPure) bool OwnsProperty(FName PropertyId) const;
     UFUNCTION(BlueprintCallable) void AwardExperience(int64 Amount);
