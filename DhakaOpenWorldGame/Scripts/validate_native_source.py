@@ -114,7 +114,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
     "Stamina=FMath::Max", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
-    "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput"
+    "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput", "VehicleFuelPercent", "VehicleConditionPercent"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
     "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid", "Mobile: drag left side"
