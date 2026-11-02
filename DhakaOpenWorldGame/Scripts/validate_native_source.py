@@ -80,7 +80,10 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
     '"vegetable_bag"', '"clothing_bundle"', '"water_bottle"'
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.h", [
-    "Chotpoti", "Vegetables", "Clothing"
+    "Chotpoti", "Vegetables", "Clothing", "virtual void BeginPlay() override"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
+    "void ADhakaVendorStall::BeginPlay()", "case EDhakaVendorType::Chotpoti: CanopyColor", "case EDhakaVendorType::Vegetables: CanopyColor", "case EDhakaVendorType::Clothing: CanopyColor"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
     '"chotpoti_plate"', '"vegetable_bag"', '"clothing_bundle"'
