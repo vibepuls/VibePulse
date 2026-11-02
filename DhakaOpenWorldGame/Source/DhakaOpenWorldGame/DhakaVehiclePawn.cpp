@@ -258,7 +258,7 @@ void ADhakaVehiclePawn::SaveProgress()
 {
     UDhakaSaveGame* Save=Cast<UDhakaSaveGame>(UGameplayStatics::CreateSaveGameObject(UDhakaSaveGame::StaticClass()));
     if(!Save)return;
-    Save->PlayerLocation=GetActorLocation();Save->PlayerRotation=GetActorRotation();Save->TravelDistanceKm=TravelDistanceKm;
+    Save->PlayerLocation=GetActorLocation();Save->PlayerRotation=GetActorRotation();Save->TravelDistanceKm=TravelDistanceKm;Save->PlayerVehicleType=static_cast<int32>(VehicleType);Save->VehicleFuelPercent=FuelPercent;Save->VehicleConditionPercent=ConditionPercent;
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()){
         Save->Wallet=Missions->Wallet;
         for(const FDhakaMission& Mission:Missions->Missions)if(Mission.bCompleted)Save->CompletedMissionIds.Add(Mission.Id);
@@ -272,6 +272,7 @@ void ADhakaVehiclePawn::LoadProgress()
     if(!Save)return;
     SetActorLocation(Save->PlayerLocation,false,nullptr,ETeleportType::TeleportPhysics);SetActorRotation(Save->PlayerRotation);TravelDistanceKm=FMath::Max(0.f,Save->TravelDistanceKm);
     ConfigureVehicleType(static_cast<EDhakaPlayerVehicleType>(FMath::Clamp(Save->PlayerVehicleType,0,4)));
+    FuelPercent=FMath::Clamp(Save->VehicleFuelPercent,0.f,100.f);ConditionPercent=FMath::Clamp(Save->VehicleConditionPercent,0.f,100.f);
     if(PhysicsBody)PhysicsBody->SetPhysicsLinearVelocity(FVector::ZeroVector);
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())
     {
