@@ -16,6 +16,7 @@ protected:
 private:
     UPROPERTY() TObjectPtr<UTextBlock> WalletLabel;
     UPROPERTY() TObjectPtr<UTextBlock> StatusLabel;
+    UPROPERTY() TObjectPtr<UTextBlock> InventoryLabel;
     float RefreshTimer=0.f;
     void AddLabel(class UVerticalBox* Box,const FString& Text,bool bHeading=false);
     void AddActionButton(class UVerticalBox* Box,const FString& Text,UButton*& OutButton);
@@ -30,4 +31,7 @@ private:
     UFUNCTION() void BuyGulshanOffice();
     UFUNCTION() void ClaimRent();
     UFUNCTION() void UseSelectedFirstAid();
+    UFUNCTION() void UseFood();
+    UFUNCTION() void UseFuel();
+    UFUNCTION() void UseRepair();
 };
