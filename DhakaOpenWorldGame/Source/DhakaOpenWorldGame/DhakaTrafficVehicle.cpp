@@ -25,8 +25,8 @@ void ADhakaTrafficVehicle::Tick(float Dt)
     {
         AIUpdateTimer=.30f;
         bRedSignalAhead=false;
+        CachedFollowingSpeedLimit=CruiseSpeed;
         const FVector Direction=RouteDirection.GetSafeNormal2D();
-        // Follow vehicles and obey traffic signals; refresh the perception cache at a bounded rate.
         for(TActorIterator<ADhakaTrafficVehicle> It(GetWorld());It;++It)
         {
             ADhakaTrafficVehicle* Other=*It;
@@ -37,13 +37,13 @@ void ADhakaTrafficVehicle::Tick(float Dt)
             if(Ahead>0.f&&Ahead<FMath::Max(BrakeDistance,700.f)&&Side<260.f)
             {
                 const float Target=FMath::Clamp((Ahead-170.f)/FMath::Max(1.f,BrakeDistance-170.f),0.f,1.f);
-                Other->SetActorTickEnabled(true);
-                if(Target<.96f)CurrentSpeed=FMath::Min(CurrentSpeed,CruiseSpeed*Target);
+                if(Target<.96f)CachedFollowingSpeedLimit=FMath::Min(CachedFollowingSpeedLimit,CruiseSpeed*Target);
             }
         }
         for(TActorIterator<ADhakaTrafficSignal> It(GetWorld());It;++It)
         {
-            ADhakaTrafficSignal* Signal=*It;if(!Signal)continue;
+            ADhakaTrafficSignal* Signal=*It;
+            if(!Signal)continue;
             const FVector Delta=Signal->GetActorLocation()-GetActorLocation();
             const float Ahead=FVector::DotProduct(Delta,Direction);
             const float Side=FMath::Abs(FVector::CrossProduct(Delta,Direction).Z);
@@ -51,7 +51,7 @@ void ADhakaTrafficVehicle::Tick(float Dt)
             { bRedSignalAhead=true;break; }
         }
     }
-    float Desired=CruiseSpeed;
+    float Desired=FMath::Min(CruiseSpeed,CachedFollowingSpeedLimit);
     if(bRedSignalAhead)Desired=0.f;
     if(bYieldToPlayer)
     {
