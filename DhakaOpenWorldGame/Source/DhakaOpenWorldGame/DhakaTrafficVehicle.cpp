@@ -88,6 +88,41 @@ void ADhakaTrafficVehicle::Tick(float Dt)
 {
     Super::Tick(Dt);
     if(!GetWorld()||Dt<=0.f)return;
+
+    // Recycle distant ambient traffic near the player to keep the city feeling
+    // populated without ticking vehicles across the entire procedural map.
+    if(APawn* PlayerPawn=UGameplayStatics::GetPlayerPawn(this,0))
+    {
+        const FVector PlayerLocation=PlayerPawn->GetActorLocation();
+        const FVector ToPlayer=PlayerLocation-GetActorLocation();
+        if(ToPlayer.SizeSquared2D()>26000.f*26000.f)
+        {
+            FVector Direction=RouteDirection.GetSafeNormal2D();
+            if(Direction.IsNearlyZero())Direction=FVector(1.f,0.f,0.f);
+            constexpr float GridStart=-160000.f;
+            constexpr float GridStep=17777.78f;
+            constexpr float GridEnd=160000.f;
+            FVector RecycledLocation=PlayerLocation+Direction*FMath::FRandRange(9000.f,14500.f);
+            if(FMath::Abs(Direction.X)>=FMath::Abs(Direction.Y))
+            {
+                RecycledLocation.Y=FMath::Clamp(GridStart+FMath::RoundToFloat((PlayerLocation.Y-GridStart)/GridStep)*GridStep,GridStart,GridEnd);
+                RecycledLocation.X=FMath::Clamp(RecycledLocation.X,-145000.f,145000.f);
+            }
+            else
+            {
+                RecycledLocation.X=FMath::Clamp(GridStart+FMath::RoundToFloat((PlayerLocation.X-GridStart)/GridStep)*GridStep,GridStart,GridEnd);
+                RecycledLocation.Y=FMath::Clamp(RecycledLocation.Y,-145000.f,145000.f);
+            }
+            RecycledLocation.Z=GetActorLocation().Z;
+            SetActorLocation(RecycledLocation,false,nullptr,ETeleportType::TeleportPhysics);
+            CurrentSpeed=CruiseSpeed*0.45f;
+            CurrentLaneShift=0.f;
+            TargetLaneShift=0.f;
+            LaneChangeCooldown=1.5f;
+            AIUpdateTimer=0.f;
+        }
+    }
+
     if(VehicleType==EDhakaTrafficVehicleType::Emergency){EmergencyLightTimer-=Dt;if(EmergencyLightTimer<=0.f){EmergencyLightTimer=.22f;bEmergencyLightPhase=!bEmergencyLightPhase;if(EmergencyLightRed)EmergencyLightRed->SetVisibility(bEmergencyLightPhase,true);if(EmergencyLightBlue)EmergencyLightBlue->SetVisibility(!bEmergencyLightPhase,true);}}
     LaneChangeCooldown=FMath::Max(0.f,LaneChangeCooldown-Dt);
     AIUpdateTimer-=Dt;
