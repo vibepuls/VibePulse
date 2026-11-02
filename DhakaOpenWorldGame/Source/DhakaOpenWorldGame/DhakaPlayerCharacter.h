@@ -22,6 +22,8 @@ private:
     void StartSprint();
     void StopSprint();
     void InteractVehicle();
+    void InteractProperty();
+    void ClaimPropertyIncome();
     void StartJump();
     void StopJump();
     void CycleCamera();
