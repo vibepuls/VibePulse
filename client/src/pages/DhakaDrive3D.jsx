@@ -130,6 +130,26 @@ function makeVehicle(THREE, color, type = 'car', player = false) {
       tail.position.set(side*bodyWidth*.37,body.position.y-bodyHeight*.12,bodyLength*.50); group.add(tail);
     }
   }
+  // Front/rear details for public transport, CNGs and commercial vehicles too.
+  if (!['car','hatchback','suv','luxury','van','deliveryVan','ambulance','police'].includes(type) && !['motorcycle','scooter','bicycle','rickshaw','batteryRickshaw','handcart','boat','riverLaunch'].includes(type)) {
+    const grilleMat=new THREE.MeshStandardMaterial({color:0x20252a,metalness:.45,roughness:.4});
+    const lampFront=new THREE.MeshStandardMaterial({color:0xffedbd,emissive:0x665022,roughness:.25});
+    const lampRear=new THREE.MeshStandardMaterial({color:0xb51f20,emissive:0x380000,roughness:.35});
+    const plateMat=new THREE.MeshStandardMaterial({color:0xf0eee5,roughness:.7});
+    const frontZ=-bodyLength*.505,rearZ=bodyLength*.505;
+    const grille=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.34,.22,.045),grilleMat);
+    grille.position.set(0,body.position.y-bodyHeight*.13,frontZ);group.add(grille);
+    for(const side of [-1,1]){
+      const head=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.17,.19,.055),lampFront);
+      head.position.set(side*bodyWidth*.34,body.position.y-bodyHeight*.10,frontZ);group.add(head);
+      const tail=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.15,.21,.055),lampRear);
+      tail.position.set(side*bodyWidth*.35,body.position.y-bodyHeight*.10,rearZ);group.add(tail);
+    }
+    for(const z of [frontZ,rearZ]){
+      const plate=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth*.27,.105,.035),plateMat);
+      plate.position.set(0,body.position.y-bodyHeight*.30,z);group.add(plate);
+    }
+  }
   if (player) {
     const bumper = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth * 0.9, 0.14, 0.2), new THREE.MeshStandardMaterial({ color: 0xe7e9e8, metalness: 0.55 }));
     bumper.position.set(0, 0.52, -bodyLength / 2 - 0.05); group.add(bumper);
