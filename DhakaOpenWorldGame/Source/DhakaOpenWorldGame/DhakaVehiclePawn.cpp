@@ -9,6 +9,7 @@
 #include "DhakaSaveGame.h"
 #include "DhakaMissionSubsystem.h"
 #include "DhakaWeatherController.h"
+#include "DhakaAudioDirector.h"
 #include "EngineUtils.h"
 #include "DhakaPlayerCharacter.h"
 #include "GameFramework/PlayerController.h"
@@ -102,11 +103,15 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("LoadGame",IE_Pressed,this,&ADhakaVehiclePawn::LoadProgress);
     Input->BindAction("ToggleVehicle",IE_Pressed,this,&ADhakaVehiclePawn::ToggleVehicleMode);
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaVehiclePawn::CycleCamera);
+    Input->BindAction("Horn",IE_Pressed,this,&ADhakaVehiclePawn::PlayHornInput);
+    Input->BindAction("RickshawBell",IE_Pressed,this,&ADhakaVehiclePawn::PlayRickshawBellInput);
     // Mobile: left-side touch steers; upper-right accelerates; lower-right brakes.
     Input->BindTouch(IE_Pressed,this,&ADhakaVehiclePawn::HandleTouchPressed);
     Input->BindTouch(IE_Repeat,this,&ADhakaVehiclePawn::HandleTouchMoved);
     Input->BindTouch(IE_Released,this,&ADhakaVehiclePawn::HandleTouchReleased);
 }
+void ADhakaVehiclePawn::PlayHornInput(){for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayHorn();break;}}
+void ADhakaVehiclePawn::PlayRickshawBellInput(){for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayRickshawBell();break;}}
 void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputBrake(float V){BrakeInput=FMath::Clamp(V,0.f,1.f);}
