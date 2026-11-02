@@ -73,7 +73,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"',
     '"old_dhaka_shop"', '"dhanmondi_flat"', '"uttara_garage"', '"gulshan_office"',
-    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "UseItem", "first_aid", "fuel_can", "repair_kit", "chotpoti_plate", "vegetable_bag", "clothing_bundle", "AvailableCapacity=999-CurrentQuantity", "Inventory full: sell or use some items first.", "Quantity=FMath::Min(Quantity,AvailableCapacity)", "Inventory.Reset()", "bKnownItem", "FMath::Clamp(SavedEntry.Value,0,999)", "OwnedProperties.Reset()", "bKnownProperty", "OwnedProperties.AddUnique(SavedProperty)", "UGameplayStatics::GetPlayerPawn(this,0)", "Character->NearbyVehicle", "never search arbitrary AI traffic vehicles", "while(PlayerLevel<1000 && Experience>=static_cast<int64>(PlayerLevel)*500)", "if(LastIncomeClaimUtc>Now)LastIncomeClaimUtc=Now"
+    "PurchaseItem", "PurchaseProperty", "ServiceGarage", "ClaimPropertyIncome", "UseItem", "first_aid", "fuel_can", "repair_kit", "chotpoti_plate", "vegetable_bag", "clothing_bundle", "AvailableCapacity=999-CurrentQuantity", "Inventory full: sell or use some items first.", "Quantity=FMath::Min(Quantity,AvailableCapacity)", "Inventory.Reset()", "bKnownItem", "FMath::Clamp(SavedEntry.Value,0,999)", "OwnedProperties.Reset()", "bKnownProperty", "OwnedProperties.AddUnique(SavedProperty)", "UGameplayStatics::GetPlayerPawn(this,0)", "Character->NearbyVehicle", "never search arbitrary AI traffic vehicles", "while(PlayerLevel<1000 && Experience>=static_cast<int64>(PlayerLevel)*500)", "if(LastIncomeClaimUtc>Now)LastIncomeClaimUtc=Now"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"chotpoti_plate"',
@@ -133,7 +133,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
     "Graphics quality set to %s and saved.", "SetOverallScalabilityLevel", "Settings->ApplySettings(false)", "Settings->SaveSettings()",
-    "Graphics: Low", "Graphics: Medium", "Graphics: High", "Graphics: Epic"
+    "Graphics: Low", "Graphics: Medium", "Graphics: High", "Graphics: Epic", "Garage: Full Repair  |  ৳2,500 (owned garage nearby)", "Garage: Full Refuel  |  ৳1,200 (owned garage nearby)", "GarageRepair", "GarageRefuel"
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
