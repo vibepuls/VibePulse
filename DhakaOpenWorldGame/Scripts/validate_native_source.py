@@ -88,6 +88,18 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.h", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
     "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw", "EDhakaPlayerVehicleType::Bus"
 ])
+require_tokens("Config/DefaultScalability.ini", [
+    "[AntiAliasingQuality@0]", "[AntiAliasingQuality@3]",
+    "[ShadowQuality@0]", "[ShadowQuality@3]",
+    "[PostProcessQuality@0]", "[PostProcessQuality@3]",
+    "[TextureQuality@0]", "[TextureQuality@3]",
+    "[EffectsQuality@0]", "[EffectsQuality@3]",
+    "[FoliageQuality@0]", "[FoliageQuality@3]",
+    "[ShadingQuality@0]", "[ShadingQuality@3]",
+    "[ViewDistanceQuality@0]", "[ViewDistanceQuality@3]",
+    "r.Streaming.PoolSize=300", "r.Streaming.PoolSize=1200",
+])
+
 require_tokens("Config/DefaultInput.ini", [
     'AxisName="MissionSlot"', 'ActionName="CycleVehicleType"', 'ActionName="BuyProperty"',
     'ActionName="ClaimRent"', 'ActionName="UseFirstAid"', 'ActionName="UseFood"', 'ActionName="UseFuel"', 'ActionName="UseRepair"', 'ActionName="Horn"', 'ActionName="RickshawBell"',
