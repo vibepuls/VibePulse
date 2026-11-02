@@ -71,3 +71,4 @@ void ADhakaAudioDirector::PlayHorn(){PlayOneShot(HornOneShot,OneShotVolume);}
 void ADhakaAudioDirector::PlayRickshawBell(){PlayOneShot(RickshawBellOneShot,OneShotVolume);}
 void ADhakaAudioDirector::PlayVendorCall(){PlayOneShot(VendorOneShot,OneShotVolume*0.65f);}
 void ADhakaAudioDirector::SetRainAmbienceEnabled(bool bEnabled){bRainEnabled=bEnabled;}
+void ADhakaAudioDirector::PlayThunder(){if(ThunderOneShot)UGameplayStatics::PlaySoundAtLocation(this,ThunderOneShot,GetActorLocation(),OneShotVolume);}
