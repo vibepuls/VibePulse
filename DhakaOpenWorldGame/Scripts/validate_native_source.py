@@ -120,6 +120,9 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection",
     "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "ReactToVehicleImpact"
 ])
+require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
+    "EDhakaTrafficVehicleType::Emergency", "AheadOfEmergency", "YieldFactor", "Distance<330.f"
+])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
     "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth"
