@@ -108,6 +108,8 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("Horn",IE_Pressed,this,&ADhakaVehiclePawn::PlayHornInput);
     Input->BindAction("RickshawBell",IE_Pressed,this,&ADhakaVehiclePawn::PlayRickshawBellInput);
     Input->BindAction("CycleVehicleType",IE_Pressed,this,&ADhakaVehiclePawn::CycleVehicleType);
+    Input->BindAction("CycleWeather",IE_Pressed,this,&ADhakaVehiclePawn::CycleWeatherInput);
+    Input->BindAction("AdvanceTime",IE_Pressed,this,&ADhakaVehiclePawn::AdvanceTimeInput);
     Input->BindAxis("MissionSlot",this,&ADhakaVehiclePawn::SelectMissionSlot);
     // Mobile: left-side touch steers; upper-right accelerates; lower-right brakes.
     Input->BindTouch(IE_Pressed,this,&ADhakaVehiclePawn::HandleTouchPressed);
@@ -128,6 +130,8 @@ void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputBrake(float V){BrakeInput=FMath::Clamp(V,0.f,1.f);}
 void ADhakaVehiclePawn::SetPaintColor(FLinearColor NewColor){PaintColor=NewColor;if(BodyMaterial)BodyMaterial->SetVectorParameterValue(TEXT("BaseColor"),PaintColor);}
+void ADhakaVehiclePawn::CycleWeatherInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->CycleWeather();break;}}
+void ADhakaVehiclePawn::AdvanceTimeInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->AdvanceTimeOfDay();break;}}
 void ADhakaVehiclePawn::CycleVehicleType()
 {
     const int32 Next=(static_cast<int32>(VehicleType)+1)%5;
