@@ -13,6 +13,10 @@ class DHAKAOPENWORLDGAME_API ADhakaVehiclePawn : public APawn
 public:
     ADhakaVehiclePawn();
     virtual void Tick(float DeltaSeconds) override;
+    UPROPERTY(BlueprintReadOnly, Category="Vehicle Condition", meta=(ClampMin="0",ClampMax="100")) float FuelPercent=100.f;
+    UPROPERTY(BlueprintReadOnly, Category="Vehicle Condition", meta=(ClampMin="0",ClampMax="100")) float ConditionPercent=100.f;
+    UFUNCTION(BlueprintCallable, Category="Vehicle Condition") void AddFuel(float Amount);
+    UFUNCTION(BlueprintCallable, Category="Vehicle Condition") void RepairVehicle(float Amount);
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UBoxComponent> PhysicsBody;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Body;
@@ -49,6 +53,8 @@ private:
     void CycleCamera();
     void PlayHornInput();
     void PlayRickshawBellInput();
+    void UseFuelInput();
+    void UseRepairInput();
     void CycleVehicleType();
     void CycleWeatherInput();
     void AdvanceTimeInput();
