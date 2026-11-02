@@ -53,7 +53,7 @@ Status: **PARTIAL** — base road grid now includes generated sidewalk slabs, cu
 ## Part 7 — Vendors and crowded footpaths
 - [ ] Tea, fuchka, chotpoti, jhalmuri, fruit/vegetable/clothing stalls, retail shops, pushcarts, tarpaulins, umbrellas, seating and cooking/shelf props.
 - [ ] Natural placement, vendor/customer interaction, crowding and obstacle-aware routing.
-Status: **PARTIAL** — procedural stalls/furniture exist; functional vendor interactions/economy and crowd routing remain.
+Status: **PARTIAL** — procedural stalls/furniture and interactable cha/fuchka/jhalmuri/fruit/general-shop actors now exist; pressing E near a vendor purchases its stocked item through the economy subsystem, with transaction feedback in the HUD. Full customer NPC behavior, obstacle-aware crowd routing and richer shop menus remain.
 
 ## Part 8 — Traffic
 - [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
@@ -68,7 +68,7 @@ Status: **PARTIAL** — simple walkers/local wanderers now use swept collision c
 ## Part 10 — Player gameplay
 - [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
 - [ ] Customization, inventory, currency, missions, shops, garages, property, save/load and progression.
-Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; a full mission map/menu, vehicle-type enforcement, inventory/shop/garage/property gameplay and comprehensive progression remain; a basic native HUD now displays wallet, active objective, destination distance and timer, a pulsing world-space destination beacon marks the current target, and wallet/mission state has a SaveGame slot implementation.
+Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; a full mission map/menu, vehicle-type enforcement, item-use effects, garage/property UI and comprehensive progression remain; a basic native HUD now displays wallet, active objective, destination distance and timer, a pulsing world-space destination beacon marks the current target, and wallet/mission state has a SaveGame slot implementation.
 
 ## Part 11 — Weather/environment
 - [ ] Day/night, sunrise/sunset, dynamic light, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
@@ -83,7 +83,7 @@ Status: **PARTIAL** — a native audio director exposes assignable loops for cit
 ## Part 13 — Missions/activities
 - [ ] Taxi, rickshaw, bus, delivery, races, exploration, vehicle collection, business/property, daily/weekly challenges and social activities.
 - [ ] Objectives, rewards, progression and saved state.
-Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; the economy subsystem adds inventory, shops, property purchase/income and XP progression APIs; completing a mission now awards XP as well as wallet currency. Full mission menu/map, vehicle requirements, business simulation, garage/repair UI, and the full activity set remain.
+Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; the economy subsystem adds inventory, shops, property purchase/income and XP progression APIs; completing a mission now awards XP as well as wallet currency; timed mission progress is saved periodically and mission switching no longer automatically fails the previous mission. Interactive street vendors support purchase transactions. Full mission menu/map, vehicle requirements, business simulation, garage/repair UI, and the full activity set remain.
 
 ## Part 14 — Multiplayer/VibePulse
 - [ ] Sessions, profiles, friends, shared city, racing, co-op, sync, leaderboards, achievements, gameplay sharing, events/community challenges.
