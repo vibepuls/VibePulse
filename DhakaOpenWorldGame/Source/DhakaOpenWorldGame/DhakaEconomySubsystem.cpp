@@ -92,15 +92,15 @@ bool UDhakaEconomySubsystem::UseItem(FName ItemId,AActor* User)
         return false;
     }
     ADhakaPlayerCharacter* Character=Cast<ADhakaPlayerCharacter>(User);
+    // Only modify the vehicle the player is actually driving (or the explicitly supplied vehicle).
+    // Never let a nearby traffic NPC's vehicle consume the player's fuel/repair item.
     ADhakaVehiclePawn* Vehicle=Cast<ADhakaVehiclePawn>(User);
-    if(!Vehicle && GetWorld())
+    if(!Vehicle)
     {
-        float BestDistance=550.f;
-        for(TActorIterator<ADhakaVehiclePawn> It(GetWorld());It;++It)
-        {
-            const float Distance=FVector::Dist2D(User->GetActorLocation(),It->GetActorLocation());
-            if(Distance<BestDistance){BestDistance=Distance;Vehicle=*It;}
-        }
+        APawn* PlayerPawn=UGameplayStatics::GetPlayerPawn(this,0);
+        ADhakaVehiclePawn* PlayerVehicle=Cast<ADhakaVehiclePawn>(PlayerPawn);
+        if(PlayerVehicle && FVector::Dist2D(User->GetActorLocation(),PlayerVehicle->GetActorLocation())<=550.f)
+            Vehicle=PlayerVehicle;
     }
     bool bApplied=false;
     if(ItemId==TEXT("first_aid") && Character && Character->Health<100.f)
