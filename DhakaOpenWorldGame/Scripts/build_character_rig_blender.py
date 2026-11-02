@@ -52,6 +52,25 @@ bones = {
  "ik_elbow_pole_l": ((0,55,115),(0,55,119),"root"),
  "ik_elbow_pole_r": ((0,-55,115),(0,-55,119),"root"),
 }
+# Finger chains: three segments for four fingers and two for each thumb.
+for side,sgn in (("l",1),("r",-1)):
+    finger_specs=[
+        ("thumb", -4.0, 5.0, 2, 2.0),
+        ("index", -2.0, 7.0, 3, 1.5),
+        ("middle", 0.0, 8.0, 3, 1.5),
+        ("ring", 2.0, 7.0, 3, 1.5),
+        ("pinky", 4.0, 5.5, 3, 1.5),
+    ]
+    for digit,yoff,length,segments,radius in finger_specs:
+        parent="hand_"+side
+        start=Vector((4.0,32.0*sgn+yoff,88.0))
+        for seg in range(1,segments+1):
+            end=start+Vector((length/segments, (1.0 if digit=="thumb" else 0.0)*sgn, 0.0))
+            bone_name=f"{digit}_{side}_{seg:02d}"
+            bones[bone_name]=(tuple(start),tuple(end),parent)
+            start=end
+            parent=bone_name
+
 arm_data=bpy.data.armatures.new("SK_DhakaHuman_Skeleton")
 arm=bpy.data.objects.new("SK_DhakaHuman_Armature",arm_data); bpy.context.collection.objects.link(arm)
 bpy.context.view_layer.objects.active=arm; arm.select_set(True)
@@ -101,6 +120,22 @@ for side,sgn in (("l",1),("r",-1)):
     uv("Elbow_"+side,(0,29*sgn,115),(4.4,4.4,4.4),mats[1],"lowerarm_"+side)
     capsule("Forearm_"+side,(0,29*sgn,115),(0,31*sgn,94),3.6,mats[1],"lowerarm_"+side)
     uv("Hand_"+side,(2,32*sgn,88),(3.3,3.1,5.0),mats[1],"hand_"+side)
+# Fingers are separate tapered cylinders so each finger chain has deforming geometry.
+for side,sgn in (("l",1),("r",-1)):
+    finger_specs=[
+        ("thumb", -4.0, 5.0, 2, 1.15),
+        ("index", -2.0, 7.0, 3, 0.95),
+        ("middle", 0.0, 8.0, 3, 0.95),
+        ("ring", 2.0, 7.0, 3, 0.9),
+        ("pinky", 4.0, 5.5, 3, 0.8),
+    ]
+    for digit,yoff,length,segments,radius in finger_specs:
+        start=Vector((4.0,32.0*sgn+yoff,88.0))
+        for seg in range(1,segments+1):
+            end=start+Vector((length/segments,(1.0 if digit=="thumb" else 0.0)*sgn,0.0))
+            capsule(f"{digit}_{side}_{seg:02d}",start,end,radius,mats[1],f"{digit}_{side}_{seg:02d}")
+            start=end
+
 # legs and feet
 for side,sgn in (("l",1),("r",-1)):
     capsule("Thigh_"+side,(0,10*sgn,94),(0,10*sgn,53),6.2,mats[2],"thigh_"+side)
