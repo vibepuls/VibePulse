@@ -68,7 +68,7 @@ def require_tokens(relative_path: str, tokens: list[str]) -> None:
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
     '"explore_lalbagh"', '"taxi_gulshan"', '"market_delivery"', '"bus_route"',
-    '"rickshaw_neighborhood"', "StartMissionBySlot", "ActiveMissionTimeRemaining", "offer the next available mission", "const int32 Candidate=(FailedIndex+Offset)%Missions.Num()"
+    '"rickshaw_neighborhood"', "StartMissionBySlot", "ActiveMissionTimeRemaining", "offer the next available mission", "const int32 Candidate=(FailedIndex+Offset)%Missions.Num()", "Mission.bFailed=!Mission.bCompleted && Saved->bFailed", "FMath::IsFinite(Save->ActiveMissionTimeRemaining)"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"',
