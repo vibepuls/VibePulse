@@ -28,4 +28,7 @@ private:
     UPROPERTY() TObjectPtr<class UExponentialHeightFogComponent> Fog;
     UPROPERTY() TObjectPtr<class USceneComponent> Root;
     UPROPERTY() TObjectPtr<ADhakaRainEffect> RainEffect;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UPointLightComponent> LightningLight;
+    float LightningCountdown=8.f;
+    float LightningFlashRemaining=0.f;
 };
