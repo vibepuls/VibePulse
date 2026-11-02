@@ -11,6 +11,7 @@
 #include "DhakaProceduralCitizen.h"
 #include "DhakaLandmarkGenerator.h"
 #include "DhakaTrafficSignal.h"
+#include "DhakaAudioDirector.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/DirectionalLight.h"
@@ -34,6 +35,7 @@ void ADhakaGameMode::BeginPlay()
     if (UGameInstance* GI=World->GetGameInstance())
         if (UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>()) Missions->EnsureMissionMonitor();
     World->SpawnActor<ADhakaMissionMarker>(ADhakaMissionMarker::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
+    World->SpawnActor<ADhakaAudioDirector>(ADhakaAudioDirector::StaticClass(),FVector::ZeroVector,FRotator::ZeroRotator);
     if(CityGeneratorClass) World->SpawnActor<ADhakaCityGenerator>(CityGeneratorClass,FVector::ZeroVector,FRotator::ZeroRotator);
     if(ADhakaLandmarkGenerator* Landmarks=World->SpawnActorDeferred<ADhakaLandmarkGenerator>(ADhakaLandmarkGenerator::StaticClass(),FTransform::Identity))
     { Landmarks->RandomSeed=2026; UGameplayStatics::FinishSpawningActor(Landmarks,FTransform::Identity); }
