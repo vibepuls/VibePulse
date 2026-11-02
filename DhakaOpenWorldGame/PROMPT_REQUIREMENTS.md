@@ -78,7 +78,7 @@ Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected we
 ## Part 12 — Sound
 - [ ] Engines, horns, rickshaw bells, motorcycles, buses, traffic, pedestrians/vendors/markets, construction, rain/thunder, river/boats and indoor/outdoor ambience.
 - [ ] Spatial audio, attenuation, zones and original/licensed assets.
-Status: **PARTIAL** — a native audio director exposes assignable loops for city traffic, market, rain, riverfront and player engine plus horn/rickshaw-bell/vendor one-shots and a rain toggle. Original/licensed audio assets are not bundled or assigned; spatial attenuation/zones, category-specific vehicle audio, thunder/construction/boat sounds and mix validation remain.
+Status: **PARTIAL** — a native audio director exposes assignable loops for city traffic, market, rain, riverfront and player engine plus horn/rickshaw-bell/vendor one-shots and a rain toggle. Original/licensed audio assets are not bundled or assigned; category-specific vehicle audio, thunder/construction/boat sounds, spatial attenuation and mix validation remain; market loops are now gated by district proximity and successful vendor purchases trigger the configurable vendor-call event.
 
 ## Part 13 — Missions/activities
 - [ ] Taxi, rickshaw, bus, delivery, races, exploration, vehicle collection, business/property, daily/weekly challenges and social activities.
