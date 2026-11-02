@@ -25,12 +25,12 @@ void UDhakaMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         Missions.Add(M);
     };
     Add("explore_lalbagh", TEXT("Old Dhaka Explorer"), TEXT("Reach Lalbagh Fort and explore the historic district."), 500, FVector(-88000,103000,0), EDhakaMissionType::Exploration, 900.f);
-    Add("taxi_gulshan", TEXT("CNG Taxi Run"), TEXT("Drive to Gulshan Circle before time runs out."), 850, FVector(-53333,-53333,0), EDhakaMissionType::Taxi, 700.f, 180.f);
+    Add("taxi_gulshan", TEXT("CNG Taxi Run"), TEXT("Switch to CNG with N, then reach Gulshan Circle before time runs out."), 850, FVector(-53333,-53333,0), EDhakaMissionType::Taxi, 700.f, 180.f);
     Add("market_delivery", TEXT("Market Delivery"), TEXT("Deliver a package to Old Dhaka market."), 700, FVector(-85000,100000,0), EDhakaMissionType::Delivery, 650.f, 150.f);
-    Add("bus_route", TEXT("City Bus Route"), TEXT("Reach the marked city bus stop."), 1000, FVector(100000,70000,0), EDhakaMissionType::BusRoute, 800.f, 240.f);
+    Add("bus_route", TEXT("City Bus Route"), TEXT("Switch to Bus with N, then reach the marked city bus stop."), 1000, FVector(100000,70000,0), EDhakaMissionType::BusRoute, 800.f, 240.f);
     Add("street_sprint", TEXT("Dhaka Street Sprint"), TEXT("Reach the finish point before the timer expires."), 1200, FVector(150000,-10000,0), EDhakaMissionType::Race, 650.f, 90.f);
     Add("sadarghat", TEXT("Riverfront Visit"), TEXT("Visit Sadarghat and the Buriganga riverfront."), 600, FVector(130000,145000,0), EDhakaMissionType::Exploration, 1000.f);
-    Add("rickshaw_neighborhood", TEXT("Rickshaw Neighborhood Run"), TEXT("Reach the neighborhood destination."), 650, FVector(-25000,45000,0), EDhakaMissionType::Rickshaw, 550.f, 180.f);
+    Add("rickshaw_neighborhood", TEXT("Rickshaw Neighborhood Run"), TEXT("Switch to Rickshaw with N, then reach the neighborhood destination."), 650, FVector(-25000,45000,0), EDhakaMissionType::Rickshaw, 550.f, 180.f);
     Add("weekly_city_tour", TEXT("Weekly City Tour"), TEXT("Explore the city and reach the marked destination."), 1800, FVector(60000,-90000,0), EDhakaMissionType::WeeklyChallenge, 900.f, 420.f);
     Add("daily_commute", TEXT("Daily Commute"), TEXT("Reach the destination for today's commute."), 400, FVector(25000,25000,0), EDhakaMissionType::DailyChallenge, 500.f, 120.f);
     Add("property_scout", TEXT("Property Scout"), TEXT("Visit the marked location to scout a property."), 900, FVector(75000,45000,0), EDhakaMissionType::Property, 700.f);
