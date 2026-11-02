@@ -127,3 +127,10 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
     "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth"
 ])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
+    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "WALLET", "UseItem"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
+    "CreateWidget<UDhakaEconomyWidget>", "SetInputMode(FInputModeGameAndUI())"
+])
