@@ -19,6 +19,13 @@ public:
     UPROPERTY(BlueprintReadOnly) TObjectPtr<class ADhakaVehiclePawn> NearbyVehicle;
     void SetNearbyVehicle(class ADhakaVehiclePawn* Vehicle) { NearbyVehicle=Vehicle; }
 private:
+    UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralTorso;
+    UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralHead;
+    UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralLeftArm;
+    UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralRightArm;
+    UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralLeftLeg;
+    UPROPERTY() TObjectPtr<class UStaticMeshComponent> ProceduralRightLeg;
+    float ProceduralAnimationTime=0.f;
     void MoveForward(float Value);
     void MoveRight(float Value);
     void Turn(float Value);
