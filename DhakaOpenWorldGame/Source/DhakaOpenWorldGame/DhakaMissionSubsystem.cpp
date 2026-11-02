@@ -198,7 +198,12 @@ bool UDhakaMissionSubsystem::LoadProgress()
     for (FDhakaMission& Mission:Missions)
     {
         const FDhakaMission* Saved=Save->Missions.FindByPredicate([&Mission](const FDhakaMission& Candidate){return Candidate.Id==Mission.Id;});
-        if (Saved) { Mission.bCompleted=Saved->bCompleted; Mission.bFailed=Saved->bFailed; }
+        if (Saved)
+        {
+            // A mission cannot be both completed and failed; completion is the terminal success state.
+            Mission.bCompleted=Saved->bCompleted;
+            Mission.bFailed=!Mission.bCompleted && Saved->bFailed;
+        }
     }
     ActiveMissionIndex=INDEX_NONE;
     for (int32 I=0;I<Missions.Num();++I)
@@ -209,7 +214,10 @@ bool UDhakaMissionSubsystem::LoadProgress()
     }
     if (Missions.IsValidIndex(ActiveMissionIndex))
     {
-        ActiveMissionTimeRemaining=Save->Version>=2?FMath::Clamp(Save->ActiveMissionTimeRemaining,0.f,Missions[ActiveMissionIndex].TimeLimitSeconds>0.f?Missions[ActiveMissionIndex].TimeLimitSeconds:Save->ActiveMissionTimeRemaining):Missions[ActiveMissionIndex].TimeLimitSeconds;
+        const float DefaultMissionTime=Missions[ActiveMissionIndex].TimeLimitSeconds;
+        const float SavedMissionTime=FMath::IsFinite(Save->ActiveMissionTimeRemaining)?Save->ActiveMissionTimeRemaining:DefaultMissionTime;
+        const float MaxMissionTime=DefaultMissionTime>0.f?DefaultMissionTime:FMath::Max(0.f,SavedMissionTime);
+        ActiveMissionTimeRemaining=Save->Version>=2?FMath::Clamp(SavedMissionTime,0.f,MaxMissionTime):DefaultMissionTime;
         if(Missions[ActiveMissionIndex].TimeLimitSeconds>0.f&&ActiveMissionTimeRemaining<=0.f)ActiveMissionTimeRemaining=Missions[ActiveMissionIndex].TimeLimitSeconds;
         StartMissionMonitor();
     }
