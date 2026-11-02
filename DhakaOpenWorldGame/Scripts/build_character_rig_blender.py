@@ -41,6 +41,16 @@ bones = {
  "calf_r": ((0,-10,53),(0,-10,12),"thigh_r"),
  "foot_r": ((7,-10,10),(20,-10,6),"calf_r"),
  "toe_r": ((20,-10,6),(27,-10,6),"foot_r"),
+ # Non-deforming IK targets and pole vectors for two-bone solvers.
+ "ik_foot_root": ((0,0,0),(0,0,4),"root"),
+ "ik_foot_l": ((20,10,6),(20,10,10),"ik_foot_root"),
+ "ik_foot_r": ((20,-10,6),(20,-10,10),"ik_foot_root"),
+ "ik_hand_l": ((2,32,88),(2,32,92),"root"),
+ "ik_hand_r": ((2,-32,88),(2,-32,92),"root"),
+ "ik_knee_pole_l": ((0,48,52),(0,48,56),"root"),
+ "ik_knee_pole_r": ((0,-48,52),(0,-48,56),"root"),
+ "ik_elbow_pole_l": ((0,55,115),(0,55,119),"root"),
+ "ik_elbow_pole_r": ((0,-55,115),(0,-55,119),"root"),
 }
 arm_data=bpy.data.armatures.new("SK_DhakaHuman_Skeleton")
 arm=bpy.data.objects.new("SK_DhakaHuman_Armature",arm_data); bpy.context.collection.objects.link(arm)
@@ -121,7 +131,7 @@ for v in mesh.data.vertices:
 arm_mod=mesh.modifiers.new("Armature_Deform","ARMATURE"); arm_mod.object=arm
 mesh.parent=arm
 # Pose axes and bone roll are kept consistent for Control Rig/IK setup.
-for b in arm.data.bones: b.use_deform=(b.name!="root")
+for b in arm.data.bones: b.use_deform=(b.name!="root" and not b.name.startswith("ik_"))
 
 def key_pose(action_name, frames, pose_func):
     action=bpy.data.actions.new(action_name)
