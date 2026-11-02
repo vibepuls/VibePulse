@@ -12,7 +12,9 @@ class DHAKAOPENWORLDGAME_API ADhakaPedestrian : public AActor
     GENERATED_BODY()
 public:
     ADhakaPedestrian();
+    virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
+    void ReactToVehicleImpact(const FVector& VehicleForward,float Severity);
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class USceneComponent> Root;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UCapsuleComponent> CollisionCapsule;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UStaticMeshComponent> Torso;
@@ -37,4 +39,17 @@ public:
 private:
     float WaitRemaining = 0.f;
     float WalkPhase = 0.f;
+    float WeatherRefreshTimer = 0.f;
+    float CrowdLodRefreshTimer = 0.f;
+    bool bVisualsHiddenForDistance = false;
+    float WeatherWalkMultiplier = 1.f;
+    float BaseWalkSpeed = 150.f;
+    float FleeRemaining = 0.f;
+    bool bWalkingToCrosswalk = false;
+    bool bWalkingToVendor = false;
+    bool bHasPostVendorDestination = false;
+    FVector PostVendorDestination = FVector::ZeroVector;
+    bool bCrossingRoad = false;
+    FVector CrosswalkTravelDirection = FVector::ZeroVector;
+    UPROPERTY() TObjectPtr<class ADhakaWeatherController> WeatherController;
 };

@@ -3,7 +3,6 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UObject/ConstructorHelpers.h"
 
 ADhakaCityGenerator::ADhakaCityGenerator(){ PrimaryActorTick.bCanEverTick=false; SceneRoot=CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot")); SetRootComponent(SceneRoot); }
 void ADhakaCityGenerator::ClearGenerated(){ for(auto* M:GeneratedMeshes){if(M){M->DestroyComponent();}} GeneratedMeshes.Reset(); }
@@ -25,18 +24,135 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             if(!bRiverRoad){
                 AddBoxMesh(FVector(P,0,0),FVector(900.f,CityExtent+Step,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
                 AddBoxMesh(FVector(P,0,10.f),FVector(1.5f,CityExtent+Step,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
+                for(float Side : {-1.f,1.f})
+                {
+                    AddBoxMesh(FVector(P+Side*660.f,0,12.f),FVector(300.f,CityExtent+Step,22.f),FLinearColor(0.43f,0.42f,0.38f),true);
+                    AddBoxMesh(FVector(P+Side*495.f,0,23.f),FVector(24.f,CityExtent+Step,28.f),FLinearColor(0.57f,0.54f,0.46f),true);
+                }
             }
             AddBoxMesh(FVector(0,P,0),FVector(CityExtent+Step,900.f,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
             AddBoxMesh(FVector(0,P,10.f),FVector(CityExtent+Step,1.5f,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
+            for(float Side : {-1.f,1.f})
+            {
+                AddBoxMesh(FVector(0,P+Side*660.f,12.f),FVector(CityExtent+Step,300.f,22.f),FLinearColor(0.43f,0.42f,0.38f),true);
+                AddBoxMesh(FVector(0,P+Side*495.f,23.f),FVector(CityExtent+Step,24.f,28.f),FLinearColor(0.57f,0.54f,0.46f),true);
+            }
             if(I%4==0)for(float Side : {-1.f,1.f})AddBoxMesh(FVector(RiverCenterX,P+Side*520.f,125.f),FVector(RiverHalfWidth*2.f,22.f,80.f),FLinearColor(.65f,.68f,.67f),true);
+            // Drainage channels along selected curb lines, kept sparse to control component count.
+            if(I%3==0)for(float Side : {-1.f,1.f})
+            {
+                if(!bRiverRoad)AddBoxMesh(FVector(P+Side*825.f,0.f,8.f),FVector(38.f,CityExtent+Step,5.f),FLinearColor(.035f,.045f,.048f),false);
+                AddBoxMesh(FVector(0.f,P+Side*825.f,8.f),FVector(CityExtent+Step,38.f,5.f),FLinearColor(.035f,.045f,.048f),false);
+            }
+        }
+    }
+    if(bGenerateRoads)
+    {
+        // Zebra crossings at selected central intersections.
+        for(const int32 IX : {7,9,11})for(const int32 IY : {7,9,11})
+        {
+            const float CrossX=Start+IX*Step, CrossY=Start+IY*Step;
+            if(CrossX>RiverCenterX-RiverHalfWidth&&CrossX<RiverCenterX+RiverHalfWidth)continue;
+            for(int32 Stripe=0;Stripe<8;++Stripe)
+            {
+                const float Offset=-280.f+Stripe*80.f;
+                AddBoxMesh(FVector(CrossX,CrossY-430.f+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX,CrossY+430.f+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX-430.f+Offset,CrossY,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX+430.f+Offset,CrossY,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+            }
+        }
+        // Low-profile speed humps on selected straight road segments. Keep them
+        // sparse and outside the river corridor so traffic remains traversable.
+        for(int32 I=2;I<GridBlocks;I+=5)
+        {
+            const float P=Start+I*Step;
+            if(!(P>RiverCenterX-RiverHalfWidth&&P<RiverCenterX+RiverHalfWidth))
+            {
+                for(const float Along : {-96000.f,-32000.f,32000.f,96000.f})
+                    AddBoxMesh(FVector(P,Along,15.f),FVector(680.f,95.f,12.f),FLinearColor(.24f,.24f,.23f),true);
+            }
+            for(const float Along : {-96000.f,-32000.f,32000.f,96000.f})
+                AddBoxMesh(FVector(Along,P,15.f),FVector(95.f,680.f,12.f),FLinearColor(.24f,.24f,.23f),true);
+        }
+        // Flat curb-cut landing pads at the selected zebra crossings improve
+        // wheelchair/stroller readability even with the current box-mesh pipeline.
+        for(const int32 IX : {7,9,11})for(const int32 IY : {7,9,11})
+        {
+            const float CrossX=Start+IX*Step, CrossY=Start+IY*Step;
+            if(CrossX>RiverCenterX-RiverHalfWidth&&CrossX<RiverCenterX+RiverHalfWidth)continue;
+            for(const float Side : {-1.f,1.f})
+            {
+                AddBoxMesh(FVector(CrossX,CrossY+Side*610.f,14.f),FVector(320.f,120.f,3.f),FLinearColor(.55f,.54f,.50f),false);
+                AddBoxMesh(FVector(CrossX+Side*610.f,CrossY,14.f),FVector(120.f,320.f,3.f),FLinearColor(.55f,.54f,.50f),false);
+            }
+        }
+        // Short dashed lane dividers on selected central roads. These are deliberately
+        // sparse so the procedural box-mesh approach does not explode component counts.
+        for(int32 I=0;I<=GridBlocks;I+=4)
+        {
+            const float P=Start+I*Step;
+            if(P>=-70000.f&&P<=70000.f)
+            {
+                const bool bRiverRoad=P>RiverCenterX-RiverHalfWidth&&P<RiverCenterX+RiverHalfWidth;
+                if(!bRiverRoad)
+                {
+                    for(float Along=-60000.f;Along<=60000.f;Along+=3200.f)
+                        for(const float LaneSide : {-1.f,1.f})
+                            AddBoxMesh(FVector(P+LaneSide*220.f,Along,11.5f),FVector(20.f,760.f,2.f),FLinearColor(.78f,.79f,.74f),false);
+                }
+                for(float Along=-60000.f;Along<=60000.f;Along+=3200.f)
+                    for(const float LaneSide : {-1.f,1.f})
+                        AddBoxMesh(FVector(Along,P+LaneSide*220.f,11.5f),FVector(760.f,20.f,2.f),FLinearColor(.78f,.79f,.74f),false);
+            }
+        }
+        // Random asphalt patches and pothole silhouettes provide low-cost road-surface variation.
+        for(int32 Damage=0;Damage<GridBlocks*3;++Damage)
+        {
+            const int32 RoadIndex=R.RandRange(0,GridBlocks);
+            const float RoadP=Start+RoadIndex*Step;
+            const float Along=R.FRandRange(Start,-Start);
+            const bool bVertical=R.RandBool();
+            const float W=R.FRandRange(45.f,150.f),D=R.FRandRange(55.f,180.f);
+            if(bVertical && !(RoadP>RiverCenterX-RiverHalfWidth&&RoadP<RiverCenterX+RiverHalfWidth))
+                AddBoxMesh(FVector(RoadP,Along,10.f),FVector(W,D,2.f),R.FRand()<.5f?FLinearColor(.045f,.05f,.052f):FLinearColor(.12f,.125f,.12f),false);
+            else if(!bVertical)
+                AddBoxMesh(FVector(Along,RoadP,10.f),FVector(D,W,2.f),R.FRand()<.5f?FLinearColor(.045f,.05f,.052f):FLinearColor(.12f,.125f,.12f),false);
         }
     }
     if(bGenerateBuildings){
+        // District centers are approximate gameplay zones, not a claim of survey-grade GIS accuracy.
+        // Each zone gets a distinct density, height profile and palette to avoid a city of identical blocks.
+        struct FDistrictStyle { FVector2D Center; float Radius; float MinHeight; float MaxHeight; float Vacancy; FLinearColor Low; FLinearColor High; };
+        const FDistrictStyle Districts[] = {
+            {FVector2D(-88000.f,103000.f),36000.f,260.f,900.f,.04f,FLinearColor(.43f,.29f,.19f),FLinearColor(.72f,.53f,.34f)}, // Old Dhaka
+            {FVector2D(-53333.f,-53333.f),33000.f,700.f,2600.f,.10f,FLinearColor(.18f,.28f,.32f),FLinearColor(.48f,.62f,.66f)}, // Gulshan
+            {FVector2D(-18000.f,-78000.f),30000.f,850.f,2800.f,.14f,FLinearColor(.16f,.25f,.3f),FLinearColor(.53f,.62f,.66f)}, // Banani
+            {FVector2D(0.f,0.f),30000.f,650.f,2100.f,.08f,FLinearColor(.34f,.32f,.27f),FLinearColor(.68f,.62f,.49f)}, // Motijheel
+            {FVector2D(23000.f,27000.f),30000.f,400.f,1500.f,.16f,FLinearColor(.38f,.35f,.29f),FLinearColor(.7f,.65f,.53f)}, // Dhanmondi
+            {FVector2D(-110000.f,-70000.f),32000.f,350.f,1250.f,.12f,FLinearColor(.34f,.31f,.28f),FLinearColor(.62f,.57f,.48f)}, // Mirpur
+            {FVector2D(73000.f,43000.f),33000.f,450.f,1650.f,.13f,FLinearColor(.36f,.38f,.34f),FLinearColor(.69f,.68f,.58f)}, // Uttara
+            {FVector2D(10000.f,-25000.f),25000.f,500.f,1900.f,.08f,FLinearColor(.38f,.29f,.21f),FLinearColor(.7f,.52f,.31f)}, // Farmgate
+            {FVector2D(130000.f,145000.f),30000.f,250.f,950.f,.07f,FLinearColor(.36f,.3f,.23f),FLinearColor(.68f,.52f,.34f)}, // Sadarghat
+            {FVector2D(95000.f,-85000.f),30000.f,400.f,1500.f,.11f,FLinearColor(.34f,.32f,.28f),FLinearColor(.66f,.59f,.48f)}, // Jatrabari
+            {FVector2D(-50000.f,50000.f),27000.f,550.f,2200.f,.09f,FLinearColor(.24f,.31f,.33f),FLinearColor(.55f,.62f,.63f)}, // Mohakhali
+            {FVector2D(60000.f,-90000.f),26000.f,450.f,1750.f,.10f,FLinearColor(.36f,.33f,.27f),FLinearColor(.68f,.61f,.47f)} // Shahbagh
+        };
         for(int32 X=0;X<GridBlocks;++X) for(int32 Y=0;Y<GridBlocks;++Y){
-            if(R.FRand()<0.12f) continue;
             const float PX=Start+(X+0.5f)*Step, PZ=Start+(Y+0.5f)*Step;
-            const float W=Step*R.FRandRange(0.28f,0.65f), D=Step*R.FRandRange(0.28f,0.65f), H=R.FRandRange(350.f,2100.f);
-            const FLinearColor C=FLinearColor::LerpUsingHSV(FLinearColor(0.34f,0.29f,0.22f),FLinearColor(0.63f,0.61f,0.54f),R.FRand());
+            int32 BestDistrict=INDEX_NONE;float BestDistance=MAX_flt;
+            for(int32 I=0;I<UE_ARRAY_COUNT(Districts);++I){
+                const float Dist=FVector2D(PX,PZ).Distance(Districts[I].Center);
+                if(Dist<Districts[I].Radius && Dist<BestDistance){BestDistance=Dist;BestDistrict=I;}
+            }
+            const FDistrictStyle& Style=BestDistrict==INDEX_NONE?Districts[3]:Districts[BestDistrict];
+            const float Vacancy=BestDistrict==INDEX_NONE?.12f:Style.Vacancy;
+            if(R.FRand()<Vacancy)continue;
+            const float W=Step*R.FRandRange(BestDistrict==0?.32f:.28f,BestDistrict==0?.52f:.65f);
+            const float D=Step*R.FRandRange(BestDistrict==0?.30f:.28f,BestDistrict==0?.5f:.65f);
+            const float HeightBias=R.FRand();
+            const float H=FMath::Lerp(Style.MinHeight,Style.MaxHeight,HeightBias*HeightBias);
+            const FLinearColor C=FLinearColor::LerpUsingHSV(Style.Low,Style.High,R.FRand());
             AddBuildingMesh(PX,PZ,W,D,H,C,R);
         }
     }

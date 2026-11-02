@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""Lightweight source sanity checks for DhakaOpenWorldGame (not an Unreal build)."""
+from pathlib import Path
+import ast
+import re
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = ROOT / "Source"
+errors = []
+checked = 0
+
+def strip_comments_and_strings(text: str) -> str:
+    # Keep newlines so diagnostic locations remain roughly useful.
+    text = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
+    text = re.sub(r"//[^\n]*", "", text)
+    text = re.sub(r'"(?:\\.|[^"\\])*"', '""', text)
+    text = re.sub(r"'(?:\\.|[^'\\])*'", "''", text)
+    return text
+
+for path in sorted(SOURCE.rglob("*")):
+    if path.suffix not in {".h", ".cpp"}:
+        continue
+    checked += 1
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    rel = path.relative_to(ROOT)
+    if "\\n" in raw:
+        errors.append(f"{rel}: contains literal backslash-n text")
+    includes = re.findall(r'^\s*#include\s+"([^"]+)"', raw, flags=re.M)
+    duplicates = sorted({name for name in includes if includes.count(name) > 1})
+    if duplicates:
+        errors.append(f"{rel}: duplicate quoted includes: {', '.join(duplicates)}")
+    generated = [name for name in includes if name.endswith(".generated.h")]
+    if path.suffix == ".h" and re.search(r"\b(UCLASS|USTRUCT|UENUM|UINTERFACE)\b", raw):
+        if len(generated) != 1:
+            errors.append(f"{rel}: reflected header must include exactly one .generated.h, found {len(generated)}")
+        elif includes[-1] != generated[0]:
+            errors.append(f"{rel}: .generated.h must be the final include")
+    for name in includes:
+        if name.endswith(".generated.h") or "/" in name or "\\" in name:
+            continue
+        candidates = [path.parent / name, SOURCE / "DhakaOpenWorldGame" / name, SOURCE / name]
+        if not any(candidate.is_file() for candidate in candidates) and name.startswith("Dhaka"):
+            errors.append(f"{rel}: local project include not found in source tree: {name}")
+    cleaned = strip_comments_and_strings(raw)
+    depth = 0
+    for char in cleaned:
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth < 0:
+                errors.append(f"{rel}: closing brace appears before matching opening brace")
+                break
+    if depth != 0:
+        errors.append(f"{rel}: unbalanced braces (final depth {depth})")
+
+# Cross-file catalog/input checks catch common wiring regressions before a UE build.
+MODULE = SOURCE / "DhakaOpenWorldGame"
+def require_tokens(relative_path: str, tokens: list[str]) -> None:
+    path = ROOT / relative_path
+    if not path.is_file():
+        errors.append(f"{relative_path}: required project file is missing")
+        return
+    source = path.read_text(encoding="utf-8", errors="replace")
+    for token in tokens:
+        if token not in source:
+            errors.append(f"{relative_path}: required integration token is missing: {token}")
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
+    '"explore_lalbagh"', '"taxi_gulshan"', '"market_delivery"', '"bus_route"',
+    '"rickshaw_neighborhood"', "StartMissionBySlot", "ActiveMissionTimeRemaining", "offer the next available mission", "const int32 Candidate=(FailedIndex+Offset)%Missions.Num()", "Mission.bFailed=!Mission.bCompleted && Saved->bFailed", "FMath::IsFinite(Save->ActiveMissionTimeRemaining)"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
+    '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"',
+    '"old_dhaka_shop"', '"dhanmondi_flat"', '"uttara_garage"', '"gulshan_office"',
+    "PurchaseItem", "PurchaseProperty", "ServiceGarage", "ClaimPropertyIncome", "UseItem", "first_aid", "fuel_can", "repair_kit", "chotpoti_plate", "vegetable_bag", "clothing_bundle", "AvailableCapacity=999-CurrentQuantity", "Inventory full: sell or use some items first.", "Quantity=FMath::Min(Quantity,AvailableCapacity)", "Inventory.Reset()", "bKnownItem", "FMath::Clamp(SavedEntry.Value,0,999)", "OwnedProperties.Reset()", "bKnownProperty", "OwnedProperties.AddUnique(SavedProperty)", "UGameplayStatics::GetPlayerPawn(this,0)", "Character->NearbyVehicle", "never search arbitrary AI traffic vehicles", "while(PlayerLevel<1000 && Experience>=static_cast<int64>(PlayerLevel)*500)", "if(LastIncomeClaimUtc>Now)LastIncomeClaimUtc=Now"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
+    '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"chotpoti_plate"',
+    '"vegetable_bag"', '"clothing_bundle"', '"water_bottle"'
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.h", [
+    "Chotpoti", "Vegetables", "Clothing", "virtual void BeginPlay() override"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
+    "void ADhakaVendorStall::BeginPlay()", "case EDhakaVendorType::Chotpoti: CanopyColor", "case EDhakaVendorType::Vegetables: CanopyColor", "case EDhakaVendorType::Clothing: CanopyColor"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
+    '"chotpoti_plate"', '"vegetable_bag"', '"clothing_bundle"'
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
+    "DhakaVendorStall", "DhakaPropertyTerminal", "TrafficCount", "PedestrianCount",
+    '"old_dhaka_shop"', '"dhanmondi_flat"', '"uttara_garage"', '"gulshan_office"'
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.h", [
+    "EDhakaPlayerVehicleType", "Sedan", "CNG", "Rickshaw", "Bus", "Motorcycle", "ConfigureVehicleType"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
+    "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw", "EDhakaPlayerVehicleType::Bus"
+])
+require_tokens("Config/DefaultScalability.ini", [
+    "[AntiAliasingQuality@0]", "[AntiAliasingQuality@3]",
+    "[ShadowQuality@0]", "[ShadowQuality@3]",
+    "[PostProcessQuality@0]", "[PostProcessQuality@3]",
+    "[TextureQuality@0]", "[TextureQuality@3]",
+    "[EffectsQuality@0]", "[EffectsQuality@3]",
+    "[FoliageQuality@0]", "[FoliageQuality@3]",
+    "[ShadingQuality@0]", "[ShadingQuality@3]",
+    "[ViewDistanceQuality@0]", "[ViewDistanceQuality@3]",
+    "r.Streaming.PoolSize=300", "r.Streaming.PoolSize=1200",
+])
+
+require_tokens("Config/DefaultInput.ini", [
+    'AxisName="MissionSlot"', 'ActionName="CycleVehicleType"', 'ActionName="BuyProperty"',
+    'ActionName="ClaimRent"', 'ActionName="UseFirstAid"', 'ActionName="UseFood"', 'ActionName="UseFuel"', 'ActionName="UseRepair"', 'ActionName="Horn"', 'ActionName="RickshawBell"',
+    'ActionName="CycleWeather"', 'ActionName="AdvanceTime"', 'ActionName="CycleGraphicsQuality"'
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
+    "CycleWeather", "AdvanceTimeOfDay", "SetWeather", "SetTimeOfDay", "FMath::IsFinite(Hours)?FMath::Fmod(FMath::Abs(Hours),24.f):12.f", "LightningCountdown", "LightningFlashRemaining", "PlayThunder"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
+    "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw",
+    "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent", "FuelPercent", "ConditionPercent", "HandleVehicleHit", "EffectiveGrip", "ConditionSpeedLimit",
+    "bLocationValid", "bRotationValid", "FMath::IsFinite(Save->TravelDistanceKm)", "FMath::IsFinite(Save->VehicleFuelPercent)", "FMath::IsFinite(Save->VehicleConditionPercent)", "RepairVehicle(0.f)", "CycleGraphicsQuality", "UGameUserSettings::GetGameUserSettings()", "Settings->SetOverallScalabilityLevel(Level)", "Settings->SaveSettings()"
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
+    "Stamina=FMath::Max", "PlayerProceduralTorso", "PlayerProceduralHead", "ProceduralAnimationTime", "MovementSpeed>8.f", "ProceduralLeftLeg->SetRelativeRotation", "void ADhakaPlayerCharacter::StartSprint(){if(Stamina>15.f)", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward", "TakeDamage", "CycleGraphicsQuality", "UGameUserSettings::GetGameUserSettings()", "Settings->SetOverallScalabilityLevel(Level)"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
+    "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput", "VehicleFuelPercent", "VehicleConditionPercent"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
+    "Graphics quality set to %s and saved.", "SetOverallScalabilityLevel", "Settings->ApplySettings(false)", "Settings->SaveSettings()",
+    "Graphics: Low", "Graphics: Medium", "Graphics: High", "Graphics: Epic", "Garage: Full Repair  |  ৳2,500 (owned garage nearby)", "Garage: Full Refuel  |  ৳1,200 (owned garage nearby)", "GarageRepair", "GarageRefuel"
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
+    "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid", "BAG", "Mobile: drag left side"
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaPedestrian.cpp", [
+    "ReactToVehicleImpact", "FleeRemaining", "BaseWalkSpeed", "GetActorForwardVector().GetSafeNormal2D()", "FMath::FRandRange(-70.f,70.f)",
+    "Animate limbs around their forward/backward pitch axis", "FRotator(Swing*28.f,0.f,0.f)", "FRotator(-Swing*20.f,0.f,0.f)", "100.f+FMath::Abs(Swing)*2.5f",
+    "bWalkingToCrosswalk", "bCrossingRoad", "StreetGridOrigin=-160000.f", "State=EDhakaPedestrianState::Cross",
+    "CrosswalkTravelDirection=Forward", "SetActorRotation(CrosswalkTravelDirection.Rotation())", "DhakaTrafficVehicle.h", "bVehicleApproaching", "Distance>1050.f", "WaitRemaining=FMath::FRandRange(.65f,1.15f)",
+    "DhakaVendorStall.h", "EDhakaPedestrianState::Shop", "WaitRemaining=FMath::FRandRange(2.5f,7.f)", "NearestStallDistance=850.f", "bWalkingToVendor", "PostVendorDestination", "NearestStall->GetActorLocation()+AwayFromStall*180.f"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
+    "SidewalkOffset=660.f", "StreetGridStep=17777.78f", "SpawnLocation+Ped->GetActorForwardVector()*WalkDistance", "Spawn crowd agents on the procedural sidewalk bands"
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
+    "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection",
+    "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "LookAhead", "const FVector Probe=CandidateLocation+Direction*LookAhead", "Separation.Size2D()<360.f", "Separation.Size2D()<280.f", "PlayerIt(GetWorld())", "Separation.Size2D()<460.f", "DhakaPlayerCharacter.h", "TActorIterator<ADhakaPlayerCharacter>", "Separation.Size2D()<380.f", "YieldForPerson(PlayerCharacter->GetActorLocation(),300.f)"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
+    "EDhakaTrafficVehicleType::Emergency", "AheadOfEmergency", "YieldFactor", "Distance<330.f", "GetPlayerPawn(this,0)", "ToPlayer.SizeSquared2D()>26000.f*26000.f", "GridStep=17777.78f", "CurrentSpeed=CruiseSpeed*0.45f", "bFoundRecycleSlot", "FVector::DistSquared2D(Candidate,Other->GetActorLocation())<900.f*900.f", "FVector::DistSquared2D(Candidate,Pedestrian->GetActorLocation())<450.f*450.f"
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
+    "Zebra crossings", "Drainage channels", "CrossX", "RiverHalfWidth", "Low-profile speed humps", "curb-cut landing pads", "Short dashed lane dividers", "LaneSide*220.f", "GridBlocks;I+=5",
+    "struct FDistrictStyle", "Old Dhaka", "Gulshan", "Banani", "Motijheel", "Dhanmondi", "Mirpur", "Uttara", "Farmgate", "Sadarghat", "Jatrabari", "Mohakhali", "Shahbagh",
+    "BestDistrict", "Style.MinHeight", "Style.MaxHeight", "Style.Vacancy"
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
+    "PurchaseItem", "SellItem", "PurchaseProperty", "ClaimPropertyIncome", "WALLET", "UseItem", "InventoryLabel", "UseFood", "UseFuel", "UseRepair", "SellWater", "SellSnack", "SellTea", "SellFuchka", "SellJhalmuri", "SellFruit", "MissionPicker", "OnMissionSelected", "NextVehicleType", "PaintVehicleRed", "PaintVehicleBlue", "PaintVehicleGreen"
+])
+
+# Prevent duplicate runtime controls from silently stacking in the native economy panel.
+widget_path = MODULE / "DhakaEconomyWidget.cpp"
+if widget_path.is_file():
+    widget_source = widget_path.read_text(encoding="utf-8", errors="replace")
+    for label, token in [
+        ("inventory label construction", 'InventoryLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("InventoryLabel"))'),
+        ("food-use button", 'AddActionButton(Actions,TEXT("Use Food/Drink  |  F2"),Button)'),
+        ("fuel-use button", 'AddActionButton(Actions,TEXT("Use Fuel Can  |  F3"),Button)'),
+        ("repair-use button", 'AddActionButton(Actions,TEXT("Use Repair Kit  |  F4"),Button)'),
+    ]:
+        count = widget_source.count(token)
+        if count != 1:
+            errors.append(f"Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp: expected one {label}, found {count}")
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
+    "CreateWidget<UDhakaEconomyWidget>", "SetInputMode(FInputModeGameAndUI())",
+    "QualityNames[]={TEXT(\"LOW\"),TEXT(\"MEDIUM\"),TEXT(\"HIGH\"),TEXT(\"EPIC\")}",
+    "F8 GRAPHICS: %s", "GetOverallScalabilityLevel()"
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaAudioDirector.cpp", [
+    "EmergencySirenLoop", "bEmergencyNearby", "PlayThunder"
+])
+
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaCharacterAnimInstance.h", [
+    "UDhakaCharacterAnimInstance", "GroundSpeed", "Direction", "VerticalSpeed", "bIsMoving", "bIsInAir", "bIsSprinting"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaCharacterAnimInstance.cpp", [
+    "NativeInitializeAnimation", "NativeUpdateAnimation", "UKismetAnimationLibrary::CalculateDirection", "Move->IsFalling()"
+])
+require_tokens("Scripts/build_character_rig_blender.py", [
+    "SK_DhakaHuman", "A_Dhaka_Idle", "A_Dhaka_Walk", "A_Dhaka_Run", "ik_foot_l", "ik_foot_r", "ik_hand_l", "ik_hand_r", "finger_specs", "pinky", "vertex_groups", "bake_anim"
+])
+require_tokens("Scripts/import_character_rig_unreal.py", [
+    "SK_DhakaHuman", "ABP_PlayerDhaka", "IK_DhakaHuman", "CR_DhakaHuman",
+    "apply_auto_generated_retarget_definition", "apply_auto_fbik", "create_control_rig_from_skeletal_mesh_or_skeleton",
+    "GroundSpeed", "RigControlType.EULER_TRANSFORM"
+])
+
+# Parse Python automation scripts without importing Blender/Unreal modules.
+for script in sorted((ROOT / "Scripts").glob("*.py")):
+    try:
+        ast.parse(script.read_text(encoding="utf-8"), filename=str(script.relative_to(ROOT)))
+    except SyntaxError as exc:
+        errors.append(f"{script.relative_to(ROOT)}: Python syntax error at line {exc.lineno}: {exc.msg}")
+
+
+print(f"Checked {checked} C++ header/source files and cross-file gameplay wiring.")
+if errors:
+    print(f"FAILED: {len(errors)} source sanity issue(s):")
+    for error in errors:
+        print(f" - {error}")
+    sys.exit(1)
+print("PASS: lightweight source sanity checks only. This does NOT replace UnrealHeaderTool, compilation, editor playtesting, or packaging.")
