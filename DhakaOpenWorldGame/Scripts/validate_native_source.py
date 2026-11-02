@@ -126,7 +126,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
-    "Stamina=FMath::Max", "void ADhakaPlayerCharacter::StartSprint(){if(Stamina>15.f)", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward", "TakeDamage", "CycleGraphicsQuality", "UGameUserSettings::GetGameUserSettings()", "Settings->SetOverallScalabilityLevel(Level)"
+    "Stamina=FMath::Max", "PlayerProceduralTorso", "PlayerProceduralHead", "ProceduralAnimationTime", "MovementSpeed>8.f", "ProceduralLeftLeg->SetRelativeRotation", "void ADhakaPlayerCharacter::StartSprint(){if(Stamina>15.f)", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward", "TakeDamage", "CycleGraphicsQuality", "UGameUserSettings::GetGameUserSettings()", "Settings->SetOverallScalabilityLevel(Level)"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput", "VehicleFuelPercent", "VehicleConditionPercent"
