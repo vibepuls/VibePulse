@@ -56,10 +56,10 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             for(int32 Stripe=0;Stripe<8;++Stripe)
             {
                 const float Offset=-280.f+Stripe*80.f;
-                AddBoxMesh(FVector(CrossX+Offset,CrossY-430.f,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
-                AddBoxMesh(FVector(CrossX+Offset,CrossY+430.f,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
-                AddBoxMesh(FVector(CrossX-430.f,CrossY+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
-                AddBoxMesh(FVector(CrossX+430.f,CrossY+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX,CrossY-430.f+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX,CrossY+430.f+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX-430.f+Offset,CrossY,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX+430.f+Offset,CrossY,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
             }
         }
         // Random asphalt patches and pothole silhouettes provide low-cost road-surface variation.
