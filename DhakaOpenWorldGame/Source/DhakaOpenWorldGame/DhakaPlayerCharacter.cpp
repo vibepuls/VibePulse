@@ -8,6 +8,7 @@
 #include "DhakaVendorStall.h"
 #include "DhakaPropertyTerminal.h"
 #include "DhakaEconomySubsystem.h"
+#include "DhakaMissionSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -35,6 +36,7 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("InteractVehicle",IE_Pressed,this,&ADhakaPlayerCharacter::InteractVehicle);
     Input->BindAction("BuyProperty",IE_Pressed,this,&ADhakaPlayerCharacter::InteractProperty);
     Input->BindAction("ClaimRent",IE_Pressed,this,&ADhakaPlayerCharacter::ClaimPropertyIncome);
+    Input->BindAxis("MissionSlot",this,&ADhakaPlayerCharacter::SelectMissionSlot);
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaPlayerCharacter::CycleCamera);
 }
 void ADhakaPlayerCharacter::MoveForward(float V){if(!Controller||FMath::IsNearlyZero(V))return;const FRotator Yaw(0,Controller->GetControlRotation().Yaw,0);AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),V);}
@@ -97,4 +99,13 @@ void ADhakaPlayerCharacter::ClaimPropertyIncome()
 {
     if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* Economy=GI->GetSubsystem<UDhakaEconomySubsystem>())
         Economy->ClaimPropertyIncome();
+}
+
+void ADhakaPlayerCharacter::SelectMissionSlot(float Value)
+{
+    const int32 Slot=FMath::RoundToInt(Value);
+    if(Slot<=0){LastMissionSlot=0;return;}
+    if(Slot==LastMissionSlot)return;
+    LastMissionSlot=Slot;
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())Missions->StartMissionBySlot(Slot);
 }
