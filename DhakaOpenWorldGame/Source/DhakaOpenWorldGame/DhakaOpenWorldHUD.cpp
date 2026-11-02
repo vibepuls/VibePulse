@@ -69,4 +69,21 @@ void ADhakaOpenWorldHUD::DrawHUD()
         if(!Economy->LastTransactionMessage.IsEmpty())Canvas->DrawText(Font,Economy->LastTransactionMessage.ToString(),PanelX+18.f,PanelY+198.f,0.68f,0.68f);
     }
     Canvas->DrawText(Font,TEXT("E: Vendor / Vehicle  |  F: Buy Property  |  P: Claim Rent"),PanelX+18.f,PanelY+224.f,0.62f,0.62f);
+    if(Missions && Canvas->ClipX>900.f)
+    {
+        const float ListW=310.f, ListX=Canvas->ClipX-ListW-24.f, ListY=24.f;
+        const int32 VisibleCount=FMath::Min(10,Missions->Missions.Num());
+        Canvas->DrawRect(FLinearColor(.02f,.03f,.045f,.86f),ListX,ListY,ListW,34.f+VisibleCount*22.f);
+        Canvas->SetDrawColor(FColor(30,210,190,255));
+        Canvas->DrawRect(FLinearColor(.08f,.82f,.72f,1.f),ListX,ListY,3.f,34.f+VisibleCount*22.f);
+        Canvas->SetDrawColor(FColor::White);
+        Canvas->DrawText(Font,TEXT("MISSIONS  |  press 1-9 or 0"),ListX+12.f,ListY+7.f,.68f,.68f);
+        for(int32 I=0;I<VisibleCount;++I)
+        {
+            const FDhakaMission& Item=Missions->Missions[I];
+            const FString Status=I==Missions->ActiveMissionIndex?TEXT("  [ACTIVE]"):(Item.bCompleted?TEXT("  [DONE]"):(Item.bFailed?TEXT("  [FAILED]"):TEXT("")));
+            const FString SlotLabel=I==9?TEXT("0"):FString::FromInt(I+1);
+            Canvas->DrawText(Font,SlotLabel+TEXT(". ")+Item.Title.ToString()+Status,ListX+12.f,ListY+34.f+I*22.f,.56f,.56f);
+        }
+    }
 }
