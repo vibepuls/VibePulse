@@ -47,6 +47,7 @@ public:
     UFUNCTION(BlueprintCallable) void EnsureMissionMonitor();
 private:
     FTimerHandle MissionUpdateTimer;
+    float MissionAutosaveTimer = 0.f;
     void UpdateActiveMission();
     void StartMissionMonitor();
 };
