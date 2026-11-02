@@ -220,6 +220,16 @@ bool UDhakaEconomySubsystem::LoadEconomy()
     }
     PlayerLevel=FMath::Clamp(Save->PlayerLevel,1,1000);
     Experience=FMath::Max<int64>(0,Save->Experience);
+    // Reconcile valid but inconsistent save data so XP thresholds cannot be bypassed
+    // or leave the player permanently carrying multiple unprocessed levels.
+    while(PlayerLevel<1000 && Experience>=static_cast<int64>(PlayerLevel)*500)
+    {
+        Experience-=static_cast<int64>(PlayerLevel)*500;
+        ++PlayerLevel;
+    }
+    const FDateTime Now=FDateTime::UtcNow();
     LastIncomeClaimUtc=Save->LastIncomeClaimUtc;
+    // A corrupt/future timestamp must not lock daily property income indefinitely.
+    if(LastIncomeClaimUtc>Now)LastIncomeClaimUtc=Now;
     return true;
 }
