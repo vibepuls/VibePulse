@@ -38,10 +38,30 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
                 AddBoxMesh(FVector(0,P+Side*495.f,23.f),FVector(CityExtent+Step,24.f,28.f),FLinearColor(0.57f,0.54f,0.46f),true);
             }
             if(I%4==0)for(float Side : {-1.f,1.f})AddBoxMesh(FVector(RiverCenterX,P+Side*520.f,125.f),FVector(RiverHalfWidth*2.f,22.f,80.f),FLinearColor(.65f,.68f,.67f),true);
+            // Drainage channels along selected curb lines, kept sparse to control component count.
+            if(I%3==0)for(float Side : {-1.f,1.f})
+            {
+                if(!bRiverRoad)AddBoxMesh(FVector(P+Side*825.f,0.f,8.f),FVector(38.f,CityExtent+Step,5.f),FLinearColor(.035f,.045f,.048f),false);
+                AddBoxMesh(FVector(0.f,P+Side*825.f,8.f),FVector(CityExtent+Step,38.f,5.f),FLinearColor(.035f,.045f,.048f),false);
+            }
         }
     }
     if(bGenerateRoads)
     {
+        // Zebra crossings at selected central intersections.
+        for(const int32 IX : {7,9,11})for(const int32 IY : {7,9,11})
+        {
+            const float CrossX=Start+IX*Step, CrossY=Start+IY*Step;
+            if(CrossX>RiverCenterX-RiverHalfWidth&&CrossX<RiverCenterX+RiverHalfWidth)continue;
+            for(int32 Stripe=0;Stripe<8;++Stripe)
+            {
+                const float Offset=-280.f+Stripe*80.f;
+                AddBoxMesh(FVector(CrossX+Offset,CrossY-430.f,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX+Offset,CrossY+430.f,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX-430.f,CrossY+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+                AddBoxMesh(FVector(CrossX+430.f,CrossY+Offset,14.f),FVector(760.f,48.f,2.f),FLinearColor(.88f,.88f,.82f),false);
+            }
+        }
         // Random asphalt patches and pothole silhouettes provide low-cost road-surface variation.
         for(int32 Damage=0;Damage<GridBlocks*3;++Damage)
         {
