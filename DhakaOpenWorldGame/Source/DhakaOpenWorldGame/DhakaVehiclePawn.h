@@ -59,6 +59,7 @@ private:
     void CycleVehicleType();
     void CycleWeatherInput();
     void AdvanceTimeInput();
+    void CycleGraphicsQuality();
     void SelectMissionSlot(float Value);
     int32 LastMissionSlot = 0;
     void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
