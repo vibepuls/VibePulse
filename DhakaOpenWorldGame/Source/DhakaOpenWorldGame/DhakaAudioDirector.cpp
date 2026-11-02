@@ -1,5 +1,6 @@
 #include "DhakaAudioDirector.h"
 #include "DhakaVehiclePawn.h"
+#include "DhakaTrafficVehicle.h"
 #include "DhakaWeatherController.h"
 #include "EngineUtils.h"
 #include "Components/AudioComponent.h"
@@ -22,6 +23,7 @@ void ADhakaAudioDirector::BeginPlay()
     RainAudio=CreateLoop(TEXT("RainAudio"),RainLoop,AmbienceVolume);
     RiverAudio=CreateLoop(TEXT("RiverfrontAudio"),RiverfrontLoop,AmbienceVolume*0.7f);
     EngineAudio=CreateLoop(TEXT("PlayerEngineAudio"),EngineLoop,AmbienceVolume);
+    SirenAudio=CreateLoop(TEXT("EmergencySirenAudio"),EmergencySirenLoop,OneShotVolume);
 }
 UAudioComponent* ADhakaAudioDirector::CreateLoop(const TCHAR* Name,USoundBase* Sound,float Volume)
 {
