@@ -31,7 +31,7 @@ Status: **PARTIAL** — city, vehicle, citizen, landmark and street-life generat
 - [ ] Functional doors/seatbelts; suspension, wheel rotation, steering, torque, transmission, braking, tire friction, mass/weight transfer, collision and damage/deformation.
 - [ ] Distinct handling profiles for sedan, hatchback, SUV, luxury, microbus, bus/coach, truck/pickup/van, emergency vehicles, motorcycles/scooters/bicycles, rickshaws, CNG, handcart and river craft.
 - [ ] Color/body/interior/performance variants and authentic Bangladesh references.
-Status: **PARTIAL** — configurable procedural vehicle and force-driven pawn exist; production meshes, Chaos wheel physics, functional doors/seatbelts, damage and category-specific handling remain.
+Status: **PARTIAL** — configurable procedural vehicle and force-driven pawn exist; production meshes, Chaos wheel/suspension physics, functional doors/seatbelts, damage and category-specific handling remain; source now animates visible wheel spin and switches headlights/brake lights based on time/braking.
 
 ## Part 4 — Human characters
 - [ ] Complete anatomy, hands/fingers, facial geometry, eyes/brows/nose/mouth/ears, hair/facial hair and body types.
@@ -68,12 +68,12 @@ Status: **PARTIAL** — simple walkers/local wanderers now use swept collision c
 ## Part 10 — Player gameplay
 - [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
 - [ ] Customization, inventory, currency, missions, shops, garages, property, save/load and progression.
-Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; a full mission map/menu, vehicle-type enforcement, inventory/shop/garage/property gameplay and comprehensive progression remain; a basic native HUD now displays wallet, active objective and timer, while wallet/mission state has a SaveGame slot implementation.
+Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; a full mission map/menu, vehicle-type enforcement, inventory/shop/garage/property gameplay and comprehensive progression remain; a basic native HUD now displays wallet, active objective, destination distance and timer, while wallet/mission state has a SaveGame slot implementation.
 
 ## Part 11 — Weather/environment
 - [ ] Day/night, sunrise/sunset, dynamic light, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
 - [ ] Weather affects visibility, handling, pedestrian behavior and visuals.
-Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected weather/time exist; a procedural instanced-rain actor is connected to Rain/Monsoon intensity in source. Niagara-quality rain, wet-road materials, puddles/splashes, thunder/lightning and handling/visibility gameplay effects remain.
+Status: **PARTIAL** — time-of-day lighting/fog and save/restore of selected weather/time exist; a procedural instanced-rain actor is connected to Rain/Monsoon intensity in source; vehicle headlights and brake lights react to time/braking. Niagara-quality rain, wet-road materials, puddles/splashes, thunder/lightning and handling/visibility gameplay effects remain.
 
 ## Part 12 — Sound
 - [ ] Engines, horns, rickshaw bells, motorcycles, buses, traffic, pedestrians/vendors/markets, construction, rain/thunder, river/boats and indoor/outdoor ambience.
