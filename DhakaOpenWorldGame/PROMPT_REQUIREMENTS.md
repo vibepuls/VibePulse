@@ -76,7 +76,7 @@ Status: **PARTIAL** — walking/driving/camera switching, basic wallet/missions 
 ## Part 11 — Weather/environment
 - [ ] Day/night, sunrise/sunset, dynamic lighting, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
 - [ ] Weather affects visibility, vehicle handling, pedestrian behavior and visuals.
-Status: **PARTIAL** — time-of-day lighting and fog density are present; rain particles, wet-road materials, puddles, splashes and gameplay effects are not done.
+Status: **PARTIAL** — time-of-day lighting and fog density are present and save/load now restores selected weather/time; rain particles, wet-road materials, puddles, splashes and gameplay effects are not done.
 
 ## Part 12 — Sound
 - [ ] Engines/horns/rickshaw bells/motorcycles/buses/traffic/pedestrian/vendor/market/construction/rain/thunder/river/boats and indoor/outdoor ambience.
