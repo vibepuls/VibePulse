@@ -20,6 +20,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weather") float RainIntensity = 0.f;
     UFUNCTION(BlueprintCallable) void SetWeather(EDhakaWeather NewWeather);
     UFUNCTION(BlueprintCallable) void SetTimeOfDay(float Hours);
+    UFUNCTION(BlueprintCallable) void CycleWeather();
+    UFUNCTION(BlueprintCallable) void AdvanceTimeOfDay();
     virtual void Tick(float DeltaSeconds) override;
 private:
     void ApplyEnvironment();
