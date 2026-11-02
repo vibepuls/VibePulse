@@ -1,5 +1,6 @@
 #include "DhakaPedestrian.h"
 #include "DhakaTrafficVehicle.h"
+#include "DhakaVendorStall.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -113,7 +114,13 @@ void ADhakaPedestrian::Tick(float Dt)
             else if(WeatherController->Weather==EDhakaWeather::Fog)WeatherWalkMultiplier=.92f;
         }
     }
-    if(State==EDhakaPedestrianState::Shop||State==EDhakaPedestrianState::Talk||State==EDhakaPedestrianState::BoardVehicle){return;}
+    if(State==EDhakaPedestrianState::Shop||State==EDhakaPedestrianState::Talk||State==EDhakaPedestrianState::BoardVehicle)
+    {
+        WaitRemaining-=Dt;
+        if(WaitRemaining>0.f)return;
+        State=EDhakaPedestrianState::Walk;
+        Destination=GetActorLocation()+GetActorForwardVector()*FMath::FRandRange(500.f,1100.f);
+    }
     if(State==EDhakaPedestrianState::Wait){WaitRemaining-=Dt;if(WaitRemaining<=0.f)State=EDhakaPedestrianState::Walk;else return;}
     FVector Delta=Destination-GetActorLocation();Delta.Z=0.f;
     if(Delta.Size2D()<=ArrivalRadius)
@@ -124,6 +131,26 @@ void ADhakaPedestrian::Tick(float Dt)
         constexpr float StreetGridStep=17777.78f;
         constexpr float StreetGridOrigin=-160000.f;
         constexpr float SidewalkOffset=660.f;
+
+        // Ambient pedestrians occasionally pause at a nearby street vendor,
+        // giving the market streets a little life without spending player money.
+        if(!bWalkingToCrosswalk&&!bCrossingRoad&&FMath::FRand()<.07f)
+        {
+            ADhakaVendorStall* NearestStall=nullptr;
+            float NearestStallDistance=850.f;
+            for(TActorIterator<ADhakaVendorStall> StallIt(GetWorld());StallIt;++StallIt)
+            {
+                const float StallDistance=FVector::Dist2D(Here,StallIt->GetActorLocation());
+                if(StallDistance<NearestStallDistance){NearestStallDistance=StallDistance;NearestStall=*StallIt;}
+            }
+            if(NearestStall)
+            {
+                State=EDhakaPedestrianState::Shop;
+                WaitRemaining=FMath::FRandRange(2.5f,7.f);
+                Destination=Here;
+                return;
+            }
+        }
 
         // A pedestrian who reaches the approach point crosses only at a grid
         // intersection, then resumes walking along the opposite sidewalk.
