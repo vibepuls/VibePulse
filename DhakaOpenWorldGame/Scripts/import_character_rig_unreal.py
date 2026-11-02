@@ -72,11 +72,12 @@ if not unreal.EditorAssetLibrary.does_asset_exist(ANIMBP_PATH):
     try:
         factory=unreal.AnimBlueprintFactory()
         factory.set_editor_property("target_skeleton",skeleton)
-        factory.set_editor_property("parent_class",unreal.AnimInstance)
+        native_anim_class=unreal.load_class(None,"/Script/DhakaOpenWorldGame.DhakaCharacterAnimInstance")
+        factory.set_editor_property("parent_class",native_anim_class or unreal.AnimInstance)
         bp=unreal.AssetToolsHelpers.get_asset_tools().create_asset("ABP_PlayerDhaka",ROOT,unreal.AnimBlueprint,factory)
         if bp:
             unreal.EditorAssetLibrary.save_loaded_asset(bp)
-            unreal.log("Created ABP_PlayerDhaka. Open it and wire Idle/Walk/Run into a locomotion state machine if the current engine version does not auto-create a state machine graph.")
+            unreal.log("Created ABP_PlayerDhaka with native GroundSpeed/Direction/VerticalSpeed/bIsMoving/bIsInAir/bIsSprinting variables. The editor must contain a locomotion state machine before this blueprint can drive the imported clips.")
     except Exception as e:
         unreal.log_warning("Animation Blueprint factory is not exposed by this engine's Python API: "+str(e))
 
