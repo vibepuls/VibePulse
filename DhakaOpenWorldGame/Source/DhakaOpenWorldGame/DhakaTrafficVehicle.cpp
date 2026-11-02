@@ -10,15 +10,16 @@
 ADhakaTrafficVehicle::ADhakaTrafficVehicle()
 {
     PrimaryActorTick.bCanEverTick=true;
-    Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrafficBody")); SetRootComponent(Body);
+    TrafficRoot=CreateDefaultSubobject<USceneComponent>(TEXT("TrafficRoot")); SetRootComponent(TrafficRoot);
+    Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrafficBody")); Body->SetupAttachment(TrafficRoot);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if(Cube.Succeeded()) Body->SetStaticMesh(Cube.Object);
     Body->SetRelativeScale3D(FVector(4.1f,2.0f,1.1f)); Body->SetCollisionProfileName(TEXT("BlockAll"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    auto MakeWheel=[this,&Cylinder](const TCHAR* Name)->UStaticMeshComponent* {
+    auto MakeWheel=[this](const TCHAR* Name)->UStaticMeshComponent* {
         UStaticMeshComponent* Wheel=CreateDefaultSubobject<UStaticMeshComponent>(Name);
         if(Cylinder.Succeeded()) Wheel->SetStaticMesh(Cylinder.Object);
-        Wheel->SetupAttachment(Body); Wheel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Wheel->SetupAttachment(TrafficRoot); Wheel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Wheel->SetRelativeRotation(FRotator(90.f,0.f,0.f)); Wheel->SetRelativeScale3D(FVector(.34f,.18f,.34f));
         return Wheel;
     };
@@ -52,7 +53,7 @@ void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType
             Body->SetMaterial(0,DynamicMaterial);
         }
     }
-    const float HalfX=Dimensions.X*.72f, HalfY=Dimensions.Y*.88f, WheelZ=-Dimensions.Z*.78f;
+    const float HalfX=Dimensions.X*50.f*.72f, HalfY=Dimensions.Y*50.f*.88f, WheelZ=-Dimensions.Z*50.f*.78f;
     if(WheelFrontLeft)WheelFrontLeft->SetRelativeLocation(FVector(HalfX,-HalfY,WheelZ));
     if(WheelFrontRight)WheelFrontRight->SetRelativeLocation(FVector(HalfX,HalfY,WheelZ));
     if(WheelRearLeft)WheelRearLeft->SetRelativeLocation(FVector(-HalfX,-HalfY,WheelZ));
