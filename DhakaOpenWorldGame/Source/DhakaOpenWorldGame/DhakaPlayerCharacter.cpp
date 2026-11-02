@@ -9,6 +9,7 @@
 #include "DhakaPropertyTerminal.h"
 #include "DhakaEconomySubsystem.h"
 #include "DhakaMissionSubsystem.h"
+#include "DhakaWeatherController.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -37,6 +38,8 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("BuyProperty",IE_Pressed,this,&ADhakaPlayerCharacter::InteractProperty);
     Input->BindAction("ClaimRent",IE_Pressed,this,&ADhakaPlayerCharacter::ClaimPropertyIncome);
     Input->BindAxis("MissionSlot",this,&ADhakaPlayerCharacter::SelectMissionSlot);
+    Input->BindAction("CycleWeather",IE_Pressed,this,&ADhakaPlayerCharacter::CycleWeatherInput);
+    Input->BindAction("AdvanceTime",IE_Pressed,this,&ADhakaPlayerCharacter::AdvanceTimeInput);
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaPlayerCharacter::CycleCamera);
 }
 void ADhakaPlayerCharacter::MoveForward(float V){if(!Controller||FMath::IsNearlyZero(V))return;const FRotator Yaw(0,Controller->GetControlRotation().Yaw,0);AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),V);}
@@ -109,3 +112,6 @@ void ADhakaPlayerCharacter::SelectMissionSlot(float Value)
     LastMissionSlot=Slot;
     if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())Missions->StartMissionBySlot(Slot);
 }
+
+void ADhakaPlayerCharacter::CycleWeatherInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->CycleWeather();break;}}
+void ADhakaPlayerCharacter::AdvanceTimeInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->AdvanceTimeOfDay();break;}}
