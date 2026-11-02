@@ -26,6 +26,10 @@ void UDhakaEconomySubsystem::BuildCatalog()
     };
     AddItem("water_bottle",TEXT("Water Bottle"),TEXT("A bottle of drinking water."),30,10);
     AddItem("street_snack",TEXT("Street Snack"),TEXT("A quick snack from a roadside stall."),60,20);
+    AddItem("tea_cup",TEXT("Cha (Tea)"),TEXT("Hot tea from a roadside cha stall."),20,5);
+    AddItem("fuchka_plate",TEXT("Fuchka Plate"),TEXT("Fuchka from a street vendor."),100,30);
+    AddItem("jhalmuri_packet",TEXT("Jhalmuri"),TEXT("A spicy puffed-rice snack."),50,15);
+    AddItem("fruit_bag",TEXT("Fruit Bag"),TEXT("Fresh seasonal fruit."),80,25);
     AddItem("first_aid",TEXT("First Aid Kit"),TEXT("Basic first aid supplies."),250,80);
     AddItem("phone_data",TEXT("Mobile Data Pack"),TEXT("A prepaid mobile data pack."),120,0);
     AddItem("fuel_can",TEXT("Fuel Can"),TEXT("Emergency fuel for a long trip."),450,150);
@@ -47,11 +51,12 @@ bool UDhakaEconomySubsystem::PurchaseItem(FName ItemId,int32 Quantity)
     Quantity=FMath::Clamp(Quantity,1,99);
     const FDhakaShopItem* Item=ShopCatalog.FindByPredicate([ItemId](const FDhakaShopItem& Candidate){return Candidate.Id==ItemId;});
     UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
-    if(!Item||!Missions)return false;
+    if(!Item||!Missions){LastTransactionMessage=FText::FromString(TEXT("Purchase failed: item or wallet unavailable."));return false;}
     const int64 Cost=static_cast<int64>(Item->Price)*Quantity;
-    if(Cost<0||Missions->Wallet<Cost)return false;
+    if(Cost<0||Missions->Wallet<Cost){LastTransactionMessage=FText::FromString(TEXT("Not enough money for this purchase."));return false;}
     Missions->AddWallet(-Cost);
     Inventory.FindOrAdd(ItemId)=FMath::Clamp(Inventory.FindRef(ItemId)+Quantity,0,999);
+    LastTransactionMessage=FText::Format(NSLOCTEXT("DhakaEconomy","PurchaseSuccess","Purchased {0} x{1}."),Item->Name,FText::AsNumber(Quantity));
     SaveEconomy();
     return true;
 }
@@ -61,10 +66,11 @@ bool UDhakaEconomySubsystem::SellItem(FName ItemId,int32 Quantity)
     Quantity=FMath::Clamp(Quantity,1,99);
     const FDhakaShopItem* Item=ShopCatalog.FindByPredicate([ItemId](const FDhakaShopItem& Candidate){return Candidate.Id==ItemId;});
     UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
-    if(!Item||Item->SellPrice<=0||!Missions||Inventory.FindRef(ItemId)<Quantity)return false;
+    if(!Item||Item->SellPrice<=0||!Missions||Inventory.FindRef(ItemId)<Quantity){LastTransactionMessage=FText::FromString(TEXT("Cannot sell this item or quantity."));return false;}
     Inventory[ItemId]-=Quantity;
     if(Inventory[ItemId]<=0)Inventory.Remove(ItemId);
     Missions->AddWallet(static_cast<int64>(Item->SellPrice)*Quantity);
+    LastTransactionMessage=FText::Format(NSLOCTEXT("DhakaEconomy","SaleSuccess","Sold {0} x{1}."),Item->Name,FText::AsNumber(Quantity));
     SaveEconomy();
     return true;
 }
@@ -73,9 +79,10 @@ bool UDhakaEconomySubsystem::PurchaseProperty(FName PropertyId)
 {
     const FDhakaPropertyOffer* Offer=PropertyCatalog.FindByPredicate([PropertyId](const FDhakaPropertyOffer& Candidate){return Candidate.Id==PropertyId;});
     UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
-    if(!Offer||!Missions||OwnsProperty(PropertyId)||Offer->Price<0||Missions->Wallet<Offer->Price)return false;
+    if(!Offer||!Missions||OwnsProperty(PropertyId)||Offer->Price<0||Missions->Wallet<Offer->Price){LastTransactionMessage=FText::FromString(TEXT("Property purchase failed: already owned or insufficient funds."));return false;}
     Missions->AddWallet(-Offer->Price);
     OwnedProperties.AddUnique(PropertyId);
+    LastTransactionMessage=FText::Format(NSLOCTEXT("DhakaEconomy","PropertyBought","Purchased property: {0}."),Offer->Name);
     AwardExperience(250);
     SaveEconomy();
     return true;
@@ -101,17 +108,18 @@ void UDhakaEconomySubsystem::AwardExperience(int64 Amount)
 int64 UDhakaEconomySubsystem::ClaimPropertyIncome()
 {
     const FDateTime Now=FDateTime::UtcNow();
-    if(LastIncomeClaimUtc.GetTicks()>0 && Now-LastIncomeClaimUtc<FTimespan::FromHours(24.0))return 0;
+    if(LastIncomeClaimUtc.GetTicks()>0 && Now-LastIncomeClaimUtc<FTimespan::FromHours(24.0)){LastTransactionMessage=FText::FromString(TEXT("Property income is available once every 24 hours."));return 0;}
     int64 Income=0;
     for(const FName PropertyId:OwnedProperties)
     {
         const FDhakaPropertyOffer* Offer=PropertyCatalog.FindByPredicate([PropertyId](const FDhakaPropertyOffer& Candidate){return Candidate.Id==PropertyId;});
         if(Offer){const int64 PropertyIncome=FMath::Max<int64>(0,Offer->DailyIncome);Income=Income>MAX_int64-PropertyIncome?MAX_int64:Income+PropertyIncome;}
     }
-    if(Income<=0)return 0;
+    if(Income<=0){LastTransactionMessage=FText::FromString(TEXT("No owned property income to claim."));return 0;}
     UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
     if(!Missions)return 0;
     LastIncomeClaimUtc=Now;
+    LastTransactionMessage=FText::Format(NSLOCTEXT("DhakaEconomy","IncomeClaimed","Claimed daily property income: {0}."),FText::AsNumber(Income));
     Missions->AddWallet(Income);
     SaveEconomy();
     return Income;
