@@ -20,11 +20,13 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Vehicles") TObjectPtr<USoundBase> HornOneShot = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Street Life") TObjectPtr<USoundBase> RickshawBellOneShot = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Street Life") TObjectPtr<USoundBase> VendorOneShot = nullptr;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Weather") TObjectPtr<USoundBase> ThunderOneShot = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio") float AmbienceVolume = 0.35f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio") float OneShotVolume = 0.8f;
     UFUNCTION(BlueprintCallable, Category="Dhaka Audio") void PlayHorn();
     UFUNCTION(BlueprintCallable, Category="Dhaka Audio") void PlayRickshawBell();
     UFUNCTION(BlueprintCallable, Category="Dhaka Audio") void PlayVendorCall();
+    UFUNCTION(BlueprintCallable, Category="Dhaka Audio") void PlayThunder();
     UFUNCTION(BlueprintCallable, Category="Dhaka Audio") void SetRainAmbienceEnabled(bool bEnabled);
 protected:
     virtual void BeginPlay() override;
