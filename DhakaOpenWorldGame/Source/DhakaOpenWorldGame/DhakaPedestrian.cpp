@@ -7,6 +7,8 @@
 #include "CollisionShape.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
+#include "DhakaWeatherController.h"
+#include "EngineUtils.h"
 
 ADhakaPedestrian::ADhakaPedestrian()
 {
@@ -49,9 +51,27 @@ ADhakaPedestrian::ADhakaPedestrian()
     auto Apply=[&](UStaticMeshComponent* Part,UMaterialInterface* Material){if(Part&&Material)Part->SetMaterial(0,Material);};
     Apply(Torso,Shirt);Apply(LeftArm,Shirt);Apply(RightArm,Shirt);Apply(Head,Skin);Apply(LeftLeg,Pants);Apply(RightLeg,Pants);Apply(Hair,HairMat);Apply(LeftEye,EyeMat);Apply(RightEye,EyeMat);Apply(Nose,Skin);Apply(Mouth,EyeMat);Apply(LeftHand,Skin);Apply(RightHand,Skin);Apply(LeftFoot,ShoeMat);Apply(RightFoot,ShoeMat);
 }
+void ADhakaPedestrian::BeginPlay()
+{
+    Super::BeginPlay();
+    if(GetWorld())
+        for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){WeatherController=*It;break;}
+}
 void ADhakaPedestrian::Tick(float Dt)
 {
     Super::Tick(Dt); if(Dt<=0.f)return;
+    WeatherRefreshTimer-=Dt;
+    if(WeatherRefreshTimer<=0.f)
+    {
+        WeatherRefreshTimer=1.f;
+        WeatherWalkMultiplier=1.f;
+        if(WeatherController)
+        {
+            if(WeatherController->Weather==EDhakaWeather::Rain)WeatherWalkMultiplier=.88f;
+            else if(WeatherController->Weather==EDhakaWeather::Monsoon)WeatherWalkMultiplier=.72f;
+            else if(WeatherController->Weather==EDhakaWeather::Fog)WeatherWalkMultiplier=.92f;
+        }
+    }
     if(State==EDhakaPedestrianState::Shop||State==EDhakaPedestrianState::Talk||State==EDhakaPedestrianState::BoardVehicle){return;}
     if(State==EDhakaPedestrianState::Wait){WaitRemaining-=Dt;if(WaitRemaining<=0.f)State=EDhakaPedestrianState::Walk;else return;}
     FVector Delta=Destination-GetActorLocation();Delta.Z=0.f;
@@ -61,7 +81,7 @@ void ADhakaPedestrian::Tick(float Dt)
         return;
     }
     FVector Direction=Delta.GetSafeNormal2D();
-    const float Speed=State==EDhakaPedestrianState::Cross?190.f:WalkSpeed;
+    const float Speed=(State==EDhakaPedestrianState::Cross?190.f:WalkSpeed)*WeatherWalkMultiplier;
     const FVector Start=GetActorLocation();
     const float Step=Speed*Dt;
     FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(DhakaPedestrianAvoidance),false,this);
