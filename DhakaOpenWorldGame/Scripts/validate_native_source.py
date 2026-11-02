@@ -95,7 +95,7 @@ require_tokens("Config/DefaultInput.ini", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
-    "CycleWeather", "AdvanceTimeOfDay", "SetWeather", "SetTimeOfDay", "LightningCountdown", "LightningFlashRemaining", "PlayThunder"
+    "CycleWeather", "AdvanceTimeOfDay", "SetWeather", "SetTimeOfDay", "LightningCountdown", "LightningFlashRemaining", "PlayThunder", "EmergencySirenLoop", "bEmergencyNearby"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw",
