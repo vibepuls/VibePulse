@@ -3,7 +3,7 @@
 This folder contains the native UE5/C++ project scaffold alongside the VibePulse browser game. The web game at `/dhaka-drive` remains the currently integrated play target; this native project is a separate build target and does not replace or break the existing React application.
 
 ## Included native gameplay source
-- Procedural city actor with configurable grid, generated roads, building blocks, shopfront props, and overhead utility-wire silhouettes.
+- Procedural city actor with configurable grid, generated roads, sidewalk slabs, curbs, asphalt patch/pothole silhouettes, building blocks, shopfront props, and overhead utility-wire silhouettes.
 - Physics-driven vehicle pawn with throttle, steering, braking, chase camera and adjustable handling parameters.
 - Game-instance mission subsystem with exploration, CNG taxi, delivery, bus-route, street-sprint and riverfront objectives plus reward wallet.
 - SaveGame data model for location, travel distance, wallet, mission IDs, weather and time of day.
