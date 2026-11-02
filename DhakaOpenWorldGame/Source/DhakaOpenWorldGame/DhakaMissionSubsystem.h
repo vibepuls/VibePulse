@@ -39,6 +39,7 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
     UFUNCTION(BlueprintCallable) bool StartMission(FName MissionId);
+    UFUNCTION(BlueprintCallable) bool StartMissionBySlot(int32 Slot);
     UFUNCTION(BlueprintCallable) bool CompleteActiveMission();
     UFUNCTION(BlueprintCallable) void FailActiveMission();
     UFUNCTION(BlueprintCallable) void AddWallet(int64 Amount);
