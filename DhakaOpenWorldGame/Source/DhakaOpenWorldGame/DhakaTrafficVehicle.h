@@ -17,6 +17,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") float LaneOffset = 0.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") float BrakeDistance = 600.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") bool bYieldToPlayer = true;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic", meta=(ClampMin="0",ClampMax="1")) float TurnChance = 0.18f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") bool bAllowTurns = true;
 protected:
     virtual void BeginPlay() override;
 private:
@@ -24,4 +26,5 @@ private:
     float AIUpdateTimer = 0.f;
     bool bRedSignalAhead = false;
     float CachedFollowingSpeedLimit = 650.f;
+    int64 LastIntersectionKey = MIN_int64;
 };
