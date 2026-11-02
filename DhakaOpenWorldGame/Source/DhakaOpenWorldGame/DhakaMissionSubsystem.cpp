@@ -102,7 +102,8 @@ bool UDhakaMissionSubsystem::CompleteActiveMission()
     if (!Missions.IsValidIndex(ActiveMissionIndex) || Missions[ActiveMissionIndex].bCompleted || Missions[ActiveMissionIndex].bFailed) return false;
     const int32 CompletedIndex=ActiveMissionIndex;
     Missions[CompletedIndex].bCompleted=true;
-    Wallet=FMath::Max<int64>(0,Wallet+FMath::Max(0,Missions[CompletedIndex].Reward));
+    const int64 Reward=FMath::Max(0,Missions[CompletedIndex].Reward);
+    Wallet=Wallet>MAX_int64-Reward?MAX_int64:Wallet+Reward;
     LastMissionResult=FString::Printf(TEXT("Completed: %s (+%d)"),*Missions[CompletedIndex].Title.ToString(),Missions[CompletedIndex].Reward);
     if (UWorld* World=GetWorld()) World->GetTimerManager().ClearTimer(MissionUpdateTimer);
     ActiveMissionIndex=INDEX_NONE;
@@ -137,8 +138,8 @@ void UDhakaMissionSubsystem::FailActiveMission()
 
 void UDhakaMissionSubsystem::AddWallet(int64 Amount)
 {
-    if (Amount<0) Wallet=FMath::Max<int64>(0,Wallet+Amount);
-    else Wallet=FMath::Min<int64>(MAX_int64,Wallet+Amount);
+    if (Amount<0) Wallet=(Amount < -Wallet)?0:Wallet+Amount;
+    else Wallet=(Wallet>MAX_int64-Amount)?MAX_int64:Wallet+Amount;
     SaveProgress();
 }
 
