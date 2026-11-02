@@ -122,7 +122,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
-    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "WALLET", "UseItem", "InventoryLabel", "UseFood", "UseFuel", "UseRepair", "MissionPicker", "OnMissionSelected", "NextVehicleType", "PaintVehicleRed", "PaintVehicleBlue", "PaintVehicleGreen"
+    "PurchaseItem", "SellItem", "PurchaseProperty", "ClaimPropertyIncome", "WALLET", "UseItem", "InventoryLabel", "UseFood", "UseFuel", "UseRepair", "SellWater", "SellSnack", "SellTea", "SellFuchka", "SellJhalmuri", "SellFruit", "MissionPicker", "OnMissionSelected", "NextVehicleType", "PaintVehicleRed", "PaintVehicleBlue", "PaintVehicleGreen"
 ])
 
 # Prevent duplicate runtime controls from silently stacking in the native economy panel.
