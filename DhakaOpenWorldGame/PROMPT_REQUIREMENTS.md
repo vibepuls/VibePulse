@@ -68,7 +68,7 @@ Status: **PARTIAL** — simple walkers and local wanderers exist; Behavior Tree/
 ## Part 10 — Player gameplay
 - [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
 - [ ] Customization, inventory, currency, missions, shops, garages, property, save/load and progression.
-Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; full UI, vehicle-type enforcement, inventory/shop/garage/property gameplay and durable progression remain.
+Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; mission UI, vehicle-type enforcement, inventory/shop/garage/property gameplay and comprehensive progression remain; wallet/mission completion state now has a SaveGame slot implementation.
 
 ## Part 11 — Weather/environment
 - [ ] Day/night, sunrise/sunset, dynamic light, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
@@ -83,7 +83,7 @@ Status: **NOT DONE** — no verified complete soundscape or audio asset set.
 ## Part 13 — Missions/activities
 - [ ] Taxi, rickshaw, bus, delivery, races, exploration, vehicle collection, business/property, daily/weekly challenges and social activities.
 - [ ] Objectives, rewards, progression and saved state.
-Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; mission UI, vehicle requirements, persistent completion, business/property simulation and full activity set remain.
+Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; mission UI, vehicle requirements, business/property simulation and full activity set remain; wallet and mission completion/failure state now save to a versioned SaveGame slot in source.
 
 ## Part 14 — Multiplayer/VibePulse
 - [ ] Sessions, profiles, friends, shared city, racing, co-op, sync, leaderboards, achievements, gameplay sharing, events/community challenges.
