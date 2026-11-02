@@ -54,7 +54,39 @@ for path in sorted(SOURCE.rglob("*")):
     if depth != 0:
         errors.append(f"{rel}: unbalanced braces (final depth {depth})")
 
-print(f"Checked {checked} C++ header/source files.")
+# Cross-file catalog/input checks catch common wiring regressions before a UE build.
+MODULE = SOURCE / "DhakaOpenWorldGame"
+def require_tokens(relative_path: str, tokens: list[str]) -> None:
+    path = ROOT / relative_path
+    if not path.is_file():
+        errors.append(f"{relative_path}: required project file is missing")
+        return
+    source = path.read_text(encoding="utf-8", errors="replace")
+    for token in tokens:
+        if token not in source:
+            errors.append(f"{relative_path}: required integration token is missing: {token}")
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
+    '"explore_lalbagh"', '"taxi_gulshan"', '"market_delivery"', '"bus_route"',
+    '"rickshaw_neighborhood"', "StartMissionBySlot", "ActiveMissionTimeRemaining"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
+    '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"',
+    '"old_dhaka_shop"', '"dhanmondi_flat"', '"uttara_garage"', '"gulshan_office"',
+    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
+    '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"water_bottle"'
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
+    "DhakaVendorStall", "DhakaPropertyTerminal", "TrafficCount", "PedestrianCount"
+])
+require_tokens("Config/DefaultInput.ini", [
+    'AxisName="MissionSlot"', 'ActionName="CycleVehicleType"', 'ActionName="BuyProperty"',
+    'ActionName="ClaimRent"', 'ActionName="Horn"', 'ActionName="RickshawBell"'
+])
+
+print(f"Checked {checked} C++ header/source files and cross-file gameplay wiring.")
 if errors:
     print(f"FAILED: {len(errors)} source sanity issue(s):")
     for error in errors:
