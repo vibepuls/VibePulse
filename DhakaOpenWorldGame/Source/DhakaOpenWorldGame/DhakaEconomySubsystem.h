@@ -36,6 +36,7 @@ public:
     UPROPERTY(BlueprintReadOnly) TArray<FName> OwnedProperties;
     UPROPERTY(BlueprintReadOnly) int32 PlayerLevel=1;
     UPROPERTY(BlueprintReadOnly) int64 Experience=0;
+    UPROPERTY(BlueprintReadOnly) FDateTime LastIncomeClaimUtc;
 
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     UFUNCTION(BlueprintCallable) bool PurchaseItem(FName ItemId,int32 Quantity=1);
@@ -44,9 +45,9 @@ public:
     UFUNCTION(BlueprintCallable) bool PurchaseProperty(FName PropertyId);
     UFUNCTION(BlueprintPure) bool OwnsProperty(FName PropertyId) const;
     UFUNCTION(BlueprintCallable) void AwardExperience(int64 Amount);
+    UFUNCTION(BlueprintCallable) int64 ClaimPropertyIncome();
     UFUNCTION(BlueprintCallable) bool SaveEconomy();
     UFUNCTION(BlueprintCallable) bool LoadEconomy();
 private:
     void BuildCatalog();
-    void CreditOwnedPropertyIncome();
 };
