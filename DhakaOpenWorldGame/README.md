@@ -15,7 +15,7 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 - Blueprint-callable economy subsystem for shop purchase/sale, inventory records, property ownership/income and XP progression; interactive tea/fuchka/jhalmuri/fruit/general-shop stalls can be used with **E** when standing nearby and show transaction feedback in the HUD; **F** near a property sign buys that investment and **P** claims eligible 24-hour property income.
 - Procedural instanced rain and puddle instances shown during rain/monsoon; vehicle grip and pedestrian pace respond to weather; pedestrians use swept collision checks and distance-based tick-rate/visual LOD.
 - Native audio director with assignable city-traffic, market, rain, riverfront and engine loops, district-proximity market zones, plus horn/rickshaw-bell/vendor one-shot events. Successful vendor purchases trigger the vendor event. No audio assets are bundled; assign original/licensed files in Unreal Editor.
-- GameMode spawns city, landmarks, street-life, signals, traffic, pedestrians, weather and audio routing. Basic touch-driving zones and PC controls are present.
+- GameMode spawns city, landmarks, street-life, signals, traffic, pedestrians, weather and audio routing. Touch steering/throttle/brake zones, right-side camera drag and PC controls are present.
 
 ## Open and build
 1. Optional source sanity check (not an Unreal build): run `python Scripts/validate_native_source.py` from this folder.
