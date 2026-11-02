@@ -21,4 +21,7 @@ protected:
     virtual void BeginPlay() override;
 private:
     float CurrentSpeed = 0.f;
+    float AIUpdateTimer = 0.f;
+    bool bRedSignalAhead = false;
+    float CachedFollowingSpeedLimit = 650.f;
 };
