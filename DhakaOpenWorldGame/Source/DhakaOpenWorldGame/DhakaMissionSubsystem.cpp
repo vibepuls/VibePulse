@@ -1,6 +1,7 @@
 #include "DhakaMissionSubsystem.h"
 #include "DhakaProgressSaveGame.h"
 #include "DhakaEconomySubsystem.h"
+#include "DhakaVehiclePawn.h"
 #include "Engine/World.h"
 #include "Engine/TimerManager.h"
 #include "GameFramework/Pawn.h"
@@ -100,6 +101,15 @@ void UDhakaMissionSubsystem::UpdateActiveMission()
     }
     APawn* Player=UGameplayStatics::GetPlayerPawn(this,0);
     if (!Player) return;
+    if(Mission.Type==EDhakaMissionType::Taxi||Mission.Type==EDhakaMissionType::Rickshaw||Mission.Type==EDhakaMissionType::BusRoute)
+    {
+        ADhakaVehiclePawn* Vehicle=Cast<ADhakaVehiclePawn>(Player);
+        if(!Vehicle)return;
+        const bool bCorrectVehicle=(Mission.Type==EDhakaMissionType::Taxi&&Vehicle->VehicleType==EDhakaPlayerVehicleType::CNG)
+            ||(Mission.Type==EDhakaMissionType::Rickshaw&&Vehicle->VehicleType==EDhakaPlayerVehicleType::Rickshaw)
+            ||(Mission.Type==EDhakaMissionType::BusRoute&&Vehicle->VehicleType==EDhakaPlayerVehicleType::Bus);
+        if(!bCorrectVehicle)return;
+    }
     FVector PlayerLocation=Player->GetActorLocation();
     FVector TargetLocation=Mission.Target;
     PlayerLocation.Z=0.f; TargetLocation.Z=0.f;
