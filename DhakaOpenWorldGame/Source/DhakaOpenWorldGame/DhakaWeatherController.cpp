@@ -1,4 +1,5 @@
 #include "DhakaWeatherController.h"
+#include "DhakaRainEffect.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
@@ -11,9 +12,31 @@ ADhakaWeatherController::ADhakaWeatherController()
     PrimaryActorTick.bCanEverTick=true; Root=CreateDefaultSubobject<USceneComponent>(TEXT("Root"));SetRootComponent(Root);
     Fog=CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("Fog"));Fog->SetupAttachment(Root);Fog->SetFogDensity(0.012f);
 }
-void ADhakaWeatherController::SetWeather(EDhakaWeather NewWeather){Weather=NewWeather;RainIntensity=(Weather==EDhakaWeather::Rain?0.45f:Weather==EDhakaWeather::Monsoon?1.f:0.f);ApplyEnvironment();}
+void ADhakaWeatherController::BeginPlay()
+{
+    Super::BeginPlay();
+    if(GetWorld())
+    {
+        RainEffect=GetWorld()->SpawnActor<ADhakaRainEffect>(ADhakaRainEffect::StaticClass(),GetActorLocation(),FRotator::ZeroRotator);
+        if(RainEffect)RainEffect->SetRainIntensity(RainIntensity);
+    }
+    ApplyEnvironment();
+}
+void ADhakaWeatherController::SetWeather(EDhakaWeather NewWeather)
+{
+    Weather=NewWeather;
+    RainIntensity=(Weather==EDhakaWeather::Rain?0.45f:Weather==EDhakaWeather::Monsoon?1.f:0.f);
+    if(RainEffect)RainEffect->SetRainIntensity(RainIntensity);
+    ApplyEnvironment();
+}
 void ADhakaWeatherController::SetTimeOfDay(float Hours){TimeOfDayHours=FMath::Fmod(FMath::Abs(Hours),24.f);ApplyEnvironment();}
-void ADhakaWeatherController::Tick(float Dt){Super::Tick(Dt);if(Weather==EDhakaWeather::Rain||Weather==EDhakaWeather::Monsoon){RainIntensity=FMath::Clamp(RainIntensity,0.f,1.f);}}
+void ADhakaWeatherController::Tick(float Dt)
+{
+    Super::Tick(Dt);
+    RainIntensity=FMath::Clamp(RainIntensity,0.f,1.f);
+    if(RainEffect && !FMath::IsNearlyEqual(RainEffect->Intensity,RainIntensity,0.02f))
+        RainEffect->SetRainIntensity(RainIntensity);
+}
 void ADhakaWeatherController::ApplyEnvironment()
 {
     if(Fog){float Density=0.012f;if(Weather==EDhakaWeather::Smog)Density=0.035f;else if(Weather==EDhakaWeather::Rain)Density=0.02f;else if(Weather==EDhakaWeather::Monsoon)Density=0.045f;else if(Weather==EDhakaWeather::Fog)Density=0.06f;Fog->SetFogDensity(Density);}
