@@ -34,7 +34,7 @@ void ADhakaWeatherController::SetWeather(EDhakaWeather NewWeather)
     if(RainEffect)RainEffect->SetRainIntensity(RainIntensity);
     ApplyEnvironment();
 }
-void ADhakaWeatherController::SetTimeOfDay(float Hours){TimeOfDayHours=FMath::Fmod(FMath::Abs(Hours),24.f);ApplyEnvironment();}
+void ADhakaWeatherController::SetTimeOfDay(float Hours){TimeOfDayHours=FMath::IsFinite(Hours)?FMath::Fmod(FMath::Abs(Hours),24.f):12.f;ApplyEnvironment();}
 void ADhakaWeatherController::Tick(float Dt)
 {
     Super::Tick(Dt);
