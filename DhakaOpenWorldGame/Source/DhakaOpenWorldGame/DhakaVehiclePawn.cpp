@@ -19,6 +19,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "GameFramework/GameUserSettings.h"
 
 ADhakaVehiclePawn::ADhakaVehiclePawn()
 {
@@ -113,6 +114,7 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("CycleVehicleType",IE_Pressed,this,&ADhakaVehiclePawn::CycleVehicleType);
     Input->BindAction("CycleWeather",IE_Pressed,this,&ADhakaVehiclePawn::CycleWeatherInput);
     Input->BindAction("AdvanceTime",IE_Pressed,this,&ADhakaVehiclePawn::AdvanceTimeInput);
+    Input->BindAction("CycleGraphicsQuality",IE_Pressed,this,&ADhakaVehiclePawn::CycleGraphicsQuality);
     Input->BindAxis("MissionSlot",this,&ADhakaVehiclePawn::SelectMissionSlot);
     // Mobile: left-side touch steers; upper-right accelerates; lower-right brakes.
     Input->BindTouch(IE_Pressed,this,&ADhakaVehiclePawn::HandleTouchPressed);
@@ -152,6 +154,7 @@ void ADhakaVehiclePawn::InputBrake(float V){BrakeInput=FMath::Clamp(V,0.f,1.f);}
 void ADhakaVehiclePawn::SetPaintColor(FLinearColor NewColor){PaintColor=NewColor;if(BodyMaterial)BodyMaterial->SetVectorParameterValue(TEXT("BaseColor"),PaintColor);}
 void ADhakaVehiclePawn::CycleWeatherInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->CycleWeather();break;}}
 void ADhakaVehiclePawn::AdvanceTimeInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->AdvanceTimeOfDay();break;}}
+void ADhakaVehiclePawn::CycleGraphicsQuality(){if(UGameUserSettings* Settings=UGameUserSettings::GetGameUserSettings()){int32 Level=Settings->GetOverallScalabilityLevel();Level=(FMath::Clamp(Level,0,3)+1)%4;Settings->SetOverallScalabilityLevel(Level);Settings->ApplySettings(false);Settings->SaveSettings();}}
 void ADhakaVehiclePawn::CycleVehicleType()
 {
     const int32 Next=(static_cast<int32>(VehicleType)+1)%5;
