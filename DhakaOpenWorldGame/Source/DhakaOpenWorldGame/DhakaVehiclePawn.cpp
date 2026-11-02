@@ -132,6 +132,7 @@ void ADhakaVehiclePawn::CycleVehicleType()
 {
     const int32 Next=(static_cast<int32>(VehicleType)+1)%5;
     ConfigureVehicleType(static_cast<EDhakaPlayerVehicleType>(Next));
+    SaveProgress();
 }
 void ADhakaVehiclePawn::ConfigureVehicleType(EDhakaPlayerVehicleType NewType)
 {
