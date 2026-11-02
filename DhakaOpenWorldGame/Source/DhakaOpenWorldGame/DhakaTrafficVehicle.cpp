@@ -1,5 +1,6 @@
 #include "DhakaTrafficVehicle.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SceneComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -66,7 +67,6 @@ void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType
         if(WheelFrontRight)WheelFrontRight->SetRelativeLocation(FVector(HalfX,0.f,WheelZ));
         if(WheelRearRight)WheelRearRight->SetRelativeLocation(FVector(-HalfX,0.f,WheelZ));
     }
-}
 }
 void ADhakaTrafficVehicle::BeginPlay(){Super::BeginPlay();RouteDirection=RouteDirection.GetSafeNormal();if(RouteDirection.IsNearlyZero())RouteDirection=FVector(1,0,0);CurrentSpeed=CruiseSpeed*0.55f;}
 void ADhakaTrafficVehicle::Tick(float Dt)
