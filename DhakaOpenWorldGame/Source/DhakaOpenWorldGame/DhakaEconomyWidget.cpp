@@ -146,6 +146,7 @@ ADhakaVehiclePawn* UDhakaEconomyWidget::FindVehicleForCustomization() const
     ADhakaVehiclePawn* BestVehicle=nullptr;float BestDistance=550.f;
     for(TActorIterator<ADhakaVehiclePawn> It(GetWorld());It;++It)
     {
+        if(It->bOccupied)continue;
         const float Distance=FVector::Dist2D(Pawn->GetActorLocation(),It->GetActorLocation());
         if(Distance<BestDistance){BestDistance=Distance;BestVehicle=*It;}
     }
