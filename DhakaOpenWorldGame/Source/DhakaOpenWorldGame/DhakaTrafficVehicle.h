@@ -19,6 +19,8 @@ public:
     UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelFrontRight;
     UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelRearLeft;
     UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> WheelRearRight;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> EmergencyLightRed;
+    UPROPERTY(VisibleAnywhere) TObjectPtr<class UStaticMeshComponent> EmergencyLightBlue;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic|Vehicle Type") EDhakaTrafficVehicleType VehicleType = EDhakaTrafficVehicleType::Car;
     UFUNCTION(BlueprintCallable, Category="Traffic|Vehicle Type") void ConfigureVehicleType(EDhakaTrafficVehicleType NewType);
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Traffic") FVector RouteDirection = FVector(1,0,0);
@@ -33,6 +35,8 @@ protected:
     virtual void BeginPlay() override;
 private:
     float CurrentSpeed = 0.f;
+    float EmergencyLightTimer = 0.f;
+    bool bEmergencyLightPhase = false;
     float AIUpdateTimer = 0.f;
     bool bRedSignalAhead = false;
     float CachedFollowingSpeedLimit = 650.f;
