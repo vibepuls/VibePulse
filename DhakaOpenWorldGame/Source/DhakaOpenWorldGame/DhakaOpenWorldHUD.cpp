@@ -1,6 +1,8 @@
 #include "DhakaOpenWorldHUD.h"
 #include "DhakaMissionSubsystem.h"
 #include "DhakaEconomySubsystem.h"
+#include "DhakaPlayerCharacter.h"
+#include "DhakaVehiclePawn.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
@@ -23,7 +25,7 @@ void ADhakaOpenWorldHUD::DrawHUD()
     if (UGameInstance* GI=GetWorld()->GetGameInstance())
         Economy=GI->GetSubsystem<UDhakaEconomySubsystem>();
 
-    const float PanelX=24.f, PanelY=24.f, PanelW=500.f, PanelH=254.f;
+    const float PanelX=24.f, PanelY=24.f, PanelW=520.f, PanelH=286.f;
     Canvas->DrawRect(FLinearColor(0.025f,0.035f,0.055f,0.88f),PanelX,PanelY,PanelW,PanelH);
     Canvas->SetDrawColor(FColor(30,210,190,255));
     Canvas->DrawRect(FLinearColor(0.08f,0.82f,0.72f,1.f),PanelX,PanelY,4.f,PanelH);
@@ -68,7 +70,14 @@ void ADhakaOpenWorldHUD::DrawHUD()
         Canvas->DrawText(Font,FString::Printf(TEXT("LEVEL %d  |  XP %lld"),Economy->PlayerLevel,static_cast<long long>(Economy->Experience)),PanelX+18.f,PanelY+171.f,0.78f,0.78f);
         if(!Economy->LastTransactionMessage.IsEmpty())Canvas->DrawText(Font,Economy->LastTransactionMessage.ToString(),PanelX+18.f,PanelY+198.f,0.68f,0.68f);
     }
-    Canvas->DrawText(Font,TEXT("E: Interact  |  N: Change Vehicle  |  F: Property  |  P: Rent"),PanelX+18.f,PanelY+224.f,0.62f,0.62f);
+    if(APawn* Pawn=UGameplayStatics::GetPlayerPawn(this,0))
+    {
+        if(ADhakaVehiclePawn* Vehicle=Cast<ADhakaVehiclePawn>(Pawn))
+            Canvas->DrawText(Font,FString::Printf(TEXT("FUEL %.0f%%  |  VEHICLE CONDITION %.0f%%"),Vehicle->FuelPercent,Vehicle->ConditionPercent),PanelX+18.f,PanelY+224.f,.68f,.68f);
+        else if(ADhakaPlayerCharacter* Character=Cast<ADhakaPlayerCharacter>(Pawn))
+            Canvas->DrawText(Font,FString::Printf(TEXT("HEALTH %.0f%%  |  STAMINA %.0f%%"),Character->Health,Character->Stamina),PanelX+18.f,PanelY+224.f,.68f,.68f);
+    }
+    Canvas->DrawText(Font,TEXT("E: Interact | F: Property | P: Rent | F1: First Aid | F2: Food | F3: Fuel | F4: Repair"),PanelX+18.f,PanelY+253.f,0.56f,0.56f);
     if(Missions && Canvas->ClipX>900.f)
     {
         const float ListW=310.f, ListX=Canvas->ClipX-ListW-24.f, ListY=24.f;
