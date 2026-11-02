@@ -12,6 +12,7 @@
 #include "DhakaLandmarkGenerator.h"
 #include "DhakaTrafficSignal.h"
 #include "DhakaAudioDirector.h"
+#include "DhakaVendorStall.h"
 #include "DhakaWetRoadEffect.h"
 #include "Engine/World.h"
 #include "HAL/PlatformProperties.h"
@@ -89,6 +90,25 @@ void ADhakaGameMode::BeginPlay()
                 Roll<77?EDhakaTrafficVehicleType::CNG:Roll<84?EDhakaTrafficVehicleType::Motorcycle:
                 Roll<96?EDhakaTrafficVehicleType::Rickshaw:EDhakaTrafficVehicleType::Emergency;
             Traffic->ConfigureVehicleType(Type);
+        }
+    }
+    // Interactive street vendors are clustered around the Old Dhaka market and busy footpaths.
+    const FVector VendorLocations[] = {
+        FVector(-90000.f,99000.f,85.f), FVector(-87000.f,101000.f,85.f),
+        FVector(-84000.f,98000.f,85.f), FVector(-82000.f,103000.f,85.f),
+        FVector(-50000.f,-50000.f,85.f), FVector(-48000.f,-52000.f,85.f),
+        FVector(25000.f,25000.f,85.f), FVector(27000.f,23000.f,85.f),
+        FVector(75000.f,45000.f,85.f), FVector(77000.f,47000.f,85.f),
+        FVector(130000.f,143000.f,85.f), FVector(128000.f,146000.f,85.f)
+    };
+    const int32 VendorCount=bMobileTarget?6:12;
+    for(int32 I=0;I<VendorCount;++I)
+    {
+        if(ADhakaVendorStall* Vendor=World->SpawnActor<ADhakaVendorStall>(ADhakaVendorStall::StaticClass(),VendorLocations[I],FRotator(0.f,FMath::FRandRange(0.f,360.f),0.f)))
+        {
+            Vendor->VendorType=static_cast<EDhakaVendorType>(I%5);
+            static const TCHAR* VendorNames[]={TEXT("Cha Stall"),TEXT("Fuchka Stall"),TEXT("Jhalmuri Cart"),TEXT("Fruit Seller"),TEXT("General Shop")};
+            Vendor->StallName=FText::FromString(VendorNames[I%5]);
         }
     }
     // Procedural citizens provide clothing and body variation near active streets.
