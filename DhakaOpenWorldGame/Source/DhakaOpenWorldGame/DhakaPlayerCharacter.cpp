@@ -16,6 +16,9 @@
 #include "Engine/GameViewportClient.h"
 #include "GameFramework/GameUserSettings.h"
 #include "EngineUtils.h"
+#include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/ConstructorHelpers.h"
 
 ADhakaPlayerCharacter::ADhakaPlayerCharacter()
 {
@@ -25,6 +28,31 @@ ADhakaPlayerCharacter::ADhakaPlayerCharacter()
     bUseControllerRotationYaw=false;
     CameraArm=CreateDefaultSubobject<USpringArmComponent>(TEXT("WalkCameraArm"));CameraArm->SetupAttachment(GetRootComponent());CameraArm->TargetArmLength=360.f;CameraArm->SetRelativeLocation(FVector(0,0,80));CameraArm->bUsePawnControlRotation=true;CameraArm->bEnableCameraLag=true;
     Camera=CreateDefaultSubobject<UCameraComponent>(TEXT("WalkCamera"));Camera->SetupAttachment(CameraArm);
+    // Lightweight procedural mannequin so the native player is visible even
+    // when no licensed skeletal character asset has been installed.
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> BodyCube(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    UMaterialInterface* BaseMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+    auto MakeBodyPart=[this,&BodyCube,BaseMaterial](const TCHAR* Name,const FVector& Scale,const FVector& Location,const FLinearColor& Color)->UStaticMeshComponent*
+    {
+        UStaticMeshComponent* Part=CreateDefaultSubobject<UStaticMeshComponent>(Name);
+        Part->SetupAttachment(GetRootComponent());
+        if(BodyCube.Succeeded())Part->SetStaticMesh(BodyCube.Object);
+        Part->SetRelativeScale3D(Scale);Part->SetRelativeLocation(Location);
+        Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        if(BaseMaterial)if(UMaterialInstanceDynamic* Mat=UMaterialInstanceDynamic::Create(BaseMaterial,this))
+        {
+            Mat->SetVectorParameterValue(TEXT("BaseColor"),Color);
+            Mat->SetVectorParameterValue(TEXT("Color"),Color);
+            Part->SetMaterial(0,Mat);
+        }
+        return Part;
+    };
+    ProceduralTorso=MakeBodyPart(TEXT("PlayerProceduralTorso"),FVector(.34f,.24f,.43f),FVector(0,0,2),FLinearColor(.08f,.22f,.58f));
+    ProceduralHead=MakeBodyPart(TEXT("PlayerProceduralHead"),FVector(.22f,.22f,.22f),FVector(0,0,56),FLinearColor(.62f,.39f,.25f));
+    ProceduralLeftArm=MakeBodyPart(TEXT("PlayerProceduralLeftArm"),FVector(.12f,.13f,.34f),FVector(0,-30,0),FLinearColor(.62f,.39f,.25f));
+    ProceduralRightArm=MakeBodyPart(TEXT("PlayerProceduralRightArm"),FVector(.12f,.13f,.34f),FVector(0,30,0),FLinearColor(.62f,.39f,.25f));
+    ProceduralLeftLeg=MakeBodyPart(TEXT("PlayerProceduralLeftLeg"),FVector(.14f,.15f,.42f),FVector(0,-14,-43),FLinearColor(.055f,.065f,.08f));
+    ProceduralRightLeg=MakeBodyPart(TEXT("PlayerProceduralRightLeg"),FVector(.14f,.15f,.42f),FVector(0,14,-43),FLinearColor(.055f,.065f,.08f));
 }
 void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
 {
@@ -61,6 +89,25 @@ float ADhakaPlayerCharacter::TakeDamage(float DamageAmount,FDamageEvent const& D
 void ADhakaPlayerCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    const float MovementSpeed=GetVelocity().Size2D();
+    if(MovementSpeed>8.f)
+    {
+        ProceduralAnimationTime+=DeltaSeconds*FMath::Clamp(MovementSpeed/NormalWalkSpeed,0.7f,1.8f)*8.f;
+        const float Swing=FMath::Sin(ProceduralAnimationTime);
+        if(ProceduralLeftArm)ProceduralLeftArm->SetRelativeRotation(FRotator(-Swing*25.f,0.f,0.f));
+        if(ProceduralRightArm)ProceduralRightArm->SetRelativeRotation(FRotator(Swing*25.f,0.f,0.f));
+        if(ProceduralLeftLeg)ProceduralLeftLeg->SetRelativeRotation(FRotator(Swing*30.f,0.f,0.f));
+        if(ProceduralRightLeg)ProceduralRightLeg->SetRelativeRotation(FRotator(-Swing*30.f,0.f,0.f));
+        if(ProceduralTorso)ProceduralTorso->SetRelativeLocation(FVector(0,0,2.f+FMath::Abs(Swing)*2.5f));
+    }
+    else
+    {
+        if(ProceduralLeftArm)ProceduralLeftArm->SetRelativeRotation(FRotator::ZeroRotator);
+        if(ProceduralRightArm)ProceduralRightArm->SetRelativeRotation(FRotator::ZeroRotator);
+        if(ProceduralLeftLeg)ProceduralLeftLeg->SetRelativeRotation(FRotator::ZeroRotator);
+        if(ProceduralRightLeg)ProceduralRightLeg->SetRelativeRotation(FRotator::ZeroRotator);
+        if(ProceduralTorso)ProceduralTorso->SetRelativeLocation(FVector(0,0,2.f));
+    }
     if(GetCharacterMovement()->MaxWalkSpeed>SprintSpeed*.8f && Stamina>0.f)
     {
         Stamina=FMath::Max(0.f,Stamina-22.f*DeltaSeconds);
