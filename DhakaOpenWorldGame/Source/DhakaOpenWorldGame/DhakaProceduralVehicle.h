@@ -3,6 +3,13 @@
 #include "GameFramework/Actor.h"
 #include "DhakaProceduralVehicle.generated.h"
 
+class UProceduralMeshComponent;
+class UMaterialInstanceDynamic;
+class UStaticMesh;
+class UStaticMeshComponent;
+class UMaterialInterface;
+class UActorComponent;
+
 UENUM(BlueprintType)
 enum class EDhakaVehicleKind : uint8
 {
@@ -64,6 +71,4 @@ private:
     UStaticMeshComponent* AddPrimitivePart(const TCHAR* Name, UStaticMesh* Mesh,
         const FVector& Location, const FVector& Scale, const FRotator& Rotation,
         UMaterialInterface* Material);
-    void AddBoxSection(UProceduralMeshComponent* Target, const FVector& Center,
-        const FVector& Size, const FLinearColor& Color, bool bCollision);
 };
