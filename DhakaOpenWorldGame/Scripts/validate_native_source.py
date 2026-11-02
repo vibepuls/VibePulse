@@ -30,17 +30,17 @@ for path in sorted(SOURCE.rglob("*")):
     if duplicates:
         errors.append(f"{rel}: duplicate quoted includes: {', '.join(duplicates)}")
     generated = [name for name in includes if name.endswith(".generated.h")]
-    if path.suffix == ".h":
+    if path.suffix == ".h" and re.search(r"\\b(UCLASS|USTRUCT|UENUM|UINTERFACE)\\b", raw):
         if len(generated) != 1:
-            errors.append(f"{rel}: expected exactly one .generated.h include, found {len(generated)}")
+            errors.append(f"{rel}: reflected header must include exactly one .generated.h, found {len(generated)}")
         elif includes[-1] != generated[0]:
             errors.append(f"{rel}: .generated.h must be the final include")
     for name in includes:
         if name.endswith(".generated.h") or "/" in name or "\\" in name:
             continue
         candidates = [path.parent / name, SOURCE / "DhakaOpenWorldGame" / name, SOURCE / name]
-        if not any(candidate.is_file() for candidate in candidates):
-            errors.append(f"{rel}: quoted include not found in source tree: {name}")
+        if not any(candidate.is_file() for candidate in candidates) and name.startswith("Dhaka"):
+            errors.append(f"{rel}: local project include not found in source tree: {name}")
     cleaned = strip_comments_and_strings(raw)
     depth = 0
     for char in cleaned:
