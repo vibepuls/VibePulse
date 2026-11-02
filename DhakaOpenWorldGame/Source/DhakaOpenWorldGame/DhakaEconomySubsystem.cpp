@@ -34,6 +34,9 @@ void UDhakaEconomySubsystem::BuildCatalog()
     AddItem("fuchka_plate",TEXT("Fuchka Plate"),TEXT("Fuchka from a street vendor."),100,30);
     AddItem("jhalmuri_packet",TEXT("Jhalmuri"),TEXT("A spicy puffed-rice snack."),50,15);
     AddItem("fruit_bag",TEXT("Fruit Bag"),TEXT("Fresh seasonal fruit."),80,25);
+    AddItem("chotpoti_plate",TEXT("Chotpoti Plate"),TEXT("A spicy chickpea and potato street-food plate."),90,28);
+    AddItem("vegetable_bag",TEXT("Vegetable Bag"),TEXT("Fresh vegetables from a footpath produce seller."),70,22);
+    AddItem("clothing_bundle",TEXT("Clothing Bundle"),TEXT("Affordable everyday clothing from a street stall."),350,100);
     AddItem("first_aid",TEXT("First Aid Kit"),TEXT("Basic first aid supplies."),250,80);
     AddItem("phone_data",TEXT("Mobile Data Pack"),TEXT("A prepaid mobile data pack."),120,0);
     AddItem("fuel_can",TEXT("Fuel Can"),TEXT("Emergency fuel for a long trip."),450,150);
