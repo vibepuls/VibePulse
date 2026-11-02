@@ -31,6 +31,7 @@ private:
     void SelectMissionSlot(float Value);
     void CycleWeatherInput();
     void AdvanceTimeInput();
+    void CycleGraphicsQuality();
     int32 LastMissionSlot = 0;
     void StartJump();
     void StopJump();
