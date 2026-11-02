@@ -5,6 +5,9 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Controller.h"
 #include "DhakaVehiclePawn.h"
+#include "DhakaVendorStall.h"
+#include "DhakaEconomySubsystem.h"
+#include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 
@@ -49,6 +52,23 @@ void ADhakaPlayerCharacter::InteractVehicle()
         for(TActorIterator<ADhakaVehiclePawn> It(GetWorld());It;++It){if(It->bOccupied)continue;const float D=FVector::Dist2D(GetActorLocation(),It->GetActorLocation());if(D<Best){Best=D;Candidate=*It;}}
     }
     if(Candidate&&!Candidate->bOccupied&&FVector::Dist2D(GetActorLocation(),Candidate->GetActorLocation())<=450.f){
-        Candidate->SetOccupied(true);Candidate->SetDriverController(PC);PC->Possess(Candidate);Destroy();
+        Candidate->SetOccupied(true);Candidate->SetDriverController(PC);PC->Possess(Candidate);Destroy();return;
+    }
+    // If no vehicle is in reach, E interacts with the nearest street vendor.
+    ADhakaVendorStall* NearestVendor=nullptr;
+    float VendorDistance=425.f;
+    for(TActorIterator<ADhakaVendorStall> It(GetWorld());It;++It)
+    {
+        const float Distance=FVector::Dist2D(GetActorLocation(),It->GetActorLocation());
+        if(Distance<VendorDistance){VendorDistance=Distance;NearestVendor=*It;}
+    }
+    if(NearestVendor)
+    {
+        if(!NearestVendor->Interact(this))
+        {
+            if(UGameInstance* GI=GetGameInstance())
+                if(UDhakaEconomySubsystem* Economy=GI->GetSubsystem<UDhakaEconomySubsystem>())
+                    Economy->LastTransactionMessage=FText::FromString(TEXT("Purchase failed: check wallet or vendor stock."));
+        }
     }
 }
