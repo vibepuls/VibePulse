@@ -68,6 +68,9 @@ void ADhakaPedestrian::ReactToVehicleImpact(const FVector& VehicleForward,float 
     if(Away.IsNearlyZero())Away=GetActorRightVector();
     const FVector Side=FVector::CrossProduct(FVector::UpVector,Away).GetSafeNormal2D();
     Destination=GetActorLocation()+Away*FMath::Clamp(650.f+Severity*500.f,650.f,1800.f)+Side*FMath::FRandRange(-350.f,350.f);
+    bWalkingToCrosswalk=false;
+    bCrossingRoad=false;
+    CrosswalkTravelDirection=FVector::ZeroVector;
     State=EDhakaPedestrianState::Walk;
     WaitRemaining=0.f;
     FleeRemaining=FMath::Clamp(2.f+Severity*3.f,2.f,6.f);
