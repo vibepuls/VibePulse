@@ -5,6 +5,7 @@
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 ADhakaRainEffect::ADhakaRainEffect()
 {
@@ -18,6 +19,16 @@ ADhakaRainEffect::ADhakaRainEffect()
     Drops->SetReceivesDecals(false);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if(Cube.Succeeded()) Drops->SetStaticMesh(Cube.Object);
+    if(UMaterialInterface* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial")))
+    {
+        UMaterialInstanceDynamic* RainMaterial=UMaterialInstanceDynamic::Create(Base,this);
+        if(RainMaterial)
+        {
+            RainMaterial->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(0.18f,0.38f,0.62f,0.8f));
+            RainMaterial->SetScalarParameterValue(TEXT("Roughness"),0.22f);
+            Drops->SetMaterial(0,RainMaterial);
+        }
+    }
     Drops->SetNumCustomDataFloats(1);
     RebuildRain();
 }
