@@ -87,6 +87,25 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
                 AddBoxMesh(FVector(CrossX+Side*610.f,CrossY,14.f),FVector(120.f,320.f,3.f),FLinearColor(.55f,.54f,.50f),false);
             }
         }
+        // Short dashed lane dividers on selected central roads. These are deliberately
+        // sparse so the procedural box-mesh approach does not explode component counts.
+        for(int32 I=0;I<=GridBlocks;I+=4)
+        {
+            const float P=Start+I*Step;
+            if(P>=-70000.f&&P<=70000.f)
+            {
+                const bool bRiverRoad=P>RiverCenterX-RiverHalfWidth&&P<RiverCenterX+RiverHalfWidth;
+                if(!bRiverRoad)
+                {
+                    for(float Along=-60000.f;Along<=60000.f;Along+=3200.f)
+                        for(const float LaneSide : {-1.f,1.f})
+                            AddBoxMesh(FVector(P+LaneSide*220.f,Along,11.5f),FVector(20.f,760.f,2.f),FLinearColor(.78f,.79f,.74f),false);
+                }
+                for(float Along=-60000.f;Along<=60000.f;Along+=3200.f)
+                    for(const float LaneSide : {-1.f,1.f})
+                        AddBoxMesh(FVector(Along,P+LaneSide*220.f,11.5f),FVector(760.f,20.f,2.f),FLinearColor(.78f,.79f,.74f),false);
+            }
+        }
         // Random asphalt patches and pothole silhouettes provide low-cost road-surface variation.
         for(int32 Damage=0;Damage<GridBlocks*3;++Damage)
         {
