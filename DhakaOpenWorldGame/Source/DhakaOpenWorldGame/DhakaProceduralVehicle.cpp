@@ -94,14 +94,14 @@ void ADhakaProceduralVehicle::BuildBodyShell()
 
 void ADhakaProceduralVehicle::BuildGlazing()
 {
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
-    if(!Cube.Succeeded()) return;
+    UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
+    if(!CubeMesh) return;
     const bool bBus=VehicleKind==EDhakaVehicleKind::CityBus || VehicleKind==EDhakaVehicleKind::Coach ||
         VehicleKind==EDhakaVehicleKind::SchoolBus || VehicleKind==EDhakaVehicleKind::Minibus ||
         VehicleKind==EDhakaVehicleKind::Microbus;
     const float Y=Width*.5f+1.5f, Z=BodyHeight*.68f;
     auto Part=[&](const TCHAR* Name,FVector P,FVector S,FRotator R=FRotator::ZeroRotator)
-    { AddPrimitivePart(Name,Cube.Object,P,S,R,GlassMaterial); };
+    { AddPrimitivePart(Name,CubeMesh,P,S,R,GlassMaterial); };
     if(bBus)
     {
         Part(TEXT("FrontWindshield"),FVector(Length*.36f,0,BodyHeight*.8f),FVector(Length*.10f,Width*.78f, CabinHeight*.68f),FRotator(0,0,-8));
@@ -129,9 +129,9 @@ void ADhakaProceduralVehicle::BuildGlazing()
 
 void ADhakaProceduralVehicle::BuildWheelsAndTrim()
 {
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
-    if(!Cylinder.Succeeded() || !Cube.Succeeded()) return;
+    UStaticMesh* CylinderMesh = LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
+    if(!CylinderMesh || !CubeMesh) return;
     const bool bBoat=VehicleKind==EDhakaVehicleKind::PassengerBoat || VehicleKind==EDhakaVehicleKind::RiverLaunch;
     const bool bTwoWheeler=VehicleKind==EDhakaVehicleKind::Motorcycle || VehicleKind==EDhakaVehicleKind::Scooter || VehicleKind==EDhakaVehicleKind::Bicycle;
     auto Part=[&](const TCHAR* Name,UStaticMesh* Mesh,FVector P,FVector S,FRotator R,UMaterialInterface* M)
@@ -146,10 +146,10 @@ void ADhakaProceduralVehicle::BuildWheelsAndTrim()
             {
                 if(VehicleKind==EDhakaVehicleKind::CycleRickshaw && Side>0) continue;
                 const float WheelR=bTwoWheeler?Width*.22f:BodyHeight*.25f;
-                Part(*FString::Printf(TEXT("Tire_%d_%d"),A,Side),Cylinder.Object,
+                Part(*FString::Printf(TEXT("Tire_%d_%d"),A,Side),CylinderMesh,
                     FVector(X,Side*(Width*.5f+WheelR*.28f),WheelR*.8f),FVector(WheelR*.2f,WheelR,WheelR),
                     FRotator(0,0,90),DarkMaterial);
-                Part(*FString::Printf(TEXT("Rim_%d_%d"),A,Side),Cylinder.Object,
+                Part(*FString::Printf(TEXT("Rim_%d_%d"),A,Side),CylinderMesh,
                     FVector(X,Side*(Width*.5f+WheelR*.29f),WheelR*.8f),FVector(WheelR*.22f,WheelR*.42f,WheelR*.42f),
                     FRotator(0,0,90),GlassMaterial);
             }
@@ -157,37 +157,37 @@ void ADhakaProceduralVehicle::BuildWheelsAndTrim()
     }
     if(bGenerateExteriorTrim)
     {
-        Part(TEXT("FrontBumper"),Cube.Object,FVector(Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
-        Part(TEXT("RearBumper"),Cube.Object,FVector(-Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
-        Part(TEXT("FrontGrille"),Cube.Object,FVector(Length*.496f,0,BodyHeight*.43f),FVector(Length*.009f,Width*.3f,BodyHeight*.19f),FRotator::ZeroRotator,DarkMaterial);
+        Part(TEXT("FrontBumper"),CubeMesh,FVector(Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
+        Part(TEXT("RearBumper"),CubeMesh,FVector(-Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
+        Part(TEXT("FrontGrille"),CubeMesh,FVector(Length*.496f,0,BodyHeight*.43f),FVector(Length*.009f,Width*.3f,BodyHeight*.19f),FRotator::ZeroRotator,DarkMaterial);
         for(int32 Side : {-1,1})
         {
-            Part(Side<0?TEXT("Headlight_L"):TEXT("Headlight_R"),Cube.Object,FVector(Length*.49f,Side*Width*.34f,BodyHeight*.48f),FVector(Length*.012f,Width*.13f,BodyHeight*.12f),FRotator::ZeroRotator,GlassMaterial);
-            Part(Side<0?TEXT("Taillight_L"):TEXT("Taillight_R"),Cube.Object,FVector(-Length*.49f,Side*Width*.36f,BodyHeight*.48f),FVector(Length*.012f,Width*.10f,BodyHeight*.14f),FRotator::ZeroRotator,PaintMaterial);
-            Part(Side<0?TEXT("Mirror_L"):TEXT("Mirror_R"),Cube.Object,FVector(Length*.16f,Side*Width*.59f,BodyHeight*.74f),FVector(Length*.045f,Width*.07f,BodyHeight*.07f),FRotator::ZeroRotator,DarkMaterial);
-            Part(Side<0?TEXT("DoorHandle_L"):TEXT("DoorHandle_R"),Cube.Object,FVector(-Length*.03f,Side*Width*.54f,BodyHeight*.56f),FVector(Length*.04f,Width*.018f,BodyHeight*.025f),FRotator::ZeroRotator,GlassMaterial);
+            Part(Side<0?TEXT("Headlight_L"):TEXT("Headlight_R"),CubeMesh,FVector(Length*.49f,Side*Width*.34f,BodyHeight*.48f),FVector(Length*.012f,Width*.13f,BodyHeight*.12f),FRotator::ZeroRotator,GlassMaterial);
+            Part(Side<0?TEXT("Taillight_L"):TEXT("Taillight_R"),CubeMesh,FVector(-Length*.49f,Side*Width*.36f,BodyHeight*.48f),FVector(Length*.012f,Width*.10f,BodyHeight*.14f),FRotator::ZeroRotator,PaintMaterial);
+            Part(Side<0?TEXT("Mirror_L"):TEXT("Mirror_R"),CubeMesh,FVector(Length*.16f,Side*Width*.59f,BodyHeight*.74f),FVector(Length*.045f,Width*.07f,BodyHeight*.07f),FRotator::ZeroRotator,DarkMaterial);
+            Part(Side<0?TEXT("DoorHandle_L"):TEXT("DoorHandle_R"),CubeMesh,FVector(-Length*.03f,Side*Width*.54f,BodyHeight*.56f),FVector(Length*.04f,Width*.018f,BodyHeight*.025f),FRotator::ZeroRotator,GlassMaterial);
         }
     }
 }
 
 void ADhakaProceduralVehicle::BuildInterior()
 {
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-    if(!Cube.Succeeded()) return;
+    UStaticMesh* CubeMesh = LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cube.Cube"));
+    UStaticMesh* CylinderMesh = LoadObject<UStaticMesh>(nullptr,TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    if(!CubeMesh) return;
     auto Part=[&](const TCHAR* Name,UStaticMesh* Mesh,FVector P,FVector S,FRotator R=FRotator::ZeroRotator)
     { AddPrimitivePart(Name,Mesh,P,S,R,DarkMaterial); };
     const float Z=BodyHeight*.34f;
-    Part(TEXT("Dashboard"),Cube.Object,FVector(Length*.18f,0,Z),FVector(Length*.08f,Width*.76f,BodyHeight*.13f));
-    Part(TEXT("CenterConsole"),Cube.Object,FVector(Length*.01f,0,Z*.8f),FVector(Length*.26f,Width*.14f,BodyHeight*.08f));
-    Part(TEXT("DriverSeatBase"),Cube.Object,FVector(-Length*.08f,-Width*.23f,Z*.72f),FVector(Length*.16f,Width*.17f,BodyHeight*.08f));
-    Part(TEXT("DriverSeatBack"),Cube.Object,FVector(-Length*.18f,-Width*.23f,Z*.98f),FVector(Length*.055f,Width*.17f,BodyHeight*.28f));
-    Part(TEXT("PassengerSeatBase"),Cube.Object,FVector(-Length*.08f,Width*.23f,Z*.72f),FVector(Length*.16f,Width*.17f,BodyHeight*.08f));
-    Part(TEXT("PassengerSeatBack"),Cube.Object,FVector(-Length*.18f,Width*.23f,Z*.98f),FVector(Length*.055f,Width*.17f,BodyHeight*.28f));
-    if(Cylinder.Succeeded())
+    Part(TEXT("Dashboard"),CubeMesh,FVector(Length*.18f,0,Z),FVector(Length*.08f,Width*.76f,BodyHeight*.13f));
+    Part(TEXT("CenterConsole"),CubeMesh,FVector(Length*.01f,0,Z*.8f),FVector(Length*.26f,Width*.14f,BodyHeight*.08f));
+    Part(TEXT("DriverSeatBase"),CubeMesh,FVector(-Length*.08f,-Width*.23f,Z*.72f),FVector(Length*.16f,Width*.17f,BodyHeight*.08f));
+    Part(TEXT("DriverSeatBack"),CubeMesh,FVector(-Length*.18f,-Width*.23f,Z*.98f),FVector(Length*.055f,Width*.17f,BodyHeight*.28f));
+    Part(TEXT("PassengerSeatBase"),CubeMesh,FVector(-Length*.08f,Width*.23f,Z*.72f),FVector(Length*.16f,Width*.17f,BodyHeight*.08f));
+    Part(TEXT("PassengerSeatBack"),CubeMesh,FVector(-Length*.18f,Width*.23f,Z*.98f),FVector(Length*.055f,Width*.17f,BodyHeight*.28f));
+    if(CylinderMesh)
     {
-        Part(TEXT("SteeringWheel"),Cylinder.Object,FVector(Length*.16f,-Width*.23f,Z*1.12f),FVector(BodyHeight*.018f,BodyHeight*.12f,BodyHeight*.12f),FRotator(0,0,90));
-        Part(TEXT("GearSelector"),Cylinder.Object,FVector(Length*.02f,-Width*.02f,Z*.98f),FVector(BodyHeight*.025f,BodyHeight*.025f,BodyHeight*.08f));
+        Part(TEXT("SteeringWheel"),CylinderMesh,FVector(Length*.16f,-Width*.23f,Z*1.12f),FVector(BodyHeight*.018f,BodyHeight*.12f,BodyHeight*.12f),FRotator(0,0,90));
+        Part(TEXT("GearSelector"),CylinderMesh,FVector(Length*.02f,-Width*.02f,Z*.98f),FVector(BodyHeight*.025f,BodyHeight*.025f,BodyHeight*.08f));
     }
 }
 
