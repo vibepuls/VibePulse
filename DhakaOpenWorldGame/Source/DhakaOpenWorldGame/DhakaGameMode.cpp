@@ -6,7 +6,7 @@
 #include "DhakaWeatherController.h"
 #include "DhakaStreetLifeGenerator.h"
 #include "DhakaProceduralCitizen.h"
-#include "DhakaLandmarkGenerator.h"
+#include "DhakaLandmarkGenerator.h"\n#include "DhakaTrafficSignal.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/DirectionalLight.h"
@@ -44,7 +44,7 @@ void ADhakaGameMode::BeginPlay()
         ADhakaVehiclePawn* Vehicle=World->SpawnActor<ADhakaVehiclePawn>(VehiclePawnClass,SpawnLocation,FRotator::ZeroRotator);
         if(Vehicle){ if(APlayerController* PC=World->GetFirstPlayerController()) PC->Possess(Vehicle); }
     }
-    // Bounded ambient traffic pool; directions follow the procedural street grid.
+    // Install timed signals at the central grid intersections; the axis determines right-of-way.\n    for(int32 IX=-1;IX<=1;++IX)for(int32 IY=-1;IY<=1;++IY){\n        const FTransform SignalTransform(FRotator::ZeroRotator,FVector(IX*53333.f,IY*53333.f,0.f));\n        if(ADhakaTrafficSignal* Signal=World->SpawnActorDeferred<ADhakaTrafficSignal>(ADhakaTrafficSignal::StaticClass(),SignalTransform)){\n            Signal->MainRoadDirection=FVector(1,0,0);UGameplayStatics::FinishSpawningActor(Signal,SignalTransform);\n        }\n    }\n    // Bounded ambient traffic pool; directions follow the procedural street grid.
     for(int32 I=0;I<42;++I){
         const bool bHorizontal=(I%2)==0;
         const float Road=-160000.f+FMath::RoundToFloat(FMath::FRandRange(0.f,18.f))*17777.f;
