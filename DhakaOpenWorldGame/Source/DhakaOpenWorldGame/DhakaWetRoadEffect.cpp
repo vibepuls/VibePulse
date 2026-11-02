@@ -14,6 +14,7 @@ ADhakaWetRoadEffect::ADhakaWetRoadEffect()
     Puddles=CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("PuddleInstances"));
     SetRootComponent(Puddles);
     Puddles->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Puddles->SetVisibility(false,true);
     Puddles->SetCastShadow(false);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     if(Sphere.Succeeded())Puddles->SetStaticMesh(Sphere.Object);
@@ -25,7 +26,7 @@ void ADhakaWetRoadEffect::BeginPlay()
     for(int32 I=0;I<FMath::Clamp(PuddleCount,0,500);++I)
     {
         const bool bOnHorizontalRoad=Random.FRand()<0.5f;
-        const float RoadLine=Random.FRandRange(-AreaExtent,AreaExtent);
+        const float RoadLine=-160000.f+Random.RandRange(0,18)*(320000.f/18.f);
         const float Along=Random.FRandRange(-AreaExtent,AreaExtent);
         const float Offset=Random.FRandRange(-1400.f,1400.f);
         const FVector Location=bOnHorizontalRoad?FVector(Along,RoadLine+Offset,7.f):FVector(RoadLine+Offset,Along,7.f);
