@@ -218,17 +218,20 @@ void ADhakaVehiclePawn::Tick(float Dt)
     const FVector ForwardVelocity=Forward*FVector::DotProduct(Velocity,Forward);
     const FVector LateralVelocity=Velocity-ForwardVelocity;
     if(ThrottleInput>0.f && FuelPercent>0.f) FuelPercent=FMath::Max(0.f,FuelPercent-ThrottleInput*Dt*(0.08f+FMath::Abs(Speed)/FMath::Max(1.f,MaxSpeed)*0.12f));
+    // Collision damage has persistent driving consequences: a badly damaged
+    // vehicle accelerates, steers, brakes and tops out more poorly until repaired.
     const float ConditionFactor=FMath::Lerp(.45f,1.f,ConditionPercent/100.f);
     PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*ConditionFactor*(FuelPercent>0.f?1.f:0.f)*PhysicsBody->GetMass());
-    // Tire-like lateral grip: damp side-slip without hard teleporting velocity; wet weather lowers the grip.
-    PhysicsBody->AddForce(-LateralVelocity*PhysicsBody->GetMass()*FMath::Lerp(2.2f,8.5f,CachedWeatherGrip));
-    if(BrakeInput>0.f) PhysicsBody->AddForce(-Velocity.GetSafeNormal()*BrakeStrength*CachedWeatherGrip*PhysicsBody->GetMass()*BrakeInput);
+    // Tire-like lateral grip: damp side-slip without hard teleporting velocity; wet weather and damage lower grip.
+    const float EffectiveGrip=CachedWeatherGrip*FMath::Lerp(.55f,1.f,ConditionPercent/100.f);
+    PhysicsBody->AddForce(-LateralVelocity*PhysicsBody->GetMass()*FMath::Lerp(2.2f,8.5f,EffectiveGrip));
+    if(BrakeInput>0.f) PhysicsBody->AddForce(-Velocity.GetSafeNormal()*BrakeStrength*EffectiveGrip*ConditionFactor*PhysicsBody->GetMass()*BrakeInput);
     else if(FMath::IsNearlyZero(ThrottleInput)) PhysicsBody->AddForce(-ForwardVelocity*PhysicsBody->GetMass()*.22f);
     const float SpeedFactor=FMath::Clamp(FMath::Abs(Speed)/MaxSpeed,0.f,1.f);
-    PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*CachedWeatherGrip*PhysicsBody->GetMass()*4.f));
+    PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*EffectiveGrip*ConditionFactor*PhysicsBody->GetMass()*4.f));
     // Reduce excessive lateral slide and high-speed steering response for heavier, wet-road handling.
     if(FMath::Abs(Speed)>MaxSpeed*.72f) PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,-PhysicsBody->GetPhysicsAngularVelocityInRadians().Z*PhysicsBody->GetMass()*0.35f));
-    if(PhysicsBody->GetPhysicsLinearVelocity().Size()>MaxSpeed) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
+    const float ConditionSpeedLimit=FMath::Lerp(.58f,1.f,ConditionPercent/100.f)*MaxSpeed;\n    if(PhysicsBody->GetPhysicsLinearVelocity().Size()>ConditionSpeedLimit) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*ConditionSpeedLimit);
     const float WheelSpin=Speed*Dt/32.f;
     bool bNight=false;
     for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
