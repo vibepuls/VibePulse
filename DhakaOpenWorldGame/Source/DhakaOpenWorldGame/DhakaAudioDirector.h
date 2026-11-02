@@ -17,6 +17,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Ambience") TObjectPtr<USoundBase> RainLoop = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Ambience") TObjectPtr<USoundBase> RiverfrontLoop = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Vehicles") TObjectPtr<USoundBase> EngineLoop = nullptr;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Vehicles") TObjectPtr<USoundBase> EmergencySirenLoop = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Vehicles") TObjectPtr<USoundBase> HornOneShot = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Street Life") TObjectPtr<USoundBase> RickshawBellOneShot = nullptr;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Dhaka Audio|Street Life") TObjectPtr<USoundBase> VendorOneShot = nullptr;
@@ -36,6 +37,7 @@ private:
     UPROPERTY(Transient) TObjectPtr<UAudioComponent> RainAudio = nullptr;
     UPROPERTY(Transient) TObjectPtr<UAudioComponent> RiverAudio = nullptr;
     UPROPERTY(Transient) TObjectPtr<UAudioComponent> EngineAudio = nullptr;
+    UPROPERTY(Transient) TObjectPtr<UAudioComponent> SirenAudio = nullptr;
     bool bRainEnabled = false;
     UAudioComponent* CreateLoop(const TCHAR* Name, USoundBase* Sound, float Volume);
     void UpdateLoop(UAudioComponent* Component, USoundBase* Sound, bool bShouldPlay, float Volume);
