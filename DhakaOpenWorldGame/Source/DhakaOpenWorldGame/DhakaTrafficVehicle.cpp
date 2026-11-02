@@ -10,6 +10,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "DhakaVehiclePawn.h"
 #include "DhakaTrafficSignal.h"
+#include "DhakaPedestrian.h"
 
 ADhakaTrafficVehicle::ADhakaTrafficVehicle()
 {
@@ -185,6 +186,25 @@ void ADhakaTrafficVehicle::Tick(float Dt)
             const float Side=FMath::Abs(FVector::CrossProduct(Delta,RouteDirection).Z);
             if(Ahead>0.f&&Ahead<BrakeDistance&&Side<260.f)
                 Desired=FMath::Min(Desired,CruiseSpeed*FMath::Clamp((Ahead-140.f)/FMath::Max(1.f,BrakeDistance-140.f),0.f,1.f));
+        }
+    }
+    // Yield to pedestrians in the vehicle's forward corridor. This is a safety
+    // slowdown, not a substitute for a NavMesh/crosswalk-aware pedestrian system.
+    {
+        const FVector Direction=RouteDirection.GetSafeNormal2D();
+        for(TActorIterator<ADhakaPedestrian> It(GetWorld());It;++It)
+        {
+            const ADhakaPedestrian* Pedestrian=*It;
+            if(!Pedestrian)continue;
+            const FVector Delta=Pedestrian->GetActorLocation()-GetActorLocation();
+            const float Ahead=FVector::DotProduct(Delta,Direction);
+            const float Side=FMath::Abs(FVector::CrossProduct(Delta,Direction).Z);
+            const float YieldDistance=FMath::Max(BrakeDistance*.65f,520.f);
+            if(Ahead>0.f&&Ahead<YieldDistance&&Side<220.f)
+            {
+                const float SafeSpeed=FMath::Clamp((Ahead-115.f)/FMath::Max(1.f,YieldDistance-115.f),0.f,1.f);
+                Desired=FMath::Min(Desired,CruiseSpeed*SafeSpeed);
+            }
         }
     }
     CurrentSpeed=FMath::FInterpTo(CurrentSpeed,Desired,Dt,Desired<CurrentSpeed?3.8f:1.5f);
