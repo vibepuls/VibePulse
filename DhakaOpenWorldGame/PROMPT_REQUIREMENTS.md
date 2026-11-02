@@ -53,7 +53,7 @@ Status: **PARTIAL** — base road grid now includes generated sidewalk slabs, cu
 ## Part 7 — Vendors and crowded footpaths
 - [ ] Tea, fuchka, chotpoti, jhalmuri, fruit/vegetable/clothing stalls, retail shops, pushcarts, tarpaulins, umbrellas, seating and cooking/shelf props.
 - [ ] Natural placement, vendor/customer interaction, crowding and obstacle-aware routing.
-Status: **PARTIAL** — procedural stalls/furniture and interactable cha/fuchka/jhalmuri/fruit/general-shop actors now exist; pressing E near a vendor purchases its stocked item through the economy subsystem, with transaction feedback in the HUD. The procedural street market now includes eight vendor categories (tea, fuchka, jhalmuri, fruit, general shop, chotpoti, vegetables and clothing); each stocks a catalog item, and purchased chotpoti/produce can restore stamina. Full customer NPC behavior, obstacle-aware crowd routing and richer shop menus remain.
+Status: **PARTIAL** — procedural stalls/furniture and interactable cha/fuchka/jhalmuri/fruit/general-shop actors now exist; pressing E near a vendor purchases its stocked item through the economy subsystem, with transaction feedback in the HUD. The procedural street market now includes eight visually color-coded vendor categories (tea, fuchka, jhalmuri, fruit, general shop, chotpoti, vegetables and clothing); each stocks a catalog item, and purchased chotpoti/produce can restore stamina. Full customer NPC behavior, obstacle-aware crowd routing and richer shop menus remain.
 
 ## Part 8 — Traffic
 - [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
