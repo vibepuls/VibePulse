@@ -59,6 +59,8 @@ private:
     bool bTouchSteeringActive = false;
     bool bTouchThrottleActive = false;
     bool bTouchBrakeActive = false;
+    bool bTouchCameraActive = false;
+    FVector LastTouchLocation = FVector::ZeroVector;
     int32 CameraModeIndex = 0;
     float WeatherQueryTimer = 0.f;
     float CachedWeatherGrip = 1.f;
