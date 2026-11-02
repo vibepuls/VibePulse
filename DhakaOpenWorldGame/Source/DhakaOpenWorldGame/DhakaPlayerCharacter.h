@@ -25,6 +25,8 @@ private:
     void InteractProperty();
     void ClaimPropertyIncome();
     void SelectMissionSlot(float Value);
+    void CycleWeatherInput();
+    void AdvanceTimeInput();
     int32 LastMissionSlot = 0;
     void StartJump();
     void StopJump();
