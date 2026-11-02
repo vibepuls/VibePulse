@@ -79,7 +79,14 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"water_bottle"'
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
-    "DhakaVendorStall", "DhakaPropertyTerminal", "TrafficCount", "PedestrianCount"
+    "DhakaVendorStall", "DhakaPropertyTerminal", "TrafficCount", "PedestrianCount",
+    '"old_dhaka_shop"', '"dhanmondi_flat"', '"uttara_garage"', '"gulshan_office"'
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.h", [
+    "EDhakaPlayerVehicleType", "Sedan", "CNG", "Rickshaw", "Bus", "Motorcycle", "ConfigureVehicleType"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
+    "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw", "EDhakaPlayerVehicleType::Bus"
 ])
 require_tokens("Config/DefaultInput.ini", [
     'AxisName="MissionSlot"', 'ActionName="CycleVehicleType"', 'ActionName="BuyProperty"',
