@@ -53,7 +53,8 @@ void ADhakaAudioDirector::Tick(float DeltaSeconds)
     for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
     { if(It->RainIntensity>0.05f){bWeatherRain=true;break;} }
     UpdateLoop(RainAudio,RainLoop,bWeatherRain,AmbienceVolume);
-    UpdateLoop(RiverAudio,RiverfrontLoop,false,AmbienceVolume*0.7f);
+    const bool bNearRiverfront=FMath::Abs(PlayerPawn->GetActorLocation().X-135000.f)<18000.f;
+    UpdateLoop(RiverAudio,RiverfrontLoop,bNearRiverfront,AmbienceVolume*0.7f);
     UpdateLoop(EngineAudio,EngineLoop,PlayerPawn->IsA(ADhakaVehiclePawn::StaticClass())&&Speed>10.f,AmbienceVolume);
 }
 void ADhakaAudioDirector::PlayOneShot(USoundBase* Sound,float Volume)
