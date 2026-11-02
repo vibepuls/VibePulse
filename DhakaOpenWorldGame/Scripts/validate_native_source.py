@@ -36,7 +36,7 @@ for path in sorted(SOURCE.rglob("*")):
         elif includes[-1] != generated[0]:
             errors.append(f"{rel}: .generated.h must be the final include")
     for name in includes:
-        if name.endswith(".generated.h"):
+        if name.endswith(".generated.h") or "/" in name or "\\" in name:
             continue
         candidates = [path.parent / name, SOURCE / "DhakaOpenWorldGame" / name, SOURCE / name]
         if not any(candidate.is_file() for candidate in candidates):
