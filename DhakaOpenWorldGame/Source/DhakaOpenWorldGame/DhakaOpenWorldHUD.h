@@ -9,5 +9,8 @@ class DHAKAOPENWORLDGAME_API ADhakaOpenWorldHUD : public AHUD
 {
     GENERATED_BODY()
 public:
+    virtual void BeginPlay() override;
     virtual void DrawHUD() override;
+private:
+    UPROPERTY() TObjectPtr<class UDhakaEconomyWidget> EconomyWidget;
 };
