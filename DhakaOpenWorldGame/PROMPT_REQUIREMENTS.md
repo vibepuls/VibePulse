@@ -83,7 +83,7 @@ Status: **PARTIAL** — a native audio director exposes assignable loops for cit
 ## Part 13 — Missions/activities
 - [ ] Taxi, rickshaw, bus, delivery, races, exploration, vehicle collection, business/property, daily/weekly challenges and social activities.
 - [ ] Objectives, rewards, progression and saved state.
-Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; the economy subsystem adds inventory, shops, property purchase/income and XP progression APIs. Full mission menu/map, vehicle requirements, business simulation, garage/repair UI, and the full activity set remain.
+Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; the economy subsystem adds inventory, shops, property purchase/income and XP progression APIs; completing a mission now awards XP as well as wallet currency. Full mission menu/map, vehicle requirements, business simulation, garage/repair UI, and the full activity set remain.
 
 ## Part 14 — Multiplayer/VibePulse
 - [ ] Sessions, profiles, friends, shared city, racing, co-op, sync, leaderboards, achievements, gameplay sharing, events/community challenges.
