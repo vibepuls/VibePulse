@@ -58,7 +58,7 @@ Status: **PARTIAL** — procedural stalls/furniture and interactable cha/fuchka/
 ## Part 8 — Traffic
 - [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
 - [ ] Road/time/density-based traffic rules and Dhaka-specific behavior.
-Status: **PARTIAL** — timed signals, basic following/red-light stopping, configurable randomized turns, and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components exist in source. A full graph-based route planner, lane changes/overtaking, intersection reservations, functional emergency behavior and robust avoidance remain.
+Status: **PARTIAL** — timed signals, basic following/red-light stopping, configurable randomized turns, and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components exist in source. Lane offsets and flashing emergency-light components are now present, but a full graph-based route planner, lane changes/overtaking, intersection reservations, emergency priority behavior and robust avoidance remain.
 
 ## Part 9 — Pedestrian AI/crowds
 - [ ] Sidewalk walking, crossing, obstacle/vendor/vehicle avoidance, gathering, bus-stop waiting, boarding/exiting, shopping, talking and reactions to weather/events/player.
@@ -83,7 +83,7 @@ Status: **PARTIAL** — a native audio director exposes assignable loops for cit
 ## Part 13 — Missions/activities
 - [ ] Taxi, rickshaw, bus, delivery, races, exploration, vehicle collection, business/property, daily/weekly challenges and social activities.
 - [ ] Objectives, rewards, progression and saved state.
-Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; the economy subsystem adds inventory, shops, property purchase/income and XP progression APIs; completing a mission now awards XP as well as wallet currency; timed mission progress is saved periodically and mission switching no longer automatically fails the previous mission. Interactive street vendors support purchase transactions. Full mission menu/map, vehicle requirements, business simulation, garage/repair UI, and the full activity set remain.
+Status: **PARTIAL** — timed destination missions and wallet rewards are implemented in source; the economy subsystem adds inventory, shops, property purchase/income and XP progression APIs; completing a mission awards XP as well as wallet currency; timed mission progress is saved periodically and mission switching no longer automatically fails the previous mission. Interactive street vendors and district property terminals support nearby purchases; P claims eligible daily property income. Full mission menu/map, vehicle requirements, business simulation, garage/repair UI, and the full activity set remain.
 
 ## Part 14 — Multiplayer/VibePulse
 - [ ] Sessions, profiles, friends, shared city, racing, co-op, sync, leaderboards, achievements, gameplay sharing, events/community challenges.
