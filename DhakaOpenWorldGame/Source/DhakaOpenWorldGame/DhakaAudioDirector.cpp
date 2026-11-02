@@ -1,5 +1,7 @@
 #include "DhakaAudioDirector.h"
 #include "DhakaVehiclePawn.h"
+#include "DhakaWeatherController.h"
+#include "EngineUtils.h"
 #include "Components/AudioComponent.h"
 #include "Components/SceneComponent.h"
 #include "GameFramework/Pawn.h"
@@ -47,7 +49,10 @@ void ADhakaAudioDirector::Tick(float DeltaSeconds)
     const float Speed=PlayerPawn->GetVelocity().Size();
     UpdateLoop(TrafficAudio,CityTrafficLoop,true,AmbienceVolume);
     UpdateLoop(MarketAudio,MarketLoop,true,AmbienceVolume*0.8f);
-    UpdateLoop(RainAudio,RainLoop,bRainEnabled,AmbienceVolume);
+    bool bWeatherRain=bRainEnabled;
+    for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
+    { if(It->RainIntensity>0.05f){bWeatherRain=true;break;} }
+    UpdateLoop(RainAudio,RainLoop,bWeatherRain,AmbienceVolume);
     UpdateLoop(RiverAudio,RiverfrontLoop,false,AmbienceVolume*0.7f);
     UpdateLoop(EngineAudio,EngineLoop,PlayerPawn->IsA(ADhakaVehiclePawn::StaticClass())&&Speed>10.f,AmbienceVolume);
 }
