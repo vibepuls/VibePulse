@@ -37,6 +37,7 @@ public:
     UPROPERTY(BlueprintReadOnly) int32 PlayerLevel=1;
     UPROPERTY(BlueprintReadOnly) int64 Experience=0;
     UPROPERTY(BlueprintReadOnly) FDateTime LastIncomeClaimUtc;
+    UPROPERTY(BlueprintReadOnly) FText LastTransactionMessage;
 
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     UFUNCTION(BlueprintCallable) bool PurchaseItem(FName ItemId,int32 Quantity=1);
