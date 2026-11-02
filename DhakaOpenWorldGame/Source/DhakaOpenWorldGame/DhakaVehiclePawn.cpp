@@ -107,6 +107,8 @@ void ADhakaVehiclePawn::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaVehiclePawn::CycleCamera);
     Input->BindAction("Horn",IE_Pressed,this,&ADhakaVehiclePawn::PlayHornInput);
     Input->BindAction("RickshawBell",IE_Pressed,this,&ADhakaVehiclePawn::PlayRickshawBellInput);
+    Input->BindAction("UseFuel",IE_Pressed,this,&ADhakaVehiclePawn::UseFuelInput);
+    Input->BindAction("UseRepair",IE_Pressed,this,&ADhakaVehiclePawn::UseRepairInput);
     Input->BindAction("CycleVehicleType",IE_Pressed,this,&ADhakaVehiclePawn::CycleVehicleType);
     Input->BindAction("CycleWeather",IE_Pressed,this,&ADhakaVehiclePawn::CycleWeatherInput);
     Input->BindAction("AdvanceTime",IE_Pressed,this,&ADhakaVehiclePawn::AdvanceTimeInput);
@@ -197,7 +199,9 @@ void ADhakaVehiclePawn::Tick(float Dt)
     const FVector Velocity=PhysicsBody->GetPhysicsLinearVelocity();
     const FVector ForwardVelocity=Forward*FVector::DotProduct(Velocity,Forward);
     const FVector LateralVelocity=Velocity-ForwardVelocity;
-    PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*PhysicsBody->GetMass());
+    if(ThrottleInput>0.f && FuelPercent>0.f) FuelPercent=FMath::Max(0.f,FuelPercent-ThrottleInput*Dt*(0.08f+FMath::Abs(Speed)/FMath::Max(1.f,MaxSpeed)*0.12f));
+    const float ConditionFactor=FMath::Lerp(.45f,1.f,ConditionPercent/100.f);
+    PhysicsBody->AddForce(Forward*ThrottleInput*Acceleration*ConditionFactor*(FuelPercent>0.f?1.f:0.f)*PhysicsBody->GetMass());
     // Tire-like lateral grip: damp side-slip without hard teleporting velocity; wet weather lowers the grip.
     PhysicsBody->AddForce(-LateralVelocity*PhysicsBody->GetMass()*FMath::Lerp(2.2f,8.5f,CachedWeatherGrip));
     if(BrakeInput>0.f) PhysicsBody->AddForce(-Velocity.GetSafeNormal()*BrakeStrength*CachedWeatherGrip*PhysicsBody->GetMass()*BrakeInput);
@@ -284,6 +288,10 @@ void ADhakaVehiclePawn::LoadProgress()
     }
 }
 
+void ADhakaVehiclePawn::AddFuel(float Amount){if(Amount>0.f)FuelPercent=FMath::Clamp(FuelPercent+Amount,0.f,100.f);}
+void ADhakaVehiclePawn::RepairVehicle(float Amount){if(Amount>0.f)ConditionPercent=FMath::Clamp(ConditionPercent+Amount,0.f,100.f);}
+void ADhakaVehiclePawn::UseFuelInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("fuel_can"),this);}
+void ADhakaVehiclePawn::UseRepairInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("repair_kit"),this);}
 void ADhakaVehiclePawn::ToggleVehicleMode()
 {
     APlayerController* PC=Cast<APlayerController>(GetController());if(!PC||!GetWorld())return;
