@@ -48,7 +48,11 @@ void ADhakaAudioDirector::Tick(float DeltaSeconds)
     SetActorLocation(PlayerPawn->GetActorLocation());
     const float Speed=PlayerPawn->GetVelocity().Size();
     UpdateLoop(TrafficAudio,CityTrafficLoop,true,AmbienceVolume);
-    UpdateLoop(MarketAudio,MarketLoop,true,AmbienceVolume*0.8f);
+    const FVector PlayerLocation=PlayerPawn->GetActorLocation();
+    const FVector MarketZones[]={FVector(-85000.f,100000.f,0.f),FVector(-50000.f,-50000.f,0.f),FVector(25000.f,25000.f,0.f),FVector(75000.f,45000.f,0.f)};
+    bool bNearMarket=false;
+    for(const FVector& Zone:MarketZones)if(FVector::Dist2D(PlayerLocation,Zone)<22000.f){bNearMarket=true;break;}
+    UpdateLoop(MarketAudio,MarketLoop,bNearMarket,AmbienceVolume*0.8f);
     bool bWeatherRain=bRainEnabled;
     for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
     { if(It->RainIntensity>0.05f){bWeatherRain=true;break;} }
