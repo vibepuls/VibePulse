@@ -38,12 +38,12 @@ void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType
     FLinearColor Paint(.12f,.28f,.62f,1.f);
     switch(VehicleType)
     {
-        case EDhakaTrafficVehicleType::Bus: Dimensions=FVector(7.2f,2.55f,1.8f); Paint=FLinearColor(.8f,.58f,.12f); break;
-        case EDhakaTrafficVehicleType::Truck: Dimensions=FVector(5.8f,2.45f,1.55f); Paint=FLinearColor(.18f,.42f,.22f); break;
-        case EDhakaTrafficVehicleType::CNG: Dimensions=FVector(2.25f,1.35f,1.25f); Paint=FLinearColor(.08f,.58f,.32f); break;
-        case EDhakaTrafficVehicleType::Motorcycle: Dimensions=FVector(1.25f,.62f,.68f); Paint=FLinearColor(.12f,.12f,.14f); break;
-        case EDhakaTrafficVehicleType::Rickshaw: Dimensions=FVector(1.75f,1.15f,1.f); Paint=FLinearColor(.88f,.24f,.12f); break;
-        case EDhakaTrafficVehicleType::Emergency: Dimensions=FVector(4.3f,2.f,1.15f); Paint=FLinearColor(.82f,.08f,.06f); break;
+        case EDhakaTrafficVehicleType::Bus: Dimensions=FVector(7.2f,2.55f,1.8f); Paint=FLinearColor(.8f,.58f,.12f); CruiseSpeed=520.f; BrakeDistance=1000.f; break;
+        case EDhakaTrafficVehicleType::Truck: Dimensions=FVector(5.8f,2.45f,1.55f); Paint=FLinearColor(.18f,.42f,.22f); CruiseSpeed=480.f; BrakeDistance=950.f; break;
+        case EDhakaTrafficVehicleType::CNG: Dimensions=FVector(2.25f,1.35f,1.25f); Paint=FLinearColor(.08f,.58f,.32f); CruiseSpeed=430.f; BrakeDistance=520.f; break;
+        case EDhakaTrafficVehicleType::Motorcycle: Dimensions=FVector(1.25f,.62f,.68f); Paint=FLinearColor(.12f,.12f,.14f); CruiseSpeed=850.f; BrakeDistance=420.f; break;
+        case EDhakaTrafficVehicleType::Rickshaw: Dimensions=FVector(1.75f,1.15f,1.f); Paint=FLinearColor(.88f,.24f,.12f); CruiseSpeed=300.f; BrakeDistance=380.f; break;
+        case EDhakaTrafficVehicleType::Emergency: Dimensions=FVector(4.3f,2.f,1.15f); Paint=FLinearColor(.82f,.08f,.06f); CruiseSpeed=900.f; BrakeDistance=850.f; break;
         default: break;
     }
     Body->SetRelativeScale3D(Dimensions);
@@ -152,6 +152,9 @@ void ADhakaTrafficVehicle::Tick(float Dt)
         }
     }
     CurrentSpeed=FMath::FInterpTo(CurrentSpeed,Desired,Dt,Desired<CurrentSpeed?3.8f:1.5f);
+    const float WheelDegrees=FMath::RadiansToDegrees(CurrentSpeed*Dt/17.f);
+    for(UStaticMeshComponent* Wheel : {WheelFrontLeft.Get(),WheelFrontRight.Get(),WheelRearLeft.Get(),WheelRearRight.Get()})
+        if(Wheel && Wheel->IsVisible()) Wheel->AddLocalRotation(FRotator(0.f,0.f,WheelDegrees));
     AddActorWorldOffset(RouteDirection.GetSafeNormal2D()*CurrentSpeed*Dt,true);
     SetActorRotation(FMath::RInterpTo(GetActorRotation(),RouteDirection.GetSafeNormal2D().Rotation(),Dt,2.f));
 }
