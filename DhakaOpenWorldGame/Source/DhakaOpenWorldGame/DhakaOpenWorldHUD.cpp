@@ -25,7 +25,7 @@ void ADhakaOpenWorldHUD::DrawHUD()
     if (UGameInstance* GI=GetWorld()->GetGameInstance())
         Economy=GI->GetSubsystem<UDhakaEconomySubsystem>();
 
-    const float PanelX=24.f, PanelY=24.f, PanelW=520.f, PanelH=286.f;
+    const float PanelX=24.f, PanelY=24.f, PanelW=540.f, PanelH=310.f;
     Canvas->DrawRect(FLinearColor(0.025f,0.035f,0.055f,0.88f),PanelX,PanelY,PanelW,PanelH);
     Canvas->SetDrawColor(FColor(30,210,190,255));
     Canvas->DrawRect(FLinearColor(0.08f,0.82f,0.72f,1.f),PanelX,PanelY,4.f,PanelH);
@@ -78,6 +78,7 @@ void ADhakaOpenWorldHUD::DrawHUD()
             Canvas->DrawText(Font,FString::Printf(TEXT("HEALTH %.0f%%  |  STAMINA %.0f%%"),Character->Health,Character->Stamina),PanelX+18.f,PanelY+224.f,.68f,.68f);
     }
     Canvas->DrawText(Font,TEXT("E: Interact | F: Property | P: Rent | F1: First Aid | F2: Food | F3: Fuel | F4: Repair"),PanelX+18.f,PanelY+253.f,0.56f,0.56f);
+    Canvas->DrawText(Font,TEXT("Mobile: drag left side to move/steer; drag right side to look"),PanelX+18.f,PanelY+278.f,0.56f,0.56f);
     if(Missions && Canvas->ClipX>900.f)
     {
         const float ListW=310.f, ListX=Canvas->ClipX-ListW-24.f, ListY=24.f;
