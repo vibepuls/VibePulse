@@ -50,6 +50,8 @@ private:
     void PlayHornInput();
     void PlayRickshawBellInput();
     void CycleVehicleType();
+    void CycleWeatherInput();
+    void AdvanceTimeInput();
     void SelectMissionSlot(float Value);
     int32 LastMissionSlot = 0;
     void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
