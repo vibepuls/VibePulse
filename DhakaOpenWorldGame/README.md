@@ -18,6 +18,7 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 - GameMode spawns city, landmarks, street-life, signals, traffic, pedestrians, weather and audio routing. Touch steering/throttle/brake zones, right-side camera drag and PC controls are present; press **F6** to cycle Clear/Smog/Rain/Monsoon/Fog and **F7** to advance the time by three hours.
 
 ## Open and build
+- GitHub Actions runs the lightweight native-source sanity validator on changes to this folder; this is not a substitute for UnrealHeaderTool, a UE5 compile, playtesting, or packaging.
 1. Optional source sanity check (not an Unreal build): run `python Scripts/validate_native_source.py` from this folder.
 2. Install Unreal Engine 5.5 and matching C++ toolchain (Visual Studio with Desktop development with C++ on Windows).
 3. Open `DhakaOpenWorldGame.uproject` in Unreal Editor and generate project files.
