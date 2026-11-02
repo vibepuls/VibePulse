@@ -37,7 +37,7 @@ void UDhakaEconomyWidget::NativeConstruct()
     StatusLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("TransactionStatus"));
     StatusLabel->SetAutoWrapText(true);StatusLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.95f,.83f,.48f,1.f)));Layout->AddChildToVerticalBox(StatusLabel);
     UScrollBox* Scroll=WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(),TEXT("EconomyActionsScroll"));
-    Layout->AddChildToVerticalBox(Scroll);
+    if(UVerticalBoxSlot* ScrollSlot=Layout->AddChildToVerticalBox(Scroll))ScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
     UVerticalBox* Actions=WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(),TEXT("EconomyActions"));
     Scroll->AddChild(Actions);
     UButton* Button=nullptr;
