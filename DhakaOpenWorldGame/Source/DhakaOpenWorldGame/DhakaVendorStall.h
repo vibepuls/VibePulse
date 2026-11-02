@@ -12,6 +12,7 @@ class DHAKAOPENWORLDGAME_API ADhakaVendorStall : public AActor
     GENERATED_BODY()
 public:
     ADhakaVendorStall();
+    virtual void BeginPlay() override;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vendor") EDhakaVendorType VendorType = EDhakaVendorType::Tea;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vendor") FText StallName;
     UFUNCTION(BlueprintCallable, Category="Vendor") bool Interact(AActor* Customer);
