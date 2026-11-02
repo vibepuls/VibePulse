@@ -2,6 +2,9 @@
 #include "DhakaRainEffect.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/PointLightComponent.h"
+#include "DhakaAudioDirector.h"
+#include "EngineUtils.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DirectionalLight.h"
@@ -11,6 +14,7 @@ ADhakaWeatherController::ADhakaWeatherController()
 {
     PrimaryActorTick.bCanEverTick=true; Root=CreateDefaultSubobject<USceneComponent>(TEXT("Root"));SetRootComponent(Root);
     Fog=CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("Fog"));Fog->SetupAttachment(Root);Fog->SetFogDensity(0.012f);
+    LightningLight=CreateDefaultSubobject<UPointLightComponent>(TEXT("MonsoonLightning"));LightningLight->SetupAttachment(Root);LightningLight->SetIntensity(0.f);LightningLight->SetAttenuationRadius(120000.f);LightningLight->SetLightColor(FLinearColor(.72f,.82f,1.f));LightningLight->SetCastShadows(false);
 }
 void ADhakaWeatherController::BeginPlay()
 {
@@ -36,6 +40,30 @@ void ADhakaWeatherController::Tick(float Dt)
     RainIntensity=FMath::Clamp(RainIntensity,0.f,1.f);
     if(RainEffect && !FMath::IsNearlyEqual(RainEffect->Intensity,RainIntensity,0.02f))
         RainEffect->SetRainIntensity(RainIntensity);
+    if(Weather!=EDhakaWeather::Monsoon)
+    {
+        LightningCountdown=FMath::FRandRange(7.f,17.f);
+        LightningFlashRemaining=0.f;
+        if(LightningLight)LightningLight->SetIntensity(0.f);
+        return;
+    }
+    if(LightningFlashRemaining>0.f)
+    {
+        LightningFlashRemaining-=Dt;
+        if(LightningFlashRemaining<=0.f && LightningLight)LightningLight->SetIntensity(0.f);
+    }
+    LightningCountdown-=Dt;
+    if(LightningCountdown<=0.f && LightningFlashRemaining<=0.f)
+    {
+        LightningCountdown=FMath::FRandRange(8.f,22.f);
+        LightningFlashRemaining=.12f;
+        if(APawn* Player=UGameplayStatics::GetPlayerPawn(this,0))
+        {
+            SetActorLocation(Player->GetActorLocation());
+            if(LightningLight)LightningLight->SetIntensity(FMath::FRandRange(2500000.f,6500000.f));
+        }
+        for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayThunder();break;}
+    }
 }
 void ADhakaWeatherController::ApplyEnvironment()
 {
