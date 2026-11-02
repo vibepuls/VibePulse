@@ -30,7 +30,7 @@ for path in sorted(SOURCE.rglob("*")):
     if duplicates:
         errors.append(f"{rel}: duplicate quoted includes: {', '.join(duplicates)}")
     generated = [name for name in includes if name.endswith(".generated.h")]
-    if path.suffix == ".h" and re.search(r"\\b(UCLASS|USTRUCT|UENUM|UINTERFACE)\\b", raw):
+    if path.suffix == ".h" and re.search(r"\b(UCLASS|USTRUCT|UENUM|UINTERFACE)\b", raw):
         if len(generated) != 1:
             errors.append(f"{rel}: reflected header must include exactly one .generated.h, found {len(generated)}")
         elif includes[-1] != generated[0]:
