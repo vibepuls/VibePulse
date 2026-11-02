@@ -12,5 +12,6 @@ public:
     UPROPERTY() TArray<FName> OwnedProperties;
     UPROPERTY() int32 PlayerLevel=1;
     UPROPERTY() int64 Experience=0;
-    UPROPERTY() int32 Version=1;
+    UPROPERTY() FDateTime LastIncomeClaimUtc;
+    UPROPERTY() int32 Version=2;
 };
