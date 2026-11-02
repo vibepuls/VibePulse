@@ -23,6 +23,11 @@ private:
     void AddLabel(class UVerticalBox* Box,const FString& Text,bool bHeading=false);
     void AddActionButton(class UVerticalBox* Box,const FString& Text,UButton*& OutButton);
     void RefreshStatus();
+    void ApplyGraphicsQuality(int32 Level);
+    UFUNCTION() void SetGraphicsLow();
+    UFUNCTION() void SetGraphicsMedium();
+    UFUNCTION() void SetGraphicsHigh();
+    UFUNCTION() void SetGraphicsEpic();
     UFUNCTION() void BuyWater();
     UFUNCTION() void BuyFirstAid();
     UFUNCTION() void BuyFuel();
