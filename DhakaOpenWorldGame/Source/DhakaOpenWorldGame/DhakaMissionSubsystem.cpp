@@ -1,8 +1,15 @@
 #include "DhakaMissionSubsystem.h"
+#include "DhakaProgressSaveGame.h"
 #include "Engine/World.h"
 #include "Engine/TimerManager.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
+
+namespace
+{
+    const TCHAR* DhakaProgressSlot = TEXT("DhakaOpenWorldProgress");
+    constexpr int32 DhakaProgressUserIndex = 0;
+}
 
 void UDhakaMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -25,11 +32,12 @@ void UDhakaMissionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     Add("weekly_city_tour", TEXT("Weekly City Tour"), TEXT("Explore the city and reach the marked destination."), 1800, FVector(60000,-90000,0), EDhakaMissionType::WeeklyChallenge, 900.f, 420.f);
     Add("daily_commute", TEXT("Daily Commute"), TEXT("Reach the destination for today's commute."), 400, FVector(25000,25000,0), EDhakaMissionType::DailyChallenge, 500.f, 120.f);
     Add("property_scout", TEXT("Property Scout"), TEXT("Visit the marked location to scout a property."), 900, FVector(75000,45000,0), EDhakaMissionType::Property, 700.f);
-    StartMission("explore_lalbagh");
+    if (!LoadProgress()) StartMission("explore_lalbagh");
 }
 
 void UDhakaMissionSubsystem::Deinitialize()
 {
+    SaveProgress();
     if (UWorld* World=GetWorld()) World->GetTimerManager().ClearTimer(MissionUpdateTimer);
     Super::Deinitialize();
 }
@@ -38,7 +46,7 @@ bool UDhakaMissionSubsystem::StartMission(FName MissionId)
 {
     for (int32 I=0; I<Missions.Num(); ++I)
     {
-        if (Missions[I].Id==MissionId && !Missions[I].bCompleted)
+        if (Missions[I].Id==MissionId && !Missions[I].bCompleted && !Missions[I].bFailed)
         {
             if (ActiveMissionIndex != INDEX_NONE && ActiveMissionIndex != I && Missions.IsValidIndex(ActiveMissionIndex))
                 Missions[ActiveMissionIndex].bFailed=true;
@@ -46,6 +54,7 @@ bool UDhakaMissionSubsystem::StartMission(FName MissionId)
             ActiveMissionTimeRemaining=Missions[I].TimeLimitSeconds;
             LastMissionResult.Reset();
             StartMissionMonitor();
+            SaveProgress();
             return true;
         }
     }
@@ -75,7 +84,6 @@ void UDhakaMissionSubsystem::UpdateActiveMission()
     if (!Player) return;
     FVector PlayerLocation=Player->GetActorLocation();
     FVector TargetLocation=Mission.Target;
-    // Destination checks are horizontal, so small differences in road elevation do not block completion.
     PlayerLocation.Z=0.f; TargetLocation.Z=0.f;
     if (FVector::DistSquared2D(PlayerLocation,TargetLocation)<=FMath::Square(Mission.TargetRadius))
         CompleteActiveMission();
@@ -102,6 +110,7 @@ bool UDhakaMissionSubsystem::CompleteActiveMission()
             break;
         }
     }
+    SaveProgress();
     return true;
 }
 
@@ -115,10 +124,48 @@ void UDhakaMissionSubsystem::FailActiveMission()
     if (UWorld* World=GetWorld()) World->GetTimerManager().ClearTimer(MissionUpdateTimer);
     ActiveMissionIndex=INDEX_NONE;
     ActiveMissionTimeRemaining=0.f;
+    SaveProgress();
 }
 
 void UDhakaMissionSubsystem::AddWallet(int64 Amount)
 {
     if (Amount<0) Wallet=FMath::Max<int64>(0,Wallet+Amount);
     else Wallet=FMath::Min<int64>(MAX_int64,Wallet+Amount);
+    SaveProgress();
+}
+
+bool UDhakaMissionSubsystem::SaveProgress()
+{
+    UDhakaProgressSaveGame* Save=Cast<UDhakaProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UDhakaProgressSaveGame::StaticClass()));
+    if (!Save) return false;
+    Save->Wallet=Wallet;
+    Save->Missions=Missions;
+    Save->ActiveMissionId=Missions.IsValidIndex(ActiveMissionIndex)?Missions[ActiveMissionIndex].Id:NAME_None;
+    return UGameplayStatics::SaveGameToSlot(Save,DhakaProgressSlot,DhakaProgressUserIndex);
+}
+
+bool UDhakaMissionSubsystem::LoadProgress()
+{
+    if (!UGameplayStatics::DoesSaveGameExist(DhakaProgressSlot,DhakaProgressUserIndex)) return false;
+    UDhakaProgressSaveGame* Save=Cast<UDhakaProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(DhakaProgressSlot,DhakaProgressUserIndex));
+    if (!Save || Save->Version!=1) return false;
+    Wallet=FMath::Max<int64>(0,Save->Wallet);
+    for (FDhakaMission& Mission:Missions)
+    {
+        const FDhakaMission* Saved=Save->Missions.FindByPredicate([&Mission](const FDhakaMission& Candidate){return Candidate.Id==Mission.Id;});
+        if (Saved) { Mission.bCompleted=Saved->bCompleted; Mission.bFailed=Saved->bFailed; }
+    }
+    ActiveMissionIndex=INDEX_NONE;
+    for (int32 I=0;I<Missions.Num();++I)
+        if (Missions[I].Id==Save->ActiveMissionId && !Missions[I].bCompleted && !Missions[I].bFailed) {ActiveMissionIndex=I;break;}
+    if (ActiveMissionIndex==INDEX_NONE)
+    {
+        for (int32 I=0;I<Missions.Num();++I) if(!Missions[I].bCompleted&&!Missions[I].bFailed){ActiveMissionIndex=I;break;}
+    }
+    if (Missions.IsValidIndex(ActiveMissionIndex))
+    {
+        ActiveMissionTimeRemaining=Missions[ActiveMissionIndex].TimeLimitSeconds;
+        StartMissionMonitor();
+    }
+    return true;
 }
