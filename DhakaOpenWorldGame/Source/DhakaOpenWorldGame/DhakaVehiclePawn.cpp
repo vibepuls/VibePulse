@@ -124,6 +124,12 @@ void ADhakaVehiclePawn::Tick(float Dt)
     PhysicsBody->AddTorqueInRadians(FVector(0.f,0.f,SteeringInput*SteeringRate*SpeedFactor*PhysicsBody->GetMass()*4.f));
     if(PhysicsBody->GetPhysicsLinearVelocity().Size()>MaxSpeed) PhysicsBody->SetPhysicsLinearVelocity(PhysicsBody->GetPhysicsLinearVelocity().GetSafeNormal()*MaxSpeed);
     const float WheelSpin=Speed*Dt/32.f;
+    bool bNight=false;
+    for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It)
+    {
+        bNight=It->TimeOfDayHours<6.f||It->TimeOfDayHours>=18.5f;
+        break;
+    }
     for(UStaticMeshComponent* Part:VisualParts)
     {
         if(!Part)continue;
@@ -133,6 +139,16 @@ void ADhakaVehiclePawn::Tick(float Dt)
             FRotator WheelRotation=Part->GetRelativeRotation();
             WheelRotation.Pitch+=FMath::RadiansToDegrees(WheelSpin);
             Part->SetRelativeRotation(WheelRotation);
+        }
+        if(PartName.Contains(TEXT("Headlight")))Part->SetVisibility(bNight,true);
+        if(PartName.Contains(TEXT("Taillight")))
+        {
+            if(UMaterialInstanceDynamic* Light=Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0)))
+            {
+                const FLinearColor BrakeColor=BrakeInput>0.05f?FLinearColor(1.f,.008f,.004f):FLinearColor(.35f,.012f,.008f);
+                Light->SetVectorParameterValue(TEXT("BaseColor"),BrakeColor);
+                Light->SetScalarParameterValue(TEXT("EmissiveStrength"),BrakeInput>0.05f?3.5f:.35f);
+            }
         }
     }
 }
