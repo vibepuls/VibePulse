@@ -148,9 +148,13 @@ void ADhakaPedestrian::Tick(float Dt)
     SetActorLocation(Start+Direction*Step,true);
     if(!Direction.IsNearlyZero())SetActorRotation(Direction.Rotation());
     WalkPhase+=Dt*7.f;
-    const float Swing=(State==EDhakaPedestrianState::Wait?0.f:FMath::Sin(WalkPhase)*.38f);
-    if(LeftLeg)LeftLeg->SetRelativeRotation(FRotator(0,Swing*28.f,0));
-    if(RightLeg)RightLeg->SetRelativeRotation(FRotator(0,-Swing*28.f,0));
-    if(LeftArm)LeftArm->SetRelativeRotation(FRotator(0,-Swing*20.f,0));
-    if(RightArm)RightArm->SetRelativeRotation(FRotator(0,Swing*20.f,0));
+    // Animate limbs around their forward/backward pitch axis. Yaw rotation
+    // made the old primitive legs swivel sideways instead of taking a step.
+    const float Swing=(State==EDhakaPedestrianState::Wait?0.f:FMath::Sin(WalkPhase)*.72f);
+    if(LeftLeg)LeftLeg->SetRelativeRotation(FRotator(Swing*28.f,0.f,0.f));
+    if(RightLeg)RightLeg->SetRelativeRotation(FRotator(-Swing*28.f,0.f,0.f));
+    if(LeftArm)LeftArm->SetRelativeRotation(FRotator(-Swing*20.f,0.f,0.f));
+    if(RightArm)RightArm->SetRelativeRotation(FRotator(Swing*20.f,0.f,0.f));
+    if(Torso)Torso->SetRelativeLocation(FVector(0.f,0.f,100.f+FMath::Abs(Swing)*2.5f));
+    if(Head)Head->SetRelativeRotation(FRotator(-FMath::Abs(Swing)*2.f,0.f,0.f));
 }
