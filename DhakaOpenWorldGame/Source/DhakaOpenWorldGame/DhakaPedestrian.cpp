@@ -2,6 +2,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/World.h"
+#include "CollisionQueryParams.h"
+#include "CollisionShape.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -57,9 +60,33 @@ void ADhakaPedestrian::Tick(float Dt)
         Destination=GetActorLocation()+FVector(FMath::FRandRange(-700.f,700.f),FMath::FRandRange(-700.f,700.f),0.f);
         return;
     }
-    const FVector Direction=Delta.GetSafeNormal2D();
+    FVector Direction=Delta.GetSafeNormal2D();
     const float Speed=State==EDhakaPedestrianState::Cross?190.f:WalkSpeed;
-    SetActorLocation(GetActorLocation()+Direction*Speed*Dt,true);
+    const FVector Start=GetActorLocation();
+    const float Step=Speed*Dt;
+    FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(DhakaPedestrianAvoidance),false,this);
+    FHitResult Hit;
+    const FCollisionShape Shape=FCollisionShape::MakeCapsule(28.f,78.f);
+    auto IsPathClear=[&](const FVector& Candidate)
+    {
+        FHitResult CandidateHit;
+        return !GetWorld() || !GetWorld()->SweepSingleByChannel(CandidateHit,Start+FVector(0,0,4.f),Start+FVector(0,0,4.f)+Candidate*Step,FQuat::Identity,ECC_Pawn,Shape,QueryParams);
+    };
+    if(GetWorld() && GetWorld()->SweepSingleByChannel(Hit,Start+FVector(0,0,4.f),Start+FVector(0,0,4.f)+Direction*FMath::Max(Step,35.f),FQuat::Identity,ECC_Pawn,Shape,QueryParams))
+    {
+        const FVector Side=FVector::CrossProduct(FVector::UpVector,Direction).GetSafeNormal();
+        const FVector Left= (Direction+Side*0.9f).GetSafeNormal();
+        const FVector Right=(Direction-Side*0.9f).GetSafeNormal();
+        if(IsPathClear(Left))Direction=Left;
+        else if(IsPathClear(Right))Direction=Right;
+        else
+        {
+            State=EDhakaPedestrianState::Wait;
+            WaitRemaining=FMath::FRandRange(.35f,.9f);
+            return;
+        }
+    }
+    SetActorLocation(Start+Direction*Step,true);
     if(!Direction.IsNearlyZero())SetActorRotation(Direction.Rotation());
     WalkPhase+=Dt*7.f;
     const float Swing=(State==EDhakaPedestrianState::Wait?0.f:FMath::Sin(WalkPhase)*.38f);
