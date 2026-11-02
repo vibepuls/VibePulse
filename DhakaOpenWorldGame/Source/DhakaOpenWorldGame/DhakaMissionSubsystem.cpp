@@ -1,5 +1,6 @@
 #include "DhakaMissionSubsystem.h"
 #include "DhakaProgressSaveGame.h"
+#include "DhakaEconomySubsystem.h"
 #include "Engine/World.h"
 #include "Engine/TimerManager.h"
 #include "GameFramework/Pawn.h"
@@ -104,6 +105,8 @@ bool UDhakaMissionSubsystem::CompleteActiveMission()
     Missions[CompletedIndex].bCompleted=true;
     const int64 Reward=FMath::Max(0,Missions[CompletedIndex].Reward);
     Wallet=Wallet>MAX_int64-Reward?MAX_int64:Wallet+Reward;
+    if(UGameInstance* GI=GetGameInstance())
+        if(UDhakaEconomySubsystem* Economy=GI->GetSubsystem<UDhakaEconomySubsystem>()) Economy->AwardExperience(static_cast<int64>(Reward)/2+50);
     LastMissionResult=FString::Printf(TEXT("Completed: %s (+%d)"),*Missions[CompletedIndex].Title.ToString(),Missions[CompletedIndex].Reward);
     if (UWorld* World=GetWorld()) World->GetTimerManager().ClearTimer(MissionUpdateTimer);
     ActiveMissionIndex=INDEX_NONE;
