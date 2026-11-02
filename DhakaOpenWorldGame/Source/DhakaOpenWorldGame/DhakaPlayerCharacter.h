@@ -10,6 +10,9 @@ class DHAKAOPENWORLDGAME_API ADhakaPlayerCharacter : public ACharacter
 public:
     ADhakaPlayerCharacter();
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+    virtual void Tick(float DeltaSeconds) override;
+    UPROPERTY(BlueprintReadOnly, Category="Player Stats", meta=(ClampMin="0",ClampMax="100")) float Health=100.f;
+    UPROPERTY(BlueprintReadOnly, Category="Player Stats", meta=(ClampMin="0",ClampMax="100")) float Stamina=100.f;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class USpringArmComponent> CameraArm;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TObjectPtr<class UCameraComponent> Camera;
     UPROPERTY(BlueprintReadOnly) TObjectPtr<class ADhakaVehiclePawn> NearbyVehicle;
@@ -31,6 +34,10 @@ private:
     void StartJump();
     void StopJump();
     void CycleCamera();
+    void UseFirstAidInput();
+    void UseFoodInput();
+    void UseFuelInput();
+    void UseRepairInput();
     bool bFirstPerson = false;
     float NormalWalkSpeed = 420.f;
     float SprintSpeed = 720.f;
