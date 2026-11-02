@@ -88,7 +88,7 @@ void ADhakaGameMode::BeginPlay()
         }
     }
     // Procedural citizens provide clothing and body variation near active streets.
-    for(int32 I=0;I<18;++I){
+    for(int32 I=0;I<CitizenCount;++I){
         const float X=FMath::FRandRange(-45000.f,45000.f),Y=FMath::FRandRange(-45000.f,45000.f);
         const FTransform CitizenTransform(FRotator(0.f,FMath::FRandRange(0.f,360.f),0.f),FVector(X,Y,5.f));
         ADhakaProceduralCitizen* Citizen=World->SpawnActorDeferred<ADhakaProceduralCitizen>(ADhakaProceduralCitizen::StaticClass(),CitizenTransform);
@@ -100,7 +100,7 @@ void ADhakaGameMode::BeginPlay()
         }
     }
     // Low-poly crowd agents use randomized footpath destinations and pause states.
-    for(int32 I=0;I<64;++I){
+    for(int32 I=0;I<PedestrianCount;++I){
         const float X=FMath::FRandRange(-150000.f,150000.f),Y=FMath::FRandRange(-150000.f,150000.f);
         ADhakaPedestrian* Ped=World->SpawnActor<ADhakaPedestrian>(ADhakaPedestrian::StaticClass(),FVector(X,Y,101.f),FRotator::ZeroRotator);
         if(Ped){Ped->Destination=Ped->GetActorLocation()+FVector(FMath::FRandRange(-900.f,900.f),FMath::FRandRange(-900.f,900.f),0.f);Ped->WalkSpeed=FMath::FRandRange(110.f,175.f);}
