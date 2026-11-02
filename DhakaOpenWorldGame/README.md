@@ -5,12 +5,12 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 ## Included native gameplay source
 - Procedural city actor with configurable grid, roads, sidewalks, curbs, asphalt patch/pothole silhouettes, buildings, shopfront props and utility-wire silhouettes.
 - Physics-driven vehicle pawn with throttle, steering, braking, chase camera and adjustable handling parameters.
-- Game-instance mission subsystem, destination markers/HUD, rewards, and SaveGame persistence.
+- Game-instance mission subsystem, destination markers/HUD, rewards, timed-progress autosave, mission switching and versioned SaveGame persistence.
 - Procedural district-inspired landmarks: Old Dhaka/Lalbagh, markets, Gulshan/Banani, Motijheel, Farmgate, Dhanmondi, Uttara and Sadarghat.
 - Procedural vehicle generator with body shell, glazing, wheels/rims, trim and basic interior pieces; sedan, bus, motorcycle, rickshaw, CNG and boat categories.
 - Procedural street-life and citizen generators, clothing-style variants, and lightweight wandering/walk-cycle motion.
-- Timed traffic signals, basic traffic following/red-light stopping, randomized grid turns, and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components.\n- Platform-aware crowd/traffic caps reduce spawned agents on mobile compared with PC.
-- Blueprint-callable economy subsystem for shop purchase/sale, inventory records, property ownership/income and XP progression.
+- Timed traffic signals, basic traffic following/red-light stopping, randomized grid turns, lane offsets and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components and flashing emergency lights.\n- Platform-aware crowd/traffic caps reduce spawned agents on mobile compared with PC.
+- Blueprint-callable economy subsystem for shop purchase/sale, inventory records, property ownership/income and XP progression; interactive tea/fuchka/jhalmuri/fruit/general-shop stalls can be used with **E** when standing nearby and show transaction feedback in the HUD.
 - Procedural instanced rain and puddle instances shown during rain/monsoon; vehicle grip and pedestrian pace respond to weather; pedestrians use swept collision checks and distance-based tick-rate/visual LOD.
 - Native audio director with assignable city-traffic, market, rain, riverfront and engine loops, plus horn/rickshaw-bell/vendor one-shot events. No audio assets are bundled; assign original/licensed files in Unreal Editor.
 - GameMode spawns city, landmarks, street-life, signals, traffic, pedestrians, weather and audio routing. Basic touch-driving zones and PC controls are present.
