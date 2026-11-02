@@ -69,7 +69,17 @@ void ADhakaGameMode::BeginPlay()
         const FVector Location=bHorizontal?FVector(Along,Road,65.f):FVector(Road,Along,65.f);
         const FVector Direction=bHorizontal?FVector(I%4<2?1.f:-1.f,0,0):FVector(0,I%4<2?1.f:-1.f,0);
         ADhakaTrafficVehicle* Traffic=World->SpawnActor<ADhakaTrafficVehicle>(ADhakaTrafficVehicle::StaticClass(),Location,Direction.Rotation());
-        if(Traffic){Traffic->RouteDirection=Direction;Traffic->CruiseSpeed=FMath::FRandRange(350.f,1050.f);Traffic->BrakeDistance=FMath::FRandRange(450.f,900.f);}
+        if(Traffic){
+            Traffic->RouteDirection=Direction;
+            Traffic->CruiseSpeed=FMath::FRandRange(350.f,1050.f);
+            Traffic->BrakeDistance=FMath::FRandRange(450.f,900.f);
+            const int32 Roll=FMath::RandRange(0,99);
+            const EDhakaTrafficVehicleType Type=Roll<43?EDhakaTrafficVehicleType::Car:
+                Roll<55?EDhakaTrafficVehicleType::Bus:Roll<65?EDhakaTrafficVehicleType::Truck:
+                Roll<77?EDhakaTrafficVehicleType::CNG:Roll<84?EDhakaTrafficVehicleType::Motorcycle:
+                Roll<96?EDhakaTrafficVehicleType::Rickshaw:EDhakaTrafficVehicleType::Emergency;
+            Traffic->ConfigureVehicleType(Type);
+        }
     }
     // Procedural citizens provide clothing and body variation near active streets.
     for(int32 I=0;I<18;++I){
