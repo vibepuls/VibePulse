@@ -47,5 +47,6 @@ private:
     float FleeRemaining = 0.f;
     bool bWalkingToCrosswalk = false;
     bool bCrossingRoad = false;
+    FVector CrosswalkTravelDirection = FVector::ZeroVector;
     UPROPERTY() TObjectPtr<class ADhakaWeatherController> WeatherController;
 };
