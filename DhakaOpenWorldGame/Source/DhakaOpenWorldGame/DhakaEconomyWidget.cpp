@@ -6,6 +6,7 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/ComboBoxString.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/ScrollBox.h"
@@ -34,6 +35,14 @@ void UDhakaEconomyWidget::NativeConstruct()
     AddLabel(Layout,TEXT("DHAKA MARKET & PROPERTIES"),true);
     WalletLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("WalletLabel"));
     WalletLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.3f,1.f,.82f,1.f)));Layout->AddChildToVerticalBox(WalletLabel);
+    MissionPicker=WidgetTree->ConstructWidget<UComboBoxString>(UComboBoxString::StaticClass(),TEXT("MissionPicker"));
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())
+    {
+        for(const FDhakaMission& Mission:Missions->Missions)MissionPicker->AddOption(Mission.Title.ToString());
+        if(Missions->Missions.IsValidIndex(Missions->ActiveMissionIndex))MissionPicker->SetSelectedOption(Missions->Missions[Missions->ActiveMissionIndex].Title.ToString());
+    }
+    MissionPicker->OnSelectionChanged.AddDynamic(this,&UDhakaEconomyWidget::OnMissionSelected);
+    Layout->AddChildToVerticalBox(MissionPicker);
     StatusLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("TransactionStatus"));
     StatusLabel->SetAutoWrapText(true);StatusLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.95f,.83f,.48f,1.f)));Layout->AddChildToVerticalBox(StatusLabel);
     InventoryLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("InventoryLabel"));
@@ -113,3 +122,12 @@ void UDhakaEconomyWidget::UseSelectedFirstAid()
 void UDhakaEconomyWidget::UseFood(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())if(APawn* Pawn=UGameplayStatics::GetPlayerPawn(this,0))E->UseItem(TEXT("street_snack"),Pawn);}
 void UDhakaEconomyWidget::UseFuel(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())if(APawn* Pawn=UGameplayStatics::GetPlayerPawn(this,0))E->UseItem(TEXT("fuel_can"),Pawn);}
 void UDhakaEconomyWidget::UseRepair(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())if(APawn* Pawn=UGameplayStatics::GetPlayerPawn(this,0))E->UseItem(TEXT("repair_kit"),Pawn);}
+
+void UDhakaEconomyWidget::OnMissionSelected(FString SelectedItem,ESelectInfo::Type SelectionType)
+{
+    if(UGameInstance* GI=GetGameInstance())if(UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>())
+    {
+        for(const FDhakaMission& Mission:Missions->Missions)
+            if(Mission.Title.ToString()==SelectedItem){Missions->StartMission(Mission.Id);break;}
+    }
+}
