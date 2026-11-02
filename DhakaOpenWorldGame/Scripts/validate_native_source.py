@@ -99,7 +99,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw",
-    "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent", "FuelPercent", "ConditionPercent", "HandleVehicleHit"
+    "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent", "FuelPercent", "ConditionPercent", "HandleVehicleHit", "EffectiveGrip", "ConditionSpeedLimit"
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
