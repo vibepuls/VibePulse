@@ -31,7 +31,7 @@ Status: **PARTIAL** — city, vehicle, citizen, landmark and street-life generat
 - [ ] Functional doors/seatbelts; suspension, wheel rotation, steering, torque, transmission, braking, tire friction, mass/weight transfer, collision and damage/deformation.
 - [ ] Distinct handling profiles for sedan, hatchback, SUV, luxury, microbus, bus/coach, truck/pickup/van, emergency vehicles, motorcycles/scooters/bicycles, rickshaws, CNG, handcart and river craft.
 - [ ] Color/body/interior/performance variants and authentic Bangladesh references.
-Status: **PARTIAL** — configurable procedural vehicle and force-driven pawn exist; production meshes, Chaos wheel/suspension physics, functional doors/seatbelts, damage and category-specific handling remain; source now animates visible wheel spin and switches headlights/brake lights based on time/braking.
+Status: **PARTIAL** — configurable procedural vehicle and force-driven pawn exist; production meshes, Chaos wheel/suspension physics, functional doors/seatbelts, damage and category-specific handling remain; source now animates visible wheel spin, switches headlights/brake lights based on time/braking, and applies weather-sensitive lateral tire-grip forces to the player vehicle.
 
 ## Part 4 — Human characters
 - [ ] Complete anatomy, hands/fingers, facial geometry, eyes/brows/nose/mouth/ears, hair/facial hair and body types.
