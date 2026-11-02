@@ -132,6 +132,8 @@ void ADhakaVehiclePawn::HandleVehicleHit(UPrimitiveComponent* HitComponent,AActo
 {
     const float Impact=NormalImpulse.Size();
     if(Impact<18000.f)return;
+    if(ADhakaPlayerCharacter* Character=Cast<ADhakaPlayerCharacter>(OtherActor))
+        UGameplayStatics::ApplyDamage(Character,FMath::Clamp((Impact-12000.f)/1600.f,5.f,40.f),GetController(),this,UDamageType::StaticClass());
     const float Damage=FMath::Clamp((Impact-18000.f)/1800.f,1.f,35.f);
     ConditionPercent=FMath::Max(0.f,ConditionPercent-Damage);
     if(BodyMaterial)
