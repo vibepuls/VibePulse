@@ -62,6 +62,31 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
                 AddBoxMesh(FVector(CrossX+430.f+Offset,CrossY,14.f),FVector(48.f,760.f,2.f),FLinearColor(.88f,.88f,.82f),false);
             }
         }
+        // Low-profile speed humps on selected straight road segments. Keep them
+        // sparse and outside the river corridor so traffic remains traversable.
+        for(int32 I=2;I<GridBlocks;I+=5)
+        {
+            const float P=Start+I*Step;
+            if(!(P>RiverCenterX-RiverHalfWidth&&P<RiverCenterX+RiverHalfWidth))
+            {
+                for(const float Along : {-96000.f,-32000.f,32000.f,96000.f})
+                    AddBoxMesh(FVector(P,Along,15.f),FVector(680.f,95.f,12.f),FLinearColor(.24f,.24f,.23f),true);
+            }
+            for(const float Along : {-96000.f,-32000.f,32000.f,96000.f})
+                AddBoxMesh(FVector(Along,P,15.f),FVector(95.f,680.f,12.f),FLinearColor(.24f,.24f,.23f),true);
+        }
+        // Flat curb-cut landing pads at the selected zebra crossings improve
+        // wheelchair/stroller readability even with the current box-mesh pipeline.
+        for(const int32 IX : {7,9,11})for(const int32 IY : {7,9,11})
+        {
+            const float CrossX=Start+IX*Step, CrossY=Start+IY*Step;
+            if(CrossX>RiverCenterX-RiverHalfWidth&&CrossX<RiverCenterX+RiverHalfWidth)continue;
+            for(const float Side : {-1.f,1.f})
+            {
+                AddBoxMesh(FVector(CrossX,CrossY+Side*610.f,14.f),FVector(320.f,120.f,3.f),FLinearColor(.55f,.54f,.50f),false);
+                AddBoxMesh(FVector(CrossX+Side*610.f,CrossY,14.f),FVector(120.f,320.f,3.f),FLinearColor(.55f,.54f,.50f),false);
+            }
+        }
         // Random asphalt patches and pothole silhouettes provide low-cost road-surface variation.
         for(int32 Damage=0;Damage<GridBlocks*3;++Damage)
         {
