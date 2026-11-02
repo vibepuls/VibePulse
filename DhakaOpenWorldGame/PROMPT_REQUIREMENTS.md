@@ -18,7 +18,7 @@ Legend: **PARTIAL** = some source exists but the full requirement is unmet; **NO
 - [ ] Gameplay Ability System where appropriate.
 - [ ] Unreal networking, dedicated-server architecture and mobile optimization.
 - [ ] Blender-compatible procedural asset pipeline.
-Status: **PARTIAL** — C++ and ProceduralMeshComponent source exists; advanced integrations are not complete or validated.
+Status: **PARTIAL** — C++ and ProceduralMeshComponent source exists; a Blender-generated humanoid rig/animation source pipeline, native locomotion animation state, Unreal import automation, and Control Rig/IK Rig asset setup are now present in source. Actual FBX generation, Unreal asset import, Control Rig graph wiring, compilation and runtime validation are still pending.
 
 ## Part 2 — Procedural asset framework
 - [ ] Vehicles, humans, buildings, roads, sidewalks, vendors, furniture, trees, traffic infrastructure, interiors and roadside assets.
@@ -37,7 +37,7 @@ Status: **PARTIAL** — configurable procedural vehicle and force-driven pawn ex
 - [ ] Complete anatomy, hands/fingers, facial geometry, eyes/brows/nose/mouth/ears, hair/facial hair and body types.
 - [ ] Bangladesh clothing variants, footwear/headwear, realistic fabric fit/textures.
 - [ ] Skeletal/procedural animations for walk/run/stand/turn/sit/talk/eat/shop/carry/enter/exit/drive/ride/interact, blending and IK.
-Status: **PARTIAL** — ambient citizens use procedural limb cycles; the player now has a visible six-part procedural mannequin with speed-driven alternating arm/leg swing and torso bob as a no-asset fallback. This is not a skeletal rig; production skeletal meshes, Animation Blueprints, facial animation, cloth, Control Rig and IK remain.
+Status: **PARTIAL** — added `Scripts/build_character_rig_blender.py` to generate a weighted humanoid mesh, pelvis/spine/neck/head, clavicles, upper/lower arms, hands, thighs/calves/feet/toes, non-deforming hand/foot IK targets and pole-vector helpers, plus cyclic idle/walk/run clips. Added `Scripts/import_character_rig_unreal.py` to import the FBX assets, create `ABP_PlayerDhaka`, configure `IK_DhakaHuman` with auto retarget chains and Full Body IK, and create a mesh-bound `CR_DhakaHuman` with a major-joint FK control hierarchy. Added native `UDhakaCharacterAnimInstance` locomotion variables and character-side asset hookup/fallback. This remains source automation only: the Blender script has not been run here, imported FBX assets are not checked into `/Content`, the AnimBP locomotion state machine is not yet wired, Control Rig controls are not yet proven to drive bone transforms, and IK foot placement/floor tracing, hands/fingers, facial rig, cloth, and editor/gameplay verification remain.
 
 ## Part 5 — Dhaka city
 - [ ] Roads/intersections/flyovers/bridges/underpasses, sidewalks, markets, homes/business districts, parks/lakes, bus/rail terminals and riverfronts.
