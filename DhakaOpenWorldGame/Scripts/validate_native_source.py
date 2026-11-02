@@ -90,7 +90,16 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
 ])
 require_tokens("Config/DefaultInput.ini", [
     'AxisName="MissionSlot"', 'ActionName="CycleVehicleType"', 'ActionName="BuyProperty"',
-    'ActionName="ClaimRent"', 'ActionName="Horn"', 'ActionName="RickshawBell"'
+    'ActionName="ClaimRent"', 'ActionName="Horn"', 'ActionName="RickshawBell"',
+    'ActionName="CycleWeather"', 'ActionName="AdvanceTime"'
+])
+
+require_tokens("Source/DhakaOpenWorldGame/DhakaWeatherController.cpp", [
+    "CycleWeather", "AdvanceTimeOfDay", "SetWeather", "SetTimeOfDay"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
+    "EDhakaPlayerVehicleType::CNG", "EDhakaPlayerVehicleType::Rickshaw",
+    "EDhakaPlayerVehicleType::Bus", "bTouchCameraActive", "SetBoxExtent"
 ])
 
 print(f"Checked {checked} C++ header/source files and cross-file gameplay wiring.")
