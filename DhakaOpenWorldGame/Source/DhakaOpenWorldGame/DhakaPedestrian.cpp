@@ -114,7 +114,9 @@ void ADhakaPedestrian::Tick(float Dt)
     FVector Delta=Destination-GetActorLocation();Delta.Z=0.f;
     if(Delta.Size2D()<=ArrivalRadius){
         State=EDhakaPedestrianState::Wait;WaitRemaining=FMath::FRandRange(.7f,2.8f);
-        Destination=GetActorLocation()+FVector(FMath::FRandRange(-700.f,700.f),FMath::FRandRange(-700.f,700.f),0.f);
+        const FVector Forward=GetActorForwardVector().GetSafeNormal2D();
+        const FVector Side=FVector::CrossProduct(FVector::UpVector,Forward).GetSafeNormal2D();
+        Destination=GetActorLocation()+Forward*FMath::FRandRange(450.f,950.f)+Side*FMath::FRandRange(-70.f,70.f);
         return;
     }
     FVector Direction=Delta.GetSafeNormal2D();
