@@ -114,9 +114,9 @@ bool UDhakaEconomySubsystem::UseItem(FName ItemId,AActor* User)
         LastTransactionMessage=FText::FromString(TEXT("First aid used: health restored."));
         bApplied=true;
     }
-    else if((ItemId==TEXT("water_bottle")||ItemId==TEXT("street_snack")||ItemId==TEXT("tea_cup")||ItemId==TEXT("fuchka_plate")||ItemId==TEXT("jhalmuri_packet")||ItemId==TEXT("fruit_bag")) && Character && Character->Stamina<100.f)
+    else if((ItemId==TEXT("water_bottle")||ItemId==TEXT("street_snack")||ItemId==TEXT("tea_cup")||ItemId==TEXT("fuchka_plate")||ItemId==TEXT("jhalmuri_packet")||ItemId==TEXT("fruit_bag")||ItemId==TEXT("chotpoti_plate")||ItemId==TEXT("vegetable_bag")) && Character && Character->Stamina<100.f)
     {
-        const float Restore=ItemId==TEXT("water_bottle")?35.f:ItemId==TEXT("fruit_bag")?28.f:20.f;
+        const float Restore=ItemId==TEXT("water_bottle")?35.f:(ItemId==TEXT("fruit_bag")||ItemId==TEXT("vegetable_bag"))?28.f:ItemId==TEXT("chotpoti_plate")?30.f:20.f;
         Character->Stamina=FMath::Min(100.f,Character->Stamina+Restore);
         LastTransactionMessage=FText::FromString(TEXT("Food/drink used: stamina restored."));
         bApplied=true;
