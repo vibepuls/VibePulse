@@ -61,7 +61,7 @@ Status: **PARTIAL** — procedural stall/furniture props exist; complete vendor 
 ## Part 8 — Traffic
 - [ ] Road graph, lanes, lane following, lights/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, congestion/queues, bus stops, crossings, blockages and emergency vehicles.
 - [ ] Traffic rules vary by road, time and density; Dhaka-specific irregular behavior.
-Status: **PARTIAL** — ambient vehicles move along simple directions and yield to player; lane graph, signals, realistic intersection logic, buses/emergency behaviors and robust collision avoidance are not done.
+Status: **PARTIAL** — ambient vehicles now have a timed signal actor and basic following/stop logic, but lane graph, true intersection reservations, lane changing/overtaking, bus/emergency behaviors and robust collision avoidance are not done.
 
 ## Part 9 — Pedestrian AI/crowds
 - [ ] Sidewalk walking, road crossing, vehicle/obstacle/vendor avoidance, shop gathering, bus-stop waiting, boarding/exiting, shopping, vendor interactions, talking, weather/event/player reactions.
