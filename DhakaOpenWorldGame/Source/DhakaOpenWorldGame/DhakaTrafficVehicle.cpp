@@ -47,8 +47,38 @@ void ADhakaTrafficVehicle::Tick(float Dt)
             const FVector Delta=Signal->GetActorLocation()-GetActorLocation();
             const float Ahead=FVector::DotProduct(Delta,Direction);
             const float Side=FMath::Abs(FVector::CrossProduct(Delta,Direction).Z);
-            if(Ahead>0.f&&Ahead<BrakeDistance+250.f&&Side<650.f&&Signal->IsRedForDirection(Direction))
+            if(Ahead>-150.f&&Ahead<BrakeDistance+250.f&&Side<650.f&&Signal->IsRedForDirection(Direction))
             { bRedSignalAhead=true;break; }
+        }
+        if(bAllowTurns&&!bRedSignalAhead)
+        {
+            const FVector Position=GetActorLocation();
+            constexpr float GridStart=-160000.f;
+            constexpr float GridStep=320000.f/18.f;
+            const int32 IX=FMath::RoundToInt((Position.X-GridStart)/GridStep);
+            const int32 IY=FMath::RoundToInt((Position.Y-GridStart)/GridStep);
+            const float RoadX=GridStart+IX*GridStep;
+            const float RoadY=GridStart+IY*GridStep;
+            if(IX>=0&&IX<=18&&IY>=0&&IY<=18&&FMath::Abs(Position.X-RoadX)<320.f&&FMath::Abs(Position.Y-RoadY)<320.f)
+            {
+                const int64 IntersectionKey=static_cast<int64>(IX)*100+IY;
+                if(IntersectionKey!=LastIntersectionKey)
+                {
+                    LastIntersectionKey=IntersectionKey;
+                    if(FMath::FRand()<FMath::Clamp(TurnChance,0.f,1.f))
+                    {
+                        const bool bTurnLeft=FMath::RandBool();
+                        if(FMath::Abs(Direction.X)>0.5f)
+                            RouteDirection=FVector(0,bTurnLeft?Direction.X:-Direction.X,0);
+                        else
+                            RouteDirection=FVector(bTurnLeft?-Direction.Y:Direction.Y,0,0);
+                        RouteDirection=RouteDirection.GetSafeNormal2D();
+                        SetActorRotation(RouteDirection.Rotation());
+                        const FVector SnappedLocation(RoadX,RoadY,GetActorLocation().Z);
+                        SetActorLocation(SnappedLocation,false,nullptr,ETeleportType::TeleportPhysics);
+                    }
+                }
+            }
         }
     }
     float Desired=FMath::Min(CruiseSpeed,CachedFollowingSpeedLimit);
