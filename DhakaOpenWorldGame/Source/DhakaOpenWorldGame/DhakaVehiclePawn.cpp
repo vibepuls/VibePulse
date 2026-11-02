@@ -24,7 +24,7 @@ ADhakaVehiclePawn::ADhakaVehiclePawn()
     PrimaryActorTick.bCanEverTick=true;
     PhysicsBody=CreateDefaultSubobject<UBoxComponent>(TEXT("VehiclePhysicsBody"));SetRootComponent(PhysicsBody);
     PhysicsBody->SetBoxExtent(FVector(220.f,100.f,45.f));PhysicsBody->SetSimulatePhysics(true);PhysicsBody->SetLinearDamping(0.18f);PhysicsBody->SetAngularDamping(1.8f);
-    PhysicsBody->SetMassOverrideInKg(NAME_None,1250.f,true);PhysicsBody->SetCollisionProfileName(TEXT("PhysicsActor"));
+    PhysicsBody->SetMassOverrideInKg(NAME_None,1250.f,true);PhysicsBody->SetCollisionProfileName(TEXT("PhysicsActor"));PhysicsBody->SetNotifyRigidBodyCollision(true);PhysicsBody->OnComponentHit.AddDynamic(this,&ADhakaVehiclePawn::HandleVehicleHit);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VehicleBody"));Body->SetupAttachment(PhysicsBody);
@@ -128,6 +128,19 @@ void ADhakaVehiclePawn::SelectMissionSlot(float Value)
 }
 void ADhakaVehiclePawn::PlayHornInput(){for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayHorn();break;}}
 void ADhakaVehiclePawn::PlayRickshawBellInput(){for(TActorIterator<ADhakaAudioDirector> It(GetWorld());It;++It){It->PlayRickshawBell();break;}}
+void ADhakaVehiclePawn::HandleVehicleHit(UPrimitiveComponent* HitComponent,AActor* OtherActor,UPrimitiveComponent* OtherComp,FVector NormalImpulse,const FHitResult& Hit)
+{
+    const float Impact=NormalImpulse.Size();
+    if(Impact<18000.f)return;
+    const float Damage=FMath::Clamp((Impact-18000.f)/1800.f,1.f,35.f);
+    ConditionPercent=FMath::Max(0.f,ConditionPercent-Damage);
+    if(BodyMaterial)
+    {
+        const float DamageBlend=1.f-ConditionPercent/100.f;
+        BodyMaterial->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor::LerpUsingHSV(PaintColor,FLinearColor(.12f,.10f,.09f,1.f),DamageBlend*.72f));
+        BodyMaterial->SetVectorParameterValue(TEXT("Color"),FLinearColor::LerpUsingHSV(PaintColor,FLinearColor(.12f,.10f,.09f,1.f),DamageBlend*.72f));
+    }
+}
 void ADhakaVehiclePawn::InputThrottle(float V){ThrottleInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputSteer(float V){SteeringInput=FMath::Clamp(V,-1.f,1.f);}
 void ADhakaVehiclePawn::InputBrake(float V){BrakeInput=FMath::Clamp(V,0.f,1.f);}
