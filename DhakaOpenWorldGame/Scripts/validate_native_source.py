@@ -129,7 +129,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaCityGenerator.cpp", [
 ])
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
-    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "WALLET", "UseItem", "InventoryLabel", "UseFood", "UseFuel", "UseRepair", "MissionPicker", "OnMissionSelected"
+    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "WALLET", "UseItem", "InventoryLabel", "UseFood", "UseFuel", "UseRepair", "MissionPicker", "OnMissionSelected", "NextVehicleType", "PaintVehicleRed", "PaintVehicleBlue", "PaintVehicleGreen"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
     "CreateWidget<UDhakaEconomyWidget>", "SetInputMode(FInputModeGameAndUI())"
