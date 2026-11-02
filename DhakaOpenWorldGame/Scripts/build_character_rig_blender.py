@@ -112,6 +112,8 @@ bpy.ops.object.select_all(action="DESELECT")
 for p in parts: p.select_set(True)
 bpy.context.view_layer.objects.active=parts[0]; bpy.ops.object.join()
 mesh=bpy.context.object; mesh.name="SK_DhakaHuman_Body"
+# Bake joined primitive transforms before parenting to the armature.
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 # Keep material assignments from joined meshes; clean normals.
 for poly in mesh.data.polygons: poly.use_smooth=True
 for bone_name in bones:
@@ -124,7 +126,7 @@ def seg_dist(p,a,b):
     return (p-(a+t*ab)).length
 for v in mesh.data.vertices:
     p=mesh.matrix_world @ v.co
-    ranked=sorted(((seg_dist(p,*bone_points[n]),n) for n in bones if n!="root"),key=lambda x:x[0])
+    ranked=sorted(((seg_dist(p,*bone_points[n]),n) for n in bones if n!="root" and not n.startswith("ik_")),key=lambda x:x[0])
     # Two-bone smooth weights around joints, rigid enough for stylized geometry.
     near=ranked[:2]; inv=[1.0/max(d,0.75) for d,n in near]; total=sum(inv)
     for (d,n),w in zip(near,inv): mesh.vertex_groups[n].add([v.index],w/total,"REPLACE")
