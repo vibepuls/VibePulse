@@ -17,7 +17,8 @@ ADhakaTrafficVehicle::ADhakaTrafficVehicle()
     Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrafficBody")); Body->SetupAttachment(TrafficRoot);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if(Cube.Succeeded()) Body->SetStaticMesh(Cube.Object);
-    Body->SetRelativeScale3D(FVector(4.1f,2.0f,1.1f)); Body->SetCollisionProfileName(TEXT("BlockAll"));
+    Body->SetRelativeScale3D(FVector(4.1f,2.0f,1.1f)); Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    if(UMaterialInterface* BaseMaterial=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"))) Body->SetMaterial(0,BaseMaterial);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
     auto MakeWheel=[this](const TCHAR* Name)->UStaticMeshComponent* {
         UStaticMeshComponent* Wheel=CreateDefaultSubobject<UStaticMeshComponent>(Name);
