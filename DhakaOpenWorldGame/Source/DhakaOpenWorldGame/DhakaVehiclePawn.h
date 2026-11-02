@@ -42,6 +42,8 @@ private:
     void CycleCamera();
     void PlayHornInput();
     void PlayRickshawBellInput();
+    void SelectMissionSlot(float Value);
+    int32 LastMissionSlot = 0;
     void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
     void HandleTouchMoved(ETouchIndex::Type FingerIndex, FVector Location);
     void HandleTouchReleased(ETouchIndex::Type FingerIndex, FVector Location);
