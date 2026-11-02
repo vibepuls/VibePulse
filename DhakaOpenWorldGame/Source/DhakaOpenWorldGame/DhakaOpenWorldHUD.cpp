@@ -23,7 +23,7 @@ void ADhakaOpenWorldHUD::DrawHUD()
     if (UGameInstance* GI=GetWorld()->GetGameInstance())
         Economy=GI->GetSubsystem<UDhakaEconomySubsystem>();
 
-    const float PanelX=24.f, PanelY=24.f, PanelW=460.f, PanelH=198.f;
+    const float PanelX=24.f, PanelY=24.f, PanelW=500.f, PanelH=232.f;
     Canvas->DrawRect(FLinearColor(0.025f,0.035f,0.055f,0.88f),PanelX,PanelY,PanelW,PanelH);
     Canvas->SetDrawColor(FColor(30,210,190,255));
     Canvas->DrawRect(FLinearColor(0.08f,0.82f,0.72f,1.f),PanelX,PanelY,4.f,PanelH);
@@ -64,5 +64,8 @@ void ADhakaOpenWorldHUD::DrawHUD()
         Canvas->DrawText(Font,TEXT("No active mission"),PanelX+18.f,PanelY+82.f,0.8f,0.8f);
     }
     if(Economy)
+    {
         Canvas->DrawText(Font,FString::Printf(TEXT("LEVEL %d  |  XP %lld"),Economy->PlayerLevel,static_cast<long long>(Economy->Experience)),PanelX+18.f,PanelY+171.f,0.78f,0.78f);
+        if(!Economy->LastTransactionMessage.IsEmpty())Canvas->DrawText(Font,Economy->LastTransactionMessage.ToString(),PanelX+18.f,PanelY+198.f,0.68f,0.68f);
+    }
 }
