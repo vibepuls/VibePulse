@@ -9,10 +9,13 @@
 #include "UObject/ConstructorHelpers.h"
 #include "DhakaWeatherController.h"
 #include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Pawn.h"
 
 ADhakaPedestrian::ADhakaPedestrian()
 {
     PrimaryActorTick.bCanEverTick=true;
+    PrimaryActorTick.TickInterval=0.18f;
     CollisionCapsule=CreateDefaultSubobject<UCapsuleComponent>(TEXT("PedestrianCollision"));SetRootComponent(CollisionCapsule);CollisionCapsule->InitCapsuleSize(38.f,92.f);CollisionCapsule->SetCollisionProfileName(TEXT("Pawn"));CollisionCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     Root=CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));Root->SetupAttachment(CollisionCapsule);Root->SetRelativeLocation(FVector(0,0,-92.f));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -60,6 +63,25 @@ void ADhakaPedestrian::BeginPlay()
 void ADhakaPedestrian::Tick(float Dt)
 {
     Super::Tick(Dt); if(Dt<=0.f)return;
+    CrowdLodRefreshTimer-=Dt;
+    if(CrowdLodRefreshTimer<=0.f)
+    {
+        CrowdLodRefreshTimer=1.f;
+        APawn* Player=UGameplayStatics::GetPlayerPawn(this,0);
+        if(Player)
+        {
+            const float Distance=FVector::DistSquared2D(GetActorLocation(),Player->GetActorLocation());
+            const float DesiredInterval=Distance>FMath::Square(50000.f)?.8f:(Distance>FMath::Square(18000.f)?.32f:.08f);
+            if(!FMath::IsNearlyEqual(PrimaryActorTick.TickInterval,DesiredInterval,.02f))SetActorTickInterval(DesiredInterval);
+            const bool bHide=Distance>FMath::Square(120000.f);
+            if(bHide!=bVisualsHiddenForDistance)
+            {
+                bVisualsHiddenForDistance=bHide;
+                for(UStaticMeshComponent* Part : {Torso.Get(),Head.Get(),LeftLeg.Get(),RightLeg.Get(),LeftArm.Get(),RightArm.Get(),Hair.Get(),LeftEye.Get(),RightEye.Get(),Nose.Get(),Mouth.Get(),LeftHand.Get(),RightHand.Get(),LeftFoot.Get(),RightFoot.Get()})
+                    if(Part)Part->SetVisibility(!bHide,true);
+            }
+        }
+    }
     WeatherRefreshTimer-=Dt;
     if(WeatherRefreshTimer<=0.f)
     {
