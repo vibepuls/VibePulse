@@ -29,6 +29,10 @@ ADhakaTrafficVehicle::ADhakaTrafficVehicle()
     };
     WheelFrontLeft=MakeWheel(TEXT("WheelFrontLeft")); WheelFrontRight=MakeWheel(TEXT("WheelFrontRight"));
     WheelRearLeft=MakeWheel(TEXT("WheelRearLeft")); WheelRearRight=MakeWheel(TEXT("WheelRearRight"));
+    EmergencyLightRed=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EmergencyLightRed")); EmergencyLightRed->SetupAttachment(TrafficRoot); if(Cube.Succeeded())EmergencyLightRed->SetStaticMesh(Cube.Object); EmergencyLightRed->SetRelativeLocation(FVector(0,-28,Dimensions.Z*50.f+24.f)); EmergencyLightRed->SetRelativeScale3D(FVector(.32f,.28f,.12f)); EmergencyLightRed->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    EmergencyLightBlue=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EmergencyLightBlue")); EmergencyLightBlue->SetupAttachment(TrafficRoot); if(Cube.Succeeded())EmergencyLightBlue->SetStaticMesh(Cube.Object); EmergencyLightBlue->SetRelativeLocation(FVector(0,28,Dimensions.Z*50.f+24.f)); EmergencyLightBlue->SetRelativeScale3D(FVector(.32f,.28f,.12f)); EmergencyLightBlue->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    if(UMaterialInterface* Base=LoadObject<UMaterialInterface>(nullptr,TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"))){if(UMaterialInstanceDynamic* Red=UMaterialInstanceDynamic::Create(Base,this)){Red->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(1.f,.01f,.015f));Red->SetScalarParameterValue(TEXT("EmissiveStrength"),4.f);EmergencyLightRed->SetMaterial(0,Red);}if(UMaterialInstanceDynamic* Blue=UMaterialInstanceDynamic::Create(Base,this)){Blue->SetVectorParameterValue(TEXT("BaseColor"),FLinearColor(.01f,.08f,1.f));Blue->SetScalarParameterValue(TEXT("EmissiveStrength"),4.f);EmergencyLightBlue->SetMaterial(0,Blue);}}
+    EmergencyLightRed->SetVisibility(false,true); EmergencyLightBlue->SetVisibility(false,true);
     RouteDirection=FVector(1,0,0);
 }
 void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType)
@@ -63,6 +67,10 @@ void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType
     if(WheelFrontRight)WheelFrontRight->SetRelativeLocation(FVector(HalfX,HalfY,WheelZ));
     if(WheelRearLeft)WheelRearLeft->SetRelativeLocation(FVector(-HalfX,-HalfY,WheelZ));
     if(WheelRearRight)WheelRearRight->SetRelativeLocation(FVector(-HalfX,HalfY,WheelZ));
+    if(EmergencyLightRed)EmergencyLightRed->SetRelativeLocation(FVector(0,-Dimensions.Y*34.f,Dimensions.Z*50.f+24.f));
+    if(EmergencyLightBlue)EmergencyLightBlue->SetRelativeLocation(FVector(0,Dimensions.Y*34.f,Dimensions.Z*50.f+24.f));
+    if(EmergencyLightRed)EmergencyLightRed->SetVisibility(VehicleType==EDhakaTrafficVehicleType::Emergency,true);
+    if(EmergencyLightBlue)EmergencyLightBlue->SetVisibility(VehicleType==EDhakaTrafficVehicleType::Emergency,true);
     const bool bMotorcycle=VehicleType==EDhakaTrafficVehicleType::Motorcycle;
     if(WheelFrontLeft)WheelFrontLeft->SetVisibility(!bMotorcycle);
     if(WheelRearLeft)WheelRearLeft->SetVisibility(!bMotorcycle);
@@ -72,11 +80,12 @@ void ADhakaTrafficVehicle::ConfigureVehicleType(EDhakaTrafficVehicleType NewType
         if(WheelRearRight)WheelRearRight->SetRelativeLocation(FVector(-HalfX,0.f,WheelZ));
     }
 }
-void ADhakaTrafficVehicle::BeginPlay(){Super::BeginPlay();RouteDirection=RouteDirection.GetSafeNormal();if(RouteDirection.IsNearlyZero())RouteDirection=FVector(1,0,0);CurrentSpeed=CruiseSpeed*0.55f;}
+void ADhakaTrafficVehicle::BeginPlay(){Super::BeginPlay();RouteDirection=RouteDirection.GetSafeNormal();if(RouteDirection.IsNearlyZero())RouteDirection=FVector(1,0,0);if(!FMath::IsNearlyZero(LaneOffset))SetActorLocation(GetActorLocation()+FVector(-RouteDirection.Y,RouteDirection.X,0.f)*LaneOffset);CurrentSpeed=CruiseSpeed*0.55f;}
 void ADhakaTrafficVehicle::Tick(float Dt)
 {
     Super::Tick(Dt);
     if(!GetWorld()||Dt<=0.f)return;
+    if(VehicleType==EDhakaTrafficVehicleType::Emergency){EmergencyLightTimer-=Dt;if(EmergencyLightTimer<=0.f){EmergencyLightTimer=.22f;bEmergencyLightPhase=!bEmergencyLightPhase;if(EmergencyLightRed)EmergencyLightRed->SetVisibility(bEmergencyLightPhase,true);if(EmergencyLightBlue)EmergencyLightBlue->SetVisibility(!bEmergencyLightPhase,true);}}
     AIUpdateTimer-=Dt;
     if(AIUpdateTimer<=0.f)
     {
@@ -131,7 +140,7 @@ void ADhakaTrafficVehicle::Tick(float Dt)
                             RouteDirection=FVector(bTurnLeft?-Direction.Y:Direction.Y,0,0);
                         RouteDirection=RouteDirection.GetSafeNormal2D();
                         SetActorRotation(RouteDirection.Rotation());
-                        const FVector SnappedLocation(RoadX,RoadY,GetActorLocation().Z);
+                        const FVector SnappedLocation=FVector(RoadX,RoadY,GetActorLocation().Z)+FVector(-RouteDirection.Y,RouteDirection.X,0.f)*LaneOffset;
                         SetActorLocation(SnappedLocation,false,nullptr,ETeleportType::TeleportPhysics);
                     }
                 }
