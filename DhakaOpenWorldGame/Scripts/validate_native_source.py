@@ -111,11 +111,11 @@ if errors:
 print("PASS: lightweight source sanity checks only. This does NOT replace UnrealHeaderTool, compilation, editor playtesting, or packaging.")
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
-    "Stamina=FMath::Max", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput"
+    "Stamina=FMath::Max", "UseFirstAidInput", "UseFoodInput", "UseFuelInput", "UseRepairInput", "BindTouch", "HandleTouchPressed", "TouchMoveForward"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
-    "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid"
+    "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid", "Mobile: drag left side"
 ])
