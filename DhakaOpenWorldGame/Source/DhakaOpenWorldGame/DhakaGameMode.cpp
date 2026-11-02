@@ -13,6 +13,7 @@
 #include "DhakaTrafficSignal.h"
 #include "DhakaAudioDirector.h"
 #include "DhakaVendorStall.h"
+#include "DhakaPropertyTerminal.h"
 #include "DhakaWetRoadEffect.h"
 #include "Engine/World.h"
 #include "HAL/PlatformProperties.h"
@@ -109,6 +110,22 @@ void ADhakaGameMode::BeginPlay()
             Vendor->VendorType=static_cast<EDhakaVendorType>(I%5);
             static const TCHAR* VendorNames[]={TEXT("Cha Stall"),TEXT("Fuchka Stall"),TEXT("Jhalmuri Cart"),TEXT("Fruit Seller"),TEXT("General Shop")};
             Vendor->StallName=FText::FromString(VendorNames[I%5]);
+        }
+    }
+    // Property signs create a simple on-foot purchase loop for the four available investments.
+    struct FPropertySpawn { const TCHAR* Id; const TCHAR* Name; FVector Location; };
+    const FPropertySpawn PropertySpawns[] = {
+        {TEXT("old_dhaka_shop"),TEXT("Old Dhaka Shop"),FVector(-93000.f,100000.f,85.f)},
+        {TEXT("dhanmondi_flat"),TEXT("Dhanmondi Apartment"),FVector(23000.f,27000.f,85.f)},
+        {TEXT("uttara_garage"),TEXT("Uttara Garage"),FVector(73000.f,43000.f,85.f)},
+        {TEXT("gulshan_office"),TEXT("Gulshan Office"),FVector(-53000.f,-48000.f,85.f)}
+    };
+    for(const FPropertySpawn& Property:PropertySpawns)
+    {
+        if(ADhakaPropertyTerminal* Terminal=World->SpawnActor<ADhakaPropertyTerminal>(ADhakaPropertyTerminal::StaticClass(),Property.Location,FRotator::ZeroRotator))
+        {
+            Terminal->PropertyId=FName(Property.Id);
+            Terminal->PropertyName=FText::FromString(Property.Name);
         }
     }
     // Procedural citizens provide clothing and body variation near active streets.
