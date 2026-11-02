@@ -58,12 +58,12 @@ Status: **PARTIAL** — procedural stalls/furniture and interactable cha/fuchka/
 ## Part 8 — Traffic
 - [ ] Road/lane graph, lane following, signals/intersections, spawn/despawn, density, lane changes/overtaking, collision avoidance, queues, bus stops, crossings, blockages and emergency vehicles.
 - [ ] Road/time/density-based traffic rules and Dhaka-specific behavior.
-Status: **PARTIAL** — timed signals, basic following/red-light stopping, configurable randomized turns, and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components exist in source. Lane offsets, flashing emergency-light components and distant-traffic recycling around the player are now present; a full graph-based route planner, lane changes/overtaking, intersection reservations, emergency priority behavior and robust avoidance remain.
+Status: **PARTIAL** — timed signals, basic following/red-light stopping, configurable randomized turns, and differentiated procedural car/bus/truck/CNG/motorcycle/rickshaw/emergency silhouettes with wheel components exist in source. Lane offsets, flashing emergency-light components and distant-traffic recycling around the player are present. Traffic now slows for pedestrians in its forward corridor and checks pedestrian clearance before a lateral lane shift. A full graph-based route planner, route-aware lane changes/overtaking, intersection reservations, emergency priority behavior and robust avoidance remain; this safety behavior is source-only and needs in-editor collision/play testing.
 
 ## Part 9 — Pedestrian AI/crowds
 - [ ] Sidewalk walking, crossing, obstacle/vendor/vehicle avoidance, gathering, bus-stop waiting, boarding/exiting, shopping, talking and reactions to weather/events/player.
 - [ ] Personality profiles, distance-based updates and low-detail distant crowds.
-Status: **PARTIAL** — simple walkers/local wanderers now use swept collision checks to sidestep or briefly wait around blocked paths; Behavior Tree/NavMesh routing, crossing logic, boarding and personality remain; a distance-based tick-rate/visual LOD is now present in source but needs device profiling.
+Status: **PARTIAL** — simple walkers/local wanderers use swept collision checks to sidestep or briefly wait around blocked paths; traffic yields to nearby pedestrians and avoids them when attempting a lane shift. Behavior Tree/NavMesh routing, explicit crosswalk intent, boarding and personality remain; a distance-based tick-rate/visual LOD is present but needs device profiling and gameplay verification.
 
 ## Part 10 — Player gameplay
 - [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
