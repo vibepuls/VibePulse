@@ -304,27 +304,39 @@ void ADhakaVehiclePawn::UpdateTouchControls(FVector Location)
     FVector2D ViewSize;GEngine->GameViewport->GetViewportSize(ViewSize);
     if(ViewSize.X<=0.f||ViewSize.Y<=0.f)return;
     const float X=Location.X/ViewSize.X,Y=Location.Y/ViewSize.Y;
+    if(bTouchCameraActive)
+    {
+        const FVector Delta=Location-LastTouchLocation;
+        if(APlayerController* PC=Cast<APlayerController>(GetController())){PC->AddYawInput(Delta.X*.08f);PC->AddPitchInput(-Delta.Y*.08f);}
+        LastTouchLocation=Location;
+        return;
+    }
     if(X<.48f)
     {
         bTouchSteeringActive=true;
         SteeringInput=FMath::Clamp((X-.24f)/.20f,-1.f,1.f);
     }
-    else if(Y<.72f)
+    else if(Y<.28f)
     {
         bTouchThrottleActive=true;bTouchBrakeActive=false;
-        ThrottleInput=FMath::Clamp((.72f-Y)/.45f,.15f,1.f);BrakeInput=0.f;
+        ThrottleInput=FMath::Clamp((.28f-Y)/.28f,.15f,1.f);BrakeInput=0.f;
+    }
+    else if(Y>.72f)
+    {
+        bTouchBrakeActive=true;bTouchThrottleActive=false;
+        BrakeInput=FMath::Clamp((Y-.72f)/.28f,.2f,1.f);ThrottleInput=0.f;
     }
     else
     {
-        bTouchBrakeActive=true;bTouchThrottleActive=false;
-        BrakeInput=FMath::Clamp((Y-.65f)/.35f,.2f,1.f);ThrottleInput=0.f;
+        bTouchCameraActive=true;LastTouchLocation=Location;
     }
 }
-void ADhakaVehiclePawn::HandleTouchPressed(ETouchIndex::Type FingerIndex,FVector Location){UpdateTouchControls(Location);}
+void ADhakaVehiclePawn::HandleTouchPressed(ETouchIndex::Type FingerIndex,FVector Location){bTouchCameraActive=false;LastTouchLocation=Location;UpdateTouchControls(Location);}
 void ADhakaVehiclePawn::HandleTouchMoved(ETouchIndex::Type FingerIndex,FVector Location){UpdateTouchControls(Location);}
 void ADhakaVehiclePawn::HandleTouchReleased(ETouchIndex::Type FingerIndex,FVector Location)
 {
     if(bTouchSteeringActive){SteeringInput=0.f;bTouchSteeringActive=false;}
     if(bTouchThrottleActive){ThrottleInput=0.f;bTouchThrottleActive=false;}
     if(bTouchBrakeActive){BrakeInput=0.f;bTouchBrakeActive=false;}
+    bTouchCameraActive=false;
 }
