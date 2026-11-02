@@ -45,7 +45,7 @@ private:
     float ThrottleInput = 0.f;
     float SteeringInput = 0.f;
     float BrakeInput = 0.f;
-    void HandleVehicleHit(UPrimitiveComponent* HitComponent,AActor* OtherActor,UPrimitiveComponent* OtherComp,FVector NormalImpulse,const FHitResult& Hit);
+    UFUNCTION() void HandleVehicleHit(UPrimitiveComponent* HitComponent,AActor* OtherActor,UPrimitiveComponent* OtherComp,FVector NormalImpulse,const FHitResult& Hit);
     void InputThrottle(float Value);
     void InputSteer(float Value);
     void InputBrake(float Value);
