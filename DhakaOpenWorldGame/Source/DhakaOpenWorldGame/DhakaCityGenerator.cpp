@@ -24,10 +24,34 @@ void ADhakaCityGenerator::OnConstruction(const FTransform& Transform)
             if(!bRiverRoad){
                 AddBoxMesh(FVector(P,0,0),FVector(900.f,CityExtent+Step,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
                 AddBoxMesh(FVector(P,0,10.f),FVector(1.5f,CityExtent+Step,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
+                for(float Side : {-1.f,1.f})
+                {
+                    AddBoxMesh(FVector(P+Side*660.f,0,12.f),FVector(300.f,CityExtent+Step,22.f),FLinearColor(0.43f,0.42f,0.38f),true);
+                    AddBoxMesh(FVector(P+Side*495.f,0,23.f),FVector(24.f,CityExtent+Step,28.f),FLinearColor(0.57f,0.54f,0.46f),true);
+                }
             }
             AddBoxMesh(FVector(0,P,0),FVector(CityExtent+Step,900.f,18.f),FLinearColor(0.075f,0.085f,0.09f),true);
             AddBoxMesh(FVector(0,P,10.f),FVector(CityExtent+Step,1.5f,1.f),FLinearColor(0.82f,0.72f,0.43f),false);
+            for(float Side : {-1.f,1.f})
+            {
+                AddBoxMesh(FVector(0,P+Side*660.f,12.f),FVector(CityExtent+Step,300.f,22.f),FLinearColor(0.43f,0.42f,0.38f),true);
+                AddBoxMesh(FVector(0,P+Side*495.f,23.f),FVector(CityExtent+Step,24.f,28.f),FLinearColor(0.57f,0.54f,0.46f),true);
+            }
             if(I%4==0)for(float Side : {-1.f,1.f})AddBoxMesh(FVector(RiverCenterX,P+Side*520.f,125.f),FVector(RiverHalfWidth*2.f,22.f,80.f),FLinearColor(.65f,.68f,.67f),true);
+        }
+    }
+        // Random asphalt patches and pothole silhouettes provide low-cost road-surface variation.
+        for(int32 Damage=0;Damage<GridBlocks*3;++Damage)
+        {
+            const int32 RoadIndex=R.RandRange(0,GridBlocks);
+            const float RoadP=Start+RoadIndex*Step;
+            const float Along=R.FRandRange(Start,-Start);
+            const bool bVertical=R.RandBool();
+            const float W=R.FRandRange(45.f,150.f),D=R.FRandRange(55.f,180.f);
+            if(bVertical && !(RoadP>RiverCenterX-RiverHalfWidth&&RoadP<RiverCenterX+RiverHalfWidth))
+                AddBoxMesh(FVector(RoadP,Along,10.f),FVector(W,D,2.f),R.FRand()<.5f?FLinearColor(.045f,.05f,.052f):FLinearColor(.12f,.125f,.12f),false);
+            else if(!bVertical)
+                AddBoxMesh(FVector(Along,RoadP,10.f),FVector(D,W,2.f),R.FRand()<.5f?FLinearColor(.045f,.05f,.052f):FLinearColor(.12f,.125f,.12f),false);
         }
     }
     if(bGenerateBuildings){
