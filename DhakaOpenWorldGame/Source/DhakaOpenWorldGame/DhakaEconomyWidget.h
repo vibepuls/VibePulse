@@ -27,6 +27,12 @@ private:
     UFUNCTION() void BuyFirstAid();
     UFUNCTION() void BuyFuel();
     UFUNCTION() void BuyRepair();
+    UFUNCTION() void SellWater();
+    UFUNCTION() void SellSnack();
+    UFUNCTION() void SellTea();
+    UFUNCTION() void SellFuchka();
+    UFUNCTION() void SellJhalmuri();
+    UFUNCTION() void SellFruit();
     UFUNCTION() void BuyOldDhakaShop();
     UFUNCTION() void BuyDhanmondiFlat();
     UFUNCTION() void BuyUttaraGarage();
