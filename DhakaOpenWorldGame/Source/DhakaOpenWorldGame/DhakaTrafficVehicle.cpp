@@ -12,7 +12,7 @@ ADhakaTrafficVehicle::ADhakaTrafficVehicle()
     Body=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TrafficBody")); SetRootComponent(Body);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if(Cube.Succeeded()) Body->SetStaticMesh(Cube.Object);
-    Body->SetRelativeScale3D(FVector(2.0f,4.1f,1.1f)); Body->SetCollisionProfileName(TEXT("BlockAll"));
+    Body->SetRelativeScale3D(FVector(4.1f,2.0f,1.1f)); Body->SetCollisionProfileName(TEXT("BlockAll"));
     RouteDirection=FVector(1,0,0);
 }
 void ADhakaTrafficVehicle::BeginPlay(){Super::BeginPlay();RouteDirection=RouteDirection.GetSafeNormal();if(RouteDirection.IsNearlyZero())RouteDirection=FVector(1,0,0);CurrentSpeed=CruiseSpeed*0.55f;}
