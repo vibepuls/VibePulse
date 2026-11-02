@@ -12,6 +12,8 @@
 #include "DhakaWeatherController.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
 #include "EngineUtils.h"
 
 ADhakaPlayerCharacter::ADhakaPlayerCharacter()
@@ -45,6 +47,9 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("UseFood",IE_Pressed,this,&ADhakaPlayerCharacter::UseFoodInput);
     Input->BindAction("UseFuel",IE_Pressed,this,&ADhakaPlayerCharacter::UseFuelInput);
     Input->BindAction("UseRepair",IE_Pressed,this,&ADhakaPlayerCharacter::UseRepairInput);
+    Input->BindTouch(IE_Pressed,this,&ADhakaPlayerCharacter::HandleTouchPressed);
+    Input->BindTouch(IE_Repeat,this,&ADhakaPlayerCharacter::HandleTouchMoved);
+    Input->BindTouch(IE_Released,this,&ADhakaPlayerCharacter::HandleTouchReleased);
 }
 void ADhakaPlayerCharacter::Tick(float DeltaSeconds)
 {
@@ -55,6 +60,12 @@ void ADhakaPlayerCharacter::Tick(float DeltaSeconds)
         if(Stamina<=0.f)StopSprint();
     }
     else Stamina=FMath::Min(100.f,Stamina+12.f*DeltaSeconds);
+    if(Controller && bTouchMoveActive)
+    {
+        const FRotator Yaw(0.f,Controller->GetControlRotation().Yaw,0.f);
+        AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),TouchMoveForward);
+        AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y),TouchMoveRight);
+    }
 }
 void ADhakaPlayerCharacter::UseFirstAidInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("first_aid"),this);}
 void ADhakaPlayerCharacter::UseFoodInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("street_snack"),this);}
@@ -133,3 +144,37 @@ void ADhakaPlayerCharacter::SelectMissionSlot(float Value)
 
 void ADhakaPlayerCharacter::CycleWeatherInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->CycleWeather();break;}}
 void ADhakaPlayerCharacter::AdvanceTimeInput(){for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){It->AdvanceTimeOfDay();break;}}
+
+void ADhakaPlayerCharacter::HandleTouchPressed(ETouchIndex::Type FingerIndex,FVector Location)
+{
+    TouchStartLocation=Location;LastTouchLocation=Location;
+    if(!GEngine||!GEngine->GameViewport)return;
+    FVector2D ViewSize;GEngine->GameViewport->GetViewportSize(ViewSize);
+    if(ViewSize.X<=0.f)return;
+    if(Location.X<ViewSize.X*.48f){bTouchMoveActive=true;bTouchLookActive=false;TouchMoveForward=0.f;TouchMoveRight=0.f;}
+    else {bTouchLookActive=true;bTouchMoveActive=false;}
+}
+void ADhakaPlayerCharacter::HandleTouchMoved(ETouchIndex::Type FingerIndex,FVector Location)
+{
+    if(!GEngine||!GEngine->GameViewport)return;
+    FVector2D ViewSize;GEngine->GameViewport->GetViewportSize(ViewSize);
+    if(ViewSize.X<=0.f)return;
+    if(bTouchMoveActive)
+    {
+        const FVector Delta=Location-TouchStartLocation;
+        TouchMoveForward=FMath::Clamp(-Delta.Y/105.f,-1.f,1.f);
+        TouchMoveRight=FMath::Clamp(Delta.X/105.f,-1.f,1.f);
+    }
+    else if(bTouchLookActive)
+    {
+        const FVector Delta=Location-LastTouchLocation;
+        AddControllerYawInput(Delta.X*.075f);
+        AddControllerPitchInput(-Delta.Y*.075f);
+    }
+    LastTouchLocation=Location;
+}
+void ADhakaPlayerCharacter::HandleTouchReleased(ETouchIndex::Type FingerIndex,FVector Location)
+{
+    bTouchMoveActive=false;bTouchLookActive=false;
+    TouchMoveForward=0.f;TouchMoveRight=0.f;
+}
