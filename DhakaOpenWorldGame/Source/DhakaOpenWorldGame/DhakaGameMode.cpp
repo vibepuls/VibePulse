@@ -1,4 +1,5 @@
 #include "DhakaGameMode.h"
+#include "DhakaOpenWorldHUD.h"
 #include "DhakaCityGenerator.h"
 #include "DhakaVehiclePawn.h"
 #include "DhakaTrafficVehicle.h"
@@ -20,6 +21,7 @@
 ADhakaGameMode::ADhakaGameMode()
 {
     DefaultPawnClass=nullptr;
+    HUDClass=ADhakaOpenWorldHUD::StaticClass();
     CityGeneratorClass=ADhakaCityGenerator::StaticClass();
     VehiclePawnClass=ADhakaVehiclePawn::StaticClass();
 }
