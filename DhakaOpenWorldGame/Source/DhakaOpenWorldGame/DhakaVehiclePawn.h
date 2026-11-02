@@ -1,6 +1,9 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+
+UENUM(BlueprintType)
+enum class EDhakaPlayerVehicleType : uint8 { Sedan, CNG, Rickshaw, Bus, Motorcycle };
 #include "DhakaVehiclePawn.generated.h"
 
 UCLASS()
@@ -19,6 +22,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vehicle") float MaxSpeed = 4200.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vehicle") float BrakeStrength = 3600.f;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vehicle") float SteeringRate = 68.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Vehicle") EDhakaPlayerVehicleType VehicleType = EDhakaPlayerVehicleType::Sedan;
+    UFUNCTION(BlueprintCallable, Category="Vehicle") void ConfigureVehicleType(EDhakaPlayerVehicleType NewType);
     UPROPERTY(BlueprintReadOnly) float Speed = 0.f;
     UPROPERTY(BlueprintReadOnly) float TravelDistanceKm = 0.f;
     UPROPERTY(BlueprintReadWrite) FLinearColor PaintColor = FLinearColor(0.72f,0.08f,0.07f,1.f);
@@ -31,6 +36,8 @@ private:
     UPROPERTY() TObjectPtr<class UMaterialInstanceDynamic> BodyMaterial;
     UPROPERTY() TObjectPtr<class AController> DriverController;
     UPROPERTY() TArray<TObjectPtr<class UStaticMeshComponent>> VisualParts;
+    TArray<FVector> DefaultVisualScales;
+    TArray<FVector> DefaultVisualLocations;
     float ThrottleInput = 0.f;
     float SteeringInput = 0.f;
     float BrakeInput = 0.f;
@@ -42,6 +49,7 @@ private:
     void CycleCamera();
     void PlayHornInput();
     void PlayRickshawBellInput();
+    void CycleVehicleType();
     void SelectMissionSlot(float Value);
     int32 LastMissionSlot = 0;
     void HandleTouchPressed(ETouchIndex::Type FingerIndex, FVector Location);
