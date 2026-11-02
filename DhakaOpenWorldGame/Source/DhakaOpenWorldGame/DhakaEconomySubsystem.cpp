@@ -111,7 +111,7 @@ void UDhakaEconomySubsystem::AwardExperience(int64 Amount)
 int64 UDhakaEconomySubsystem::ClaimPropertyIncome()
 {
     const FDateTime Now=FDateTime::UtcNow();
-    if(LastIncomeClaimUtc.GetTicks()>0 && Now-LastIncomeClaimUtc<FDateTime::FromHours(24))return 0;
+    if(LastIncomeClaimUtc.GetTicks()>0 && Now-LastIncomeClaimUtc<FTimespan::FromHours(24.0))return 0;
     int64 Income=0;
     for(const FName PropertyId:OwnedProperties)
     {
