@@ -146,10 +146,10 @@ void ADhakaProceduralVehicle::BuildWheelsAndTrim()
             {
                 if(VehicleKind==EDhakaVehicleKind::CycleRickshaw && Side>0) continue;
                 const float WheelR=bTwoWheeler?Width*.22f:BodyHeight*.25f;
-                Part(*FString::Printf(TEXT("Tire_%d_%d"),A,Side),Cylinder,
+                Part(*FString::Printf(TEXT("Tire_%d_%d"),A,Side),Cylinder.Object,
                     FVector(X,Side*(Width*.5f+WheelR*.28f),WheelR*.8f),FVector(WheelR*.2f,WheelR,WheelR),
                     FRotator(0,0,90),DarkMaterial);
-                Part(*FString::Printf(TEXT("Rim_%d_%d"),A,Side),Cylinder,
+                Part(*FString::Printf(TEXT("Rim_%d_%d"),A,Side),Cylinder.Object,
                     FVector(X,Side*(Width*.5f+WheelR*.29f),WheelR*.8f),FVector(WheelR*.22f,WheelR*.42f,WheelR*.42f),
                     FRotator(0,0,90),GlassMaterial);
             }
@@ -157,15 +157,15 @@ void ADhakaProceduralVehicle::BuildWheelsAndTrim()
     }
     if(bGenerateExteriorTrim)
     {
-        Part(TEXT("FrontBumper"),Cube,FVector(Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
-        Part(TEXT("RearBumper"),Cube,FVector(-Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
-        Part(TEXT("FrontGrille"),Cube,FVector(Length*.496f,0,BodyHeight*.43f),FVector(Length*.009f,Width*.3f,BodyHeight*.19f),FRotator::ZeroRotator,DarkMaterial);
+        Part(TEXT("FrontBumper"),Cube.Object,FVector(Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
+        Part(TEXT("RearBumper"),Cube.Object,FVector(-Length*.49f,0,BodyHeight*.22f),FVector(Length*.035f,Width*.94f,BodyHeight*.12f),FRotator::ZeroRotator,DarkMaterial);
+        Part(TEXT("FrontGrille"),Cube.Object,FVector(Length*.496f,0,BodyHeight*.43f),FVector(Length*.009f,Width*.3f,BodyHeight*.19f),FRotator::ZeroRotator,DarkMaterial);
         for(int32 Side : {-1,1})
         {
-            Part(Side<0?TEXT("Headlight_L"):TEXT("Headlight_R"),Cube,FVector(Length*.49f,Side*Width*.34f,BodyHeight*.48f),FVector(Length*.012f,Width*.13f,BodyHeight*.12f),FRotator::ZeroRotator,GlassMaterial);
-            Part(Side<0?TEXT("Taillight_L"):TEXT("Taillight_R"),Cube,FVector(-Length*.49f,Side*Width*.36f,BodyHeight*.48f),FVector(Length*.012f,Width*.10f,BodyHeight*.14f),FRotator::ZeroRotator,PaintMaterial);
-            Part(Side<0?TEXT("Mirror_L"):TEXT("Mirror_R"),Cube,FVector(Length*.16f,Side*Width*.59f,BodyHeight*.74f),FVector(Length*.045f,Width*.07f,BodyHeight*.07f),FRotator::ZeroRotator,DarkMaterial);
-            Part(Side<0?TEXT("DoorHandle_L"):TEXT("DoorHandle_R"),Cube,FVector(-Length*.03f,Side*Width*.54f,BodyHeight*.56f),FVector(Length*.04f,Width*.018f,BodyHeight*.025f),FRotator::ZeroRotator,GlassMaterial);
+            Part(Side<0?TEXT("Headlight_L"):TEXT("Headlight_R"),Cube.Object,FVector(Length*.49f,Side*Width*.34f,BodyHeight*.48f),FVector(Length*.012f,Width*.13f,BodyHeight*.12f),FRotator::ZeroRotator,GlassMaterial);
+            Part(Side<0?TEXT("Taillight_L"):TEXT("Taillight_R"),Cube.Object,FVector(-Length*.49f,Side*Width*.36f,BodyHeight*.48f),FVector(Length*.012f,Width*.10f,BodyHeight*.14f),FRotator::ZeroRotator,PaintMaterial);
+            Part(Side<0?TEXT("Mirror_L"):TEXT("Mirror_R"),Cube.Object,FVector(Length*.16f,Side*Width*.59f,BodyHeight*.74f),FVector(Length*.045f,Width*.07f,BodyHeight*.07f),FRotator::ZeroRotator,DarkMaterial);
+            Part(Side<0?TEXT("DoorHandle_L"):TEXT("DoorHandle_R"),Cube.Object,FVector(-Length*.03f,Side*Width*.54f,BodyHeight*.56f),FVector(Length*.04f,Width*.018f,BodyHeight*.025f),FRotator::ZeroRotator,GlassMaterial);
         }
     }
 }
