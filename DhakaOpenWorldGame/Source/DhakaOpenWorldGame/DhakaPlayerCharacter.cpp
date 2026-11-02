@@ -41,7 +41,25 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindAction("CycleWeather",IE_Pressed,this,&ADhakaPlayerCharacter::CycleWeatherInput);
     Input->BindAction("AdvanceTime",IE_Pressed,this,&ADhakaPlayerCharacter::AdvanceTimeInput);
     Input->BindAction("CameraCycle",IE_Pressed,this,&ADhakaPlayerCharacter::CycleCamera);
+    Input->BindAction("UseFirstAid",IE_Pressed,this,&ADhakaPlayerCharacter::UseFirstAidInput);
+    Input->BindAction("UseFood",IE_Pressed,this,&ADhakaPlayerCharacter::UseFoodInput);
+    Input->BindAction("UseFuel",IE_Pressed,this,&ADhakaPlayerCharacter::UseFuelInput);
+    Input->BindAction("UseRepair",IE_Pressed,this,&ADhakaPlayerCharacter::UseRepairInput);
 }
+void ADhakaPlayerCharacter::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    if(GetCharacterMovement()->MaxWalkSpeed>SprintSpeed*.8f && Stamina>0.f)
+    {
+        Stamina=FMath::Max(0.f,Stamina-22.f*DeltaSeconds);
+        if(Stamina<=0.f)StopSprint();
+    }
+    else Stamina=FMath::Min(100.f,Stamina+12.f*DeltaSeconds);
+}
+void ADhakaPlayerCharacter::UseFirstAidInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("first_aid"),this);}
+void ADhakaPlayerCharacter::UseFoodInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("street_snack"),this);}
+void ADhakaPlayerCharacter::UseFuelInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("fuel_can"),this);}
+void ADhakaPlayerCharacter::UseRepairInput(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->UseItem(TEXT("repair_kit"),this);}
 void ADhakaPlayerCharacter::MoveForward(float V){if(!Controller||FMath::IsNearlyZero(V))return;const FRotator Yaw(0,Controller->GetControlRotation().Yaw,0);AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X),V);}
 void ADhakaPlayerCharacter::MoveRight(float V){if(!Controller||FMath::IsNearlyZero(V))return;const FRotator Yaw(0,Controller->GetControlRotation().Yaw,0);AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y),V);}
 void ADhakaPlayerCharacter::Turn(float V){AddControllerYawInput(V);}
