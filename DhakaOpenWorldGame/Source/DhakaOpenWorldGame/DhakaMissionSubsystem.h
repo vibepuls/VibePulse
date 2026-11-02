@@ -43,6 +43,7 @@ public:
     UFUNCTION(BlueprintCallable) void AddWallet(int64 Amount);
     UFUNCTION(BlueprintCallable) bool SaveProgress();
     UFUNCTION(BlueprintCallable) bool LoadProgress();
+    UFUNCTION(BlueprintCallable) void EnsureMissionMonitor();
 private:
     FTimerHandle MissionUpdateTimer;
     void UpdateActiveMission();
