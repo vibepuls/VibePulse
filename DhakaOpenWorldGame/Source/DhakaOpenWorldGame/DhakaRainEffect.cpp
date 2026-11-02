@@ -30,7 +30,12 @@ ADhakaRainEffect::ADhakaRainEffect()
         }
     }
     Drops->SetNumCustomDataFloats(1);
+}
+void ADhakaRainEffect::BeginPlay()
+{
+    Super::BeginPlay();
     RebuildRain();
+    SetRainIntensity(Intensity);
 }
 void ADhakaRainEffect::RebuildRain()
 {
