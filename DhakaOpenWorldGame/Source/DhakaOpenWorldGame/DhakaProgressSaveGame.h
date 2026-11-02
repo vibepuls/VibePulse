@@ -12,5 +12,6 @@ public:
     UPROPERTY() int64 Wallet = 12500;
     UPROPERTY() TArray<FDhakaMission> Missions;
     UPROPERTY() FName ActiveMissionId = NAME_None;
+    UPROPERTY() float ActiveMissionTimeRemaining = 0.f;
     UPROPERTY() int32 Version = 1;
 };
