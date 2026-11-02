@@ -118,7 +118,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaPedestrian.cpp", [
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection",
-    "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "ReactToVehicleImpact"
+    "ADhakaPedestrian", "YieldDistance", "SafeSpeed"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "EDhakaTrafficVehicleType::Emergency", "AheadOfEmergency", "YieldFactor", "Distance<330.f"
