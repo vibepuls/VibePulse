@@ -153,7 +153,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection",
-    "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "LookAhead", "const FVector Probe=CandidateLocation+Direction*LookAhead", "Separation.Size2D()<360.f", "Separation.Size2D()<280.f"
+    "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "LookAhead", "const FVector Probe=CandidateLocation+Direction*LookAhead", "Separation.Size2D()<360.f", "Separation.Size2D()<280.f", "PlayerIt(GetWorld())", "Separation.Size2D()<460.f"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "EDhakaTrafficVehicleType::Emergency", "AheadOfEmergency", "YieldFactor", "Distance<330.f"
