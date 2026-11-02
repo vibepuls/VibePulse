@@ -51,6 +51,11 @@ void ADhakaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* Input)
     Input->BindTouch(IE_Repeat,this,&ADhakaPlayerCharacter::HandleTouchMoved);
     Input->BindTouch(IE_Released,this,&ADhakaPlayerCharacter::HandleTouchReleased);
 }
+float ADhakaPlayerCharacter::TakeDamage(float DamageAmount,FDamageEvent const& DamageEvent,AController* EventInstigator,AActor* DamageCauser)
+{
+    if(DamageAmount>0.f)Health=FMath::Clamp(Health-DamageAmount,0.f,100.f);
+    return DamageAmount;
+}
 void ADhakaPlayerCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
