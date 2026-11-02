@@ -73,7 +73,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaMissionSubsystem.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"',
     '"old_dhaka_shop"', '"dhanmondi_flat"', '"uttara_garage"', '"gulshan_office"',
-    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "UseItem", "first_aid", "fuel_can", "repair_kit", "AvailableCapacity=999-CurrentQuantity", "Inventory full: sell or use some items first.", "Quantity=FMath::Min(Quantity,AvailableCapacity)", "Inventory.Reset()", "bKnownItem", "FMath::Clamp(SavedEntry.Value,0,999)", "OwnedProperties.Reset()", "bKnownProperty", "OwnedProperties.AddUnique(SavedProperty)", "UGameplayStatics::GetPlayerPawn(this,0)", "Character->NearbyVehicle", "Never search arbitrary AI traffic vehicles"
+    "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "UseItem", "first_aid", "fuel_can", "repair_kit", "AvailableCapacity=999-CurrentQuantity", "Inventory full: sell or use some items first.", "Quantity=FMath::Min(Quantity,AvailableCapacity)", "Inventory.Reset()", "bKnownItem", "FMath::Clamp(SavedEntry.Value,0,999)", "OwnedProperties.Reset()", "bKnownProperty", "OwnedProperties.AddUnique(SavedProperty)", "UGameplayStatics::GetPlayerPawn(this,0)", "Character->NearbyVehicle", "never search arbitrary AI traffic vehicles"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
     '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"water_bottle"'
