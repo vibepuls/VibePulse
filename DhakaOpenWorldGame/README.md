@@ -12,7 +12,7 @@ This folder contains the native UE5/C++ project scaffold alongside the VibePulse
 - Procedural street-life generator for tea/food stalls, shop awnings, display props, plastic chairs, tables, barriers, drain covers, trees, lamps, signs and electric poles.
 - Procedural citizen generator with seeded body/face parts, clothing-style variants (shirt/trousers, T-shirt/jeans, panjabi, saree, salwar kameez, school uniform, office/traditional clothing and jacket), and lightweight local wandering/walk-cycle motion.
 - Timed directional traffic signals are generated at central intersections; traffic agents check red lights and follow vehicles ahead at a basic level.
-- A native HUD displays the wallet, active mission, and countdown; mission rewards and completion/failure states are saved in a versioned SaveGame slot.
+- A native HUD displays wallet, active mission, destination distance and countdown; a pulsing world-space beacon marks the active destination; mission rewards and completion/failure states are saved in a versioned SaveGame slot.
 - Weather Rain/Monsoon states drive an instanced procedural rain effect that follows the player; pedestrians perform swept collision checks and sidestep or wait when blocked.
 - GameMode now spawns the district landmark, street-life, traffic-signal and procedural citizen generators. Mobile vehicle input includes touch zones for steering, acceleration and braking.
 
