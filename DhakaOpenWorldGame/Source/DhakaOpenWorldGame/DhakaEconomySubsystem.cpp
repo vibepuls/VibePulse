@@ -3,6 +3,7 @@
 #include "DhakaMissionSubsystem.h"
 #include "DhakaPlayerCharacter.h"
 #include "DhakaVehiclePawn.h"
+#include "DhakaPropertyTerminal.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
@@ -153,6 +154,69 @@ bool UDhakaEconomySubsystem::PurchaseProperty(FName PropertyId)
     OwnedProperties.AddUnique(PropertyId);
     LastTransactionMessage=FText::Format(NSLOCTEXT("DhakaEconomy","PropertyBought","Purchased property: {0}."),Offer->Name);
     AwardExperience(250);
+    SaveEconomy();
+    return true;
+}
+
+bool UDhakaEconomySubsystem::ServiceGarage(AActor* User,bool bRefuel)
+{
+    if(!User||!GetWorld()||!OwnsProperty(TEXT("uttara_garage")))
+    {
+        LastTransactionMessage=FText::FromString(TEXT("Garage service requires ownership of the Uttara Garage."));
+        return false;
+    }
+    bool bNearOwnedGarage=false;
+    for(TActorIterator<ADhakaPropertyTerminal> It(GetWorld());It;++It)
+    {
+        const ADhakaPropertyTerminal* Terminal=*It;
+        if(Terminal&&Terminal->PropertyId==TEXT("uttara_garage")
+            &&FVector::Dist2D(User->GetActorLocation(),Terminal->GetActorLocation())<=600.f)
+        {bNearOwnedGarage=true;break;}
+    }
+    if(!bNearOwnedGarage)
+    {
+        LastTransactionMessage=FText::FromString(TEXT("Drive or walk to the Uttara Garage sign to use garage services."));
+        return false;
+    }
+    ADhakaVehiclePawn* Vehicle=Cast<ADhakaVehiclePawn>(User);
+    if(!Vehicle)
+    {
+        if(const ADhakaPlayerCharacter* Character=Cast<ADhakaPlayerCharacter>(User))
+            if(Character->NearbyVehicle&&FVector::Dist2D(User->GetActorLocation(),Character->NearbyVehicle->GetActorLocation())<=600.f)
+                Vehicle=Character->NearbyVehicle;
+        if(!Vehicle)
+        {
+            float BestDistance=600.f;
+            for(TActorIterator<ADhakaVehiclePawn> It(GetWorld());It;++It)
+            {
+                const float Distance=FVector::Dist2D(User->GetActorLocation(),It->GetActorLocation());
+                if(Distance<BestDistance&&(!It->bOccupied||It->GetController()==User))
+                {BestDistance=Distance;Vehicle=*It;}
+            }
+        }
+    }
+    if(!Vehicle)
+    {
+        LastTransactionMessage=FText::FromString(TEXT("Bring a vehicle within 6 metres of the garage service point."));
+        return false;
+    }
+    UDhakaMissionSubsystem* Missions=GetGameInstance()?GetGameInstance()->GetSubsystem<UDhakaMissionSubsystem>():nullptr;
+    if(!Missions)return false;
+    const int64 Cost=bRefuel?1200:2500;
+    if((bRefuel&&Vehicle->FuelPercent>=99.9f)||(!bRefuel&&Vehicle->ConditionPercent>=99.9f))
+    {
+        LastTransactionMessage=FText::FromString(bRefuel?TEXT("Fuel tank is already full."):TEXT("Vehicle condition is already full."));
+        return false;
+    }
+    if(Missions->Wallet<Cost)
+    {
+        LastTransactionMessage=FText::FromString(FString::Printf(TEXT("Garage service costs ৳%lld; insufficient wallet balance."),static_cast<long long>(Cost)));
+        return false;
+    }
+    Missions->AddWallet(-Cost);
+    if(bRefuel)Vehicle->AddFuel(100.f);
+    else Vehicle->RepairVehicle(100.f);
+    LastTransactionMessage=FText::FromString(bRefuel?TEXT("Garage refuel complete: tank filled."):TEXT("Garage repair complete: vehicle restored."));
     SaveEconomy();
     return true;
 }
