@@ -46,6 +46,34 @@ ADhakaVendorStall::ADhakaVendorStall()
     MakePart(TEXT("ShelfGoods2"),FVector(.2f,.18f,.18f),FVector(-22.f,18.f,74.f),FLinearColor(.9f,.18f,.12f));
     MakePart(TEXT("ShelfGoods3"),FVector(.18f,.16f,.24f),FVector(30.f,22.f,76.f),FLinearColor(.2f,.58f,.2f));
 }
+void ADhakaVendorStall::BeginPlay()
+{
+    Super::BeginPlay();
+    if(!Canopy)return;
+    FLinearColor CanopyColor(.05f,.38f,.34f,1.f);
+    switch(VendorType)
+    {
+        case EDhakaVendorType::Tea: CanopyColor=FLinearColor(.08f,.28f,.18f,1.f); break;
+        case EDhakaVendorType::Fuchka: CanopyColor=FLinearColor(.78f,.12f,.08f,1.f); break;
+        case EDhakaVendorType::Jhalmuri: CanopyColor=FLinearColor(.92f,.58f,.08f,1.f); break;
+        case EDhakaVendorType::Fruit: CanopyColor=FLinearColor(.18f,.52f,.12f,1.f); break;
+        case EDhakaVendorType::GeneralShop: CanopyColor=FLinearColor(.08f,.32f,.58f,1.f); break;
+        case EDhakaVendorType::Chotpoti: CanopyColor=FLinearColor(.62f,.12f,.42f,1.f); break;
+        case EDhakaVendorType::Vegetables: CanopyColor=FLinearColor(.22f,.48f,.16f,1.f); break;
+        case EDhakaVendorType::Clothing: CanopyColor=FLinearColor(.36f,.18f,.68f,1.f); break;
+        default: break;
+    }
+    if(UMaterialInterface* BaseMaterial=Canopy->GetMaterial(0))
+    {
+        if(UMaterialInstanceDynamic* DynamicMaterial=UMaterialInstanceDynamic::Create(BaseMaterial,this))
+        {
+            DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"),CanopyColor);
+            DynamicMaterial->SetVectorParameterValue(TEXT("Color"),CanopyColor);
+            Canopy->SetMaterial(0,DynamicMaterial);
+        }
+    }
+}
+
 FName ADhakaVendorStall::GetStockItemId() const
 {
     switch(VendorType)
