@@ -114,6 +114,32 @@ void ADhakaTrafficVehicle::Tick(float Dt)
                 RecycledLocation.Y=FMath::Clamp(RecycledLocation.Y,-145000.f,145000.f);
             }
             RecycledLocation.Z=GetActorLocation().Z;
+            // Try several points along the lane and reject occupied placements.
+            bool bFoundRecycleSlot=false;
+            for(const float Offset : {0.f,1800.f,-1800.f,3600.f,-3600.f,5400.f})
+            {
+                const FVector Candidate=RecycledLocation+Direction*Offset;
+                bool bOccupied=false;
+                if(FVector::DistSquared2D(Candidate,PlayerLocation)<2200.f*2200.f)bOccupied=true;
+                for(TActorIterator<ADhakaTrafficVehicle> OtherIt(GetWorld());!bOccupied&&OtherIt;++OtherIt)
+                {
+                    const ADhakaTrafficVehicle* Other=*OtherIt;
+                    if(!Other||Other==this)continue;
+                    if(FVector::DistSquared2D(Candidate,Other->GetActorLocation())<900.f*900.f)bOccupied=true;
+                }
+                for(TActorIterator<ADhakaPedestrian> PedIt(GetWorld());!bOccupied&&PedIt;++PedIt)
+                {
+                    const ADhakaPedestrian* Pedestrian=*PedIt;
+                    if(Pedestrian&&FVector::DistSquared2D(Candidate,Pedestrian->GetActorLocation())<450.f*450.f)bOccupied=true;
+                }
+                if(!bOccupied)
+                {
+                    RecycledLocation=Candidate;
+                    bFoundRecycleSlot=true;
+                    break;
+                }
+            }
+            if(!bFoundRecycleSlot)return;
             SetActorLocation(RecycledLocation,false,nullptr,ETeleportType::TeleportPhysics);
             CurrentSpeed=CruiseSpeed*0.45f;
             CurrentLaneShift=0.f;
