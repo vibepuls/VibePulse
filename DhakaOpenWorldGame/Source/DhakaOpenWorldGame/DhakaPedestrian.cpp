@@ -57,12 +57,27 @@ ADhakaPedestrian::ADhakaPedestrian()
 void ADhakaPedestrian::BeginPlay()
 {
     Super::BeginPlay();
+    BaseWalkSpeed=WalkSpeed;
     if(GetWorld())
         for(TActorIterator<ADhakaWeatherController> It(GetWorld());It;++It){WeatherController=*It;break;}
 }
+void ADhakaPedestrian::ReactToVehicleImpact(const FVector& VehicleForward,float Severity)
+{
+    if(Severity<0.1f||!GetWorld())return;
+    FVector Away=(-VehicleForward).GetSafeNormal2D();
+    if(Away.IsNearlyZero())Away=GetActorRightVector();
+    const FVector Side=FVector::CrossProduct(FVector::UpVector,Away).GetSafeNormal2D();
+    Destination=GetActorLocation()+Away*FMath::Clamp(650.f+Severity*500.f,650.f,1800.f)+Side*FMath::FRandRange(-350.f,350.f);
+    State=EDhakaPedestrianState::Walk;
+    WaitRemaining=0.f;
+    FleeRemaining=FMath::Clamp(2.f+Severity*3.f,2.f,6.f);
+    WalkSpeed=FMath::Max(BaseWalkSpeed,260.f+Severity*80.f);
+}
+
 void ADhakaPedestrian::Tick(float Dt)
 {
     Super::Tick(Dt); if(Dt<=0.f)return;
+    if(FleeRemaining>0.f){FleeRemaining=FMath::Max(0.f,FleeRemaining-Dt);if(FleeRemaining<=0.f)WalkSpeed=BaseWalkSpeed;}
     CrowdLodRefreshTimer-=Dt;
     if(CrowdLodRefreshTimer<=0.f)
     {
