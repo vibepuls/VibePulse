@@ -153,7 +153,7 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
 
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "bBlockedAhead", "TargetLaneShift", "CandidateShift", "CurrentLaneShift", "IsRedForDirection",
-    "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "LookAhead", "const FVector Probe=CandidateLocation+Direction*LookAhead", "Separation.Size2D()<360.f", "Separation.Size2D()<280.f", "PlayerIt(GetWorld())", "Separation.Size2D()<460.f"
+    "ADhakaPedestrian", "YieldDistance", "SafeSpeed", "LookAhead", "const FVector Probe=CandidateLocation+Direction*LookAhead", "Separation.Size2D()<360.f", "Separation.Size2D()<280.f", "PlayerIt(GetWorld())", "Separation.Size2D()<460.f", "DhakaPlayerCharacter.h", "TActorIterator<ADhakaPlayerCharacter>", "Separation.Size2D()<380.f", "YieldForPerson(PlayerCharacter->GetActorLocation(),300.f)"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaTrafficVehicle.cpp", [
     "EDhakaTrafficVehicleType::Emergency", "AheadOfEmergency", "YieldFactor", "Distance<330.f", "GetPlayerPawn(this,0)", "ToPlayer.SizeSquared2D()>26000.f*26000.f", "GridStep=17777.78f", "CurrentSpeed=CruiseSpeed*0.45f", "bFoundRecycleSlot", "FVector::DistSquared2D(Candidate,Other->GetActorLocation())<900.f*900.f", "FVector::DistSquared2D(Candidate,Pedestrian->GetActorLocation())<450.f*450.f"
