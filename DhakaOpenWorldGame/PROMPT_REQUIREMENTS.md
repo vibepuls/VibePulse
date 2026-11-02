@@ -68,7 +68,7 @@ Status: **PARTIAL** — simple walkers/local wanderers now use swept collision c
 ## Part 10 — Player gameplay
 - [ ] First-/third-person movement, walk/run/jump/sit/interact, enter/exit/drive/switch vehicles.
 - [ ] Customization, inventory, currency, missions, shops, garages, property, save/load and progression.
-Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; a full mission map/menu, vehicle-type enforcement, inventory/shop/garage/property gameplay and comprehensive progression remain; a basic native HUD now displays wallet, active objective, destination distance and timer, while wallet/mission state has a SaveGame slot implementation.
+Status: **PARTIAL** — movement/driving/camera, wallet and SaveGame foundations exist. Mission subsystem now has destination-radius completion, timed objectives, failure state and expanded exploration/taxi/rickshaw/bus/delivery/race/property/daily/weekly entries; a full mission map/menu, vehicle-type enforcement, inventory/shop/garage/property gameplay and comprehensive progression remain; a basic native HUD now displays wallet, active objective, destination distance and timer, a pulsing world-space destination beacon marks the current target, and wallet/mission state has a SaveGame slot implementation.
 
 ## Part 11 — Weather/environment
 - [ ] Day/night, sunrise/sunset, dynamic light, rain/heavy rain/monsoon/fog, wet roads/puddles/splashes, shadows, streetlights/headlights/reflections.
