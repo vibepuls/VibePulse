@@ -24,6 +24,8 @@ private:
     void InteractVehicle();
     void InteractProperty();
     void ClaimPropertyIncome();
+    void SelectMissionSlot(float Value);
+    int32 LastMissionSlot = 0;
     void StartJump();
     void StopJump();
     void CycleCamera();
