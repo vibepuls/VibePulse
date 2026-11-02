@@ -1,6 +1,7 @@
 #include "DhakaCharacterAnimInstance.h"
 #include "DhakaPlayerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "KismetAnimationLibrary.h"
 
 void UDhakaCharacterAnimInstance::NativeInitializeAnimation()
 {
@@ -14,7 +15,7 @@ void UDhakaCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     if(!CachedCharacter) { GroundSpeed=0.f; Direction=0.f; VerticalSpeed=0.f; bIsMoving=false; bIsInAir=false; bIsSprinting=false; return; }
     const FVector Velocity=CachedCharacter->GetVelocity();
     GroundSpeed=Velocity.Size2D();
-    Direction=CalculateDirection(Velocity,CachedCharacter->GetActorRotation());
+    Direction=UKismetAnimationLibrary::CalculateDirection(Velocity,CachedCharacter->GetActorRotation());
     VerticalSpeed=Velocity.Z;
     bIsMoving=GroundSpeed>8.f;
     if(const UCharacterMovementComponent* Move=CachedCharacter->GetCharacterMovement())
