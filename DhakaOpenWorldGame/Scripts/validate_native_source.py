@@ -76,7 +76,14 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
     "PurchaseItem", "PurchaseProperty", "ClaimPropertyIncome", "UseItem", "first_aid", "fuel_can", "repair_kit", "AvailableCapacity=999-CurrentQuantity", "Inventory full: sell or use some items first.", "Quantity=FMath::Min(Quantity,AvailableCapacity)", "Inventory.Reset()", "bKnownItem", "FMath::Clamp(SavedEntry.Value,0,999)", "OwnedProperties.Reset()", "bKnownProperty", "OwnedProperties.AddUnique(SavedProperty)", "UGameplayStatics::GetPlayerPawn(this,0)", "Character->NearbyVehicle", "never search arbitrary AI traffic vehicles", "while(PlayerLevel<1000 && Experience>=static_cast<int64>(PlayerLevel)*500)", "if(LastIncomeClaimUtc>Now)LastIncomeClaimUtc=Now"
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.cpp", [
-    '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"water_bottle"'
+    '"tea_cup"', '"fuchka_plate"', '"jhalmuri_packet"', '"fruit_bag"', '"chotpoti_plate"',
+    '"vegetable_bag"', '"clothing_bundle"', '"water_bottle"'
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaVendorStall.h", [
+    "Chotpoti", "Vegetables", "Clothing"
+])
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomySubsystem.cpp", [
+    '"chotpoti_plate"', '"vegetable_bag"', '"clothing_bundle"'
 ])
 require_tokens("Source/DhakaOpenWorldGame/DhakaGameMode.cpp", [
     "DhakaVendorStall", "DhakaPropertyTerminal", "TrafficCount", "PedestrianCount",
