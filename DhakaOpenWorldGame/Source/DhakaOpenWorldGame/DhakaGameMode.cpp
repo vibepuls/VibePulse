@@ -141,10 +141,26 @@ void ADhakaGameMode::BeginPlay()
             UGameplayStatics::FinishSpawningActor(Citizen,CitizenTransform);
         }
     }
-    // Low-poly crowd agents use randomized footpath destinations and pause states.
+    // Spawn crowd agents on the procedural sidewalk bands instead of arbitrary road/building coordinates.
+    constexpr float SidewalkOffset=660.f;
+    constexpr float StreetGridStep=17777.78f;
     for(int32 I=0;I<PedestrianCount;++I){
-        const float X=FMath::FRandRange(-150000.f,150000.f),Y=FMath::FRandRange(-150000.f,150000.f);
-        ADhakaPedestrian* Ped=World->SpawnActor<ADhakaPedestrian>(ADhakaPedestrian::StaticClass(),FVector(X,Y,101.f),FRotator::ZeroRotator);
-        if(Ped){Ped->Destination=Ped->GetActorLocation()+FVector(FMath::FRandRange(-900.f,900.f),FMath::FRandRange(-900.f,900.f),0.f);Ped->WalkSpeed=FMath::FRandRange(110.f,175.f);}
+        const bool bWalkAlongX=FMath::RandBool();
+        const int32 RoadIndex=FMath::RandRange(0,18);
+        const float Road=-160000.f+RoadIndex*StreetGridStep;
+        const float Along=FMath::FRandRange(-145000.f,145000.f);
+        const float Side=FMath::RandBool()?1.f:-1.f;
+        const FVector SpawnLocation=bWalkAlongX
+            ?FVector(Along,Road+Side*SidewalkOffset,101.f)
+            :FVector(Road+Side*SidewalkOffset,Along,101.f);
+        const FRotator Facing=bWalkAlongX
+            ?FRotator(0.f,FMath::RandBool()?0.f:180.f,0.f)
+            :FRotator(0.f,FMath::RandBool()?90.f:270.f,0.f);
+        ADhakaPedestrian* Ped=World->SpawnActor<ADhakaPedestrian>(ADhakaPedestrian::StaticClass(),SpawnLocation,Facing);
+        if(Ped){
+            const float WalkDistance=FMath::FRandRange(500.f,1200.f);
+            Ped->Destination=SpawnLocation+Ped->GetActorForwardVector()*WalkDistance;
+            Ped->WalkSpeed=FMath::FRandRange(110.f,175.f);
+        }
     }
 }
