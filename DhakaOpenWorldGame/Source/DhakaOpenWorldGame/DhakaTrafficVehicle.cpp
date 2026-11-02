@@ -196,6 +196,30 @@ void ADhakaTrafficVehicle::Tick(float Dt)
                 Desired=FMath::Min(Desired,CruiseSpeed*FMath::Clamp((Ahead-140.f)/FMath::Max(1.f,BrakeDistance-140.f),0.f,1.f));
         }
     }
+
+    // Emergency vehicles receive right-of-way: nearby ordinary traffic slows or
+    // stops when an emergency vehicle is approaching from behind/alongside.
+    // This is a local yielding rule, not a full intersection-reservation system.
+    if(VehicleType!=EDhakaTrafficVehicleType::Emergency)
+    {
+        for(TActorIterator<ADhakaTrafficVehicle> It(GetWorld());It;++It)
+        {
+            const ADhakaTrafficVehicle* Emergency=*It;
+            if(!Emergency||Emergency==this||Emergency->VehicleType!=EDhakaTrafficVehicleType::Emergency)continue;
+            const FVector Delta=GetActorLocation()-Emergency->GetActorLocation();
+            const float Distance=Delta.Size2D();
+            if(Distance>1500.f)continue;
+            const FVector EmergencyDirection=Emergency->RouteDirection.GetSafeNormal2D();
+            const float AheadOfEmergency=FVector::DotProduct(Delta,EmergencyDirection);
+            const float Lateral=FMath::Abs(FVector::CrossProduct(Delta,EmergencyDirection).Z);
+            if(AheadOfEmergency>-250.f&&AheadOfEmergency<1250.f&&Lateral<500.f)
+            {
+                const float YieldFactor=FMath::Clamp((Distance-180.f)/900.f,0.f,0.35f);
+                Desired=FMath::Min(Desired,CruiseSpeed*YieldFactor);
+                if(Distance<330.f)Desired=0.f;
+            }
+        }
+    }
     // Yield to pedestrians in the vehicle's forward corridor. This is a safety
     // slowdown, not a substitute for a NavMesh/crosswalk-aware pedestrian system.
     {
