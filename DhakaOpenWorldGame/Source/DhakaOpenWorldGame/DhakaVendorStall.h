@@ -4,7 +4,7 @@
 #include "DhakaVendorStall.generated.h"
 
 UENUM(BlueprintType)
-enum class EDhakaVendorType : uint8 { Tea, Fuchka, Jhalmuri, Fruit, GeneralShop };
+enum class EDhakaVendorType : uint8 { Tea, Fuchka, Jhalmuri, Fruit, GeneralShop, Chotpoti, Vegetables, Clothing };
 
 UCLASS()
 class DHAKAOPENWORLDGAME_API ADhakaVendorStall : public AActor
