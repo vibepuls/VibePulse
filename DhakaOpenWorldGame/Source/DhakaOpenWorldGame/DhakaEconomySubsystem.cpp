@@ -69,16 +69,6 @@ bool UDhakaEconomySubsystem::SellItem(FName ItemId,int32 Quantity)
     return true;
 }
 
-bool UDhakaEconomySubsystem::UseItem(FName ItemId,int32 Quantity)
-{
-    Quantity=FMath::Clamp(Quantity,1,99);
-    if(Inventory.FindRef(ItemId)<Quantity)return false;
-    Inventory[ItemId]-=Quantity;
-    if(Inventory[ItemId]<=0)Inventory.Remove(ItemId);
-    SaveEconomy();
-    return true;
-}
-
 bool UDhakaEconomySubsystem::PurchaseProperty(FName PropertyId)
 {
     const FDhakaPropertyOffer* Offer=PropertyCatalog.FindByPredicate([PropertyId](const FDhakaPropertyOffer& Candidate){return Candidate.Id==PropertyId;});
