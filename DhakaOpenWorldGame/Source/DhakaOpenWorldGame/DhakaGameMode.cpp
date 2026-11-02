@@ -80,6 +80,7 @@ void ADhakaGameMode::BeginPlay()
         ADhakaTrafficVehicle* Traffic=World->SpawnActor<ADhakaTrafficVehicle>(ADhakaTrafficVehicle::StaticClass(),Location,Direction.Rotation());
         if(Traffic){
             Traffic->RouteDirection=Direction;
+            Traffic->LaneOffset=(FMath::RandBool()?1.f:-1.f)*FMath::FRandRange(85.f,175.f);
             Traffic->CruiseSpeed=FMath::FRandRange(350.f,1050.f);
             Traffic->BrakeDistance=FMath::FRandRange(450.f,900.f);
             const int32 Roll=FMath::RandRange(0,99);
