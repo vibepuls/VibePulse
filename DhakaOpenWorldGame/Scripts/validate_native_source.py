@@ -121,6 +121,11 @@ require_tokens("Source/DhakaOpenWorldGame/DhakaPlayerCharacter.cpp", [
 require_tokens("Source/DhakaOpenWorldGame/DhakaVehiclePawn.cpp", [
     "FuelPercent", "ConditionPercent", "HandleVehicleHit", "UseFuelInput", "UseRepairInput", "VehicleFuelPercent", "VehicleConditionPercent"
 ])
+require_tokens("Source/DhakaOpenWorldGame/DhakaEconomyWidget.cpp", [
+    "Graphics quality set to %s and saved.", "SetOverallScalabilityLevel", "Settings->ApplySettings(false)", "Settings->SaveSettings()",
+    "Graphics: Low", "Graphics: Medium", "Graphics: High", "Graphics: Epic"
+])
+
 require_tokens("Source/DhakaOpenWorldGame/DhakaOpenWorldHUD.cpp", [
     "HEALTH", "STAMINA", "FUEL", "VEHICLE CONDITION", "F1: First Aid", "BAG", "Mobile: drag left side"
 ])
