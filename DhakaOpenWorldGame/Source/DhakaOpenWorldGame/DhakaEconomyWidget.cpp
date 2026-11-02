@@ -38,6 +38,8 @@ void UDhakaEconomyWidget::NativeConstruct()
     StatusLabel->SetAutoWrapText(true);StatusLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.95f,.83f,.48f,1.f)));Layout->AddChildToVerticalBox(StatusLabel);
     InventoryLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("InventoryLabel"));
     InventoryLabel->SetAutoWrapText(true);InventoryLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.82f,.87f,.9f,1.f)));Layout->AddChildToVerticalBox(InventoryLabel);
+    InventoryLabel=WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("InventoryLabel"));
+    InventoryLabel->SetAutoWrapText(true);InventoryLabel->SetColorAndOpacity(FSlateColor(FLinearColor(.82f,.87f,.9f,1.f)));Layout->AddChildToVerticalBox(InventoryLabel);
     UScrollBox* Scroll=WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(),TEXT("EconomyActionsScroll"));
     if(UVerticalBoxSlot* ScrollSlot=Layout->AddChildToVerticalBox(Scroll))ScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
     UVerticalBox* Actions=WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(),TEXT("EconomyActions"));
@@ -53,6 +55,9 @@ void UDhakaEconomyWidget::NativeConstruct()
     AddActionButton(Actions,TEXT("Buy Gulshan Office  |  ৳1,500,000"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::BuyGulshanOffice);
     AddActionButton(Actions,TEXT("Claim Daily Property Rent  |  P"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::ClaimRent);
     AddActionButton(Actions,TEXT("Use First Aid  |  F1"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseSelectedFirstAid);
+    AddActionButton(Actions,TEXT("Use Food/Drink  |  F2"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFood);
+    AddActionButton(Actions,TEXT("Use Fuel Can  |  F3"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFuel);
+    AddActionButton(Actions,TEXT("Use Repair Kit  |  F4"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseRepair);
     AddActionButton(Actions,TEXT("Use Food/Drink  |  F2"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFood);
     AddActionButton(Actions,TEXT("Use Fuel Can  |  F3"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseFuel);
     AddActionButton(Actions,TEXT("Use Repair Kit  |  F4"),Button);Button->OnClicked.AddDynamic(this,&UDhakaEconomyWidget::UseRepair);
@@ -87,6 +92,7 @@ void UDhakaEconomyWidget::RefreshStatus()
     UDhakaMissionSubsystem* Missions=GI->GetSubsystem<UDhakaMissionSubsystem>();
     if(WalletLabel&&Missions)WalletLabel->SetText(FText::FromString(FString::Printf(TEXT("WALLET  ৳ %lld"),static_cast<long long>(Missions->Wallet))));
     if(StatusLabel&&Economy&&!Economy->LastTransactionMessage.IsEmpty())StatusLabel->SetText(Economy->LastTransactionMessage);
+    if(InventoryLabel&&Economy)InventoryLabel->SetText(FText::FromString(FString::Printf(TEXT("BAG Water:%d First aid:%d Snack:%d Fuel:%d Repair:%d"),Economy->Inventory.FindRef(TEXT("water_bottle")),Economy->Inventory.FindRef(TEXT("first_aid")),Economy->Inventory.FindRef(TEXT("street_snack")),Economy->Inventory.FindRef(TEXT("fuel_can")),Economy->Inventory.FindRef(TEXT("repair_kit")))));
     if(InventoryLabel&&Economy)InventoryLabel->SetText(FText::FromString(FString::Printf(TEXT("BAG  Water:%d  First aid:%d  Snack:%d  Fuel:%d  Repair:%d"),Economy->Inventory.FindRef(TEXT("water_bottle")),Economy->Inventory.FindRef(TEXT("first_aid")),Economy->Inventory.FindRef(TEXT("street_snack")),Economy->Inventory.FindRef(TEXT("fuel_can")),Economy->Inventory.FindRef(TEXT("repair_kit")))));
 }
 void UDhakaEconomyWidget::BuyWater(){if(UGameInstance* GI=GetGameInstance())if(UDhakaEconomySubsystem* E=GI->GetSubsystem<UDhakaEconomySubsystem>())E->PurchaseItem(TEXT("water_bottle"));}
