@@ -48,7 +48,7 @@ Status: **PARTIAL** — grid, river and district-inspired landmarks exist; proce
 ## Part 6 — Roads and sidewalks
 - [ ] Asphalt/concrete/markings, cracks, potholes, patches, speed breakers, drains/covers, uneven surfaces, barriers, signs, lights, poles/wires, construction materials/dust.
 - [ ] Broken/uneven sidewalks, crossings, ramps, curbs, drainage, furniture and roadside trees.
-Status: **PARTIAL** — base road grid now includes generated sidewalk slabs, curbs, random asphalt patch/pothole silhouettes and selected props; realistic broken pavement, accessible ramps, comprehensive lane markings and routing remain; zebra crossings at selected central intersections and sparse curb-side drainage channels are generated procedurally.
+Status: **PARTIAL** — base road grid now includes generated sidewalk slabs, curbs, random asphalt patch/pothole silhouettes and selected props; realistic broken pavement and comprehensive lane markings remain; zebra crossings at selected central intersections, sparse curb-side drainage channels, low-profile speed humps on selected road segments, and flat curb-cut landing pads at crossings are generated procedurally. These low-profile geometry additions need in-editor collision and vehicle-clearance testing.
 
 ## Part 7 — Vendors and crowded footpaths
 - [ ] Tea, fuchka, chotpoti, jhalmuri, fruit/vegetable/clothing stalls, retail shops, pushcarts, tarpaulins, umbrellas, seating and cooking/shelf props.
