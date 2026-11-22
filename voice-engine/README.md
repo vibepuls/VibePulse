@@ -1,17 +1,30 @@
 ---
 title: VibePulse Bengali Voice Engine
+emoji: 🎙️
+colorFrom: indigo
+colorTo: purple
 sdk: gradio
-python_version: 3.10
+sdk_version: 5.50.0
+python_version: "3.10"
 app_file: app.py
+short_description: Private Bengali voice cloning API for VibePulse
+models:
+  - ai4bharat/IndicF5
 ---
 # VibePulse Bengali Voice Engine
 
 A private inference API for the VibePulse Voice Studio, powered by AI4Bharat IndicF5.
 
+## Space setup
+
+Create this as a **Private Gradio Space** and select **ZeroGPU** in Space Settings. On eligible free personal accounts, Hugging Face currently allows up to two ZeroGPU Spaces.
+
 ## Required Space secrets
 
-- `HF_TOKEN`: a Hugging Face token with read access. First accept the model conditions at https://huggingface.co/ai4bharat/IndicF5.
-- `VOICE_ENGINE_TOKEN`: a long random secret shared only with the VibePulse Render backend.
+- `HF_TOKEN`: a Hugging Face read token. First accept the model conditions at https://huggingface.co/ai4bharat/IndicF5.
+- `VOICE_ENGINE_TOKEN`: use the same long random token as `HF_TOKEN`. The VibePulse backend sends this token to authenticate to the private Space and the API checks it before running inference.
+
+Add the same token to the Render backend as `VOICE_ENGINE_TOKEN`. Set `VOICE_ENGINE_URL` to `https://<your-space-subdomain>.hf.space/api/clone`. Never expose either token in frontend code or Git.
 
 ## API
 
