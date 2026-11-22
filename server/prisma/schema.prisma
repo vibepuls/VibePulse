@@ -47,6 +47,9 @@ model User {
  followsIn Follow[] @relation("Followers")
  comments Comment[]
  likes Like[]
+ dhakaGameProfile DhakaGameProfile?
+ dhakaGameSessions DhakaGameSession[]
+ dhakaGameMissionCompletions DhakaGameMissionCompletion[]
  @@schema("social_gaming")
 }
 model Post {
@@ -356,5 +359,58 @@ model VideoTemplate {
 
   @@index([published, category])
   @@index([trending, popular])
+  @@schema("social_gaming")
+}
+
+
+model DhakaGameProfile {
+  userId String @id @map("user_id")
+  score BigInt @default(0)
+  missionsCompleted Int @default(0) @map("missions_completed")
+  playSeconds BigInt @default(0) @map("play_seconds")
+  createdAt DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt DateTime @default(now()) @db.Timestamptz(6) @map("updated_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("dhaka_game_profiles")
+  @@schema("social_gaming")
+}
+
+model DhakaGameSession {
+  id String @id
+  userId String @map("user_id")
+  status String @default("active")
+  activeMissionId String? @default("explore") @map("active_mission_id")
+  missionStartedAt DateTime? @default(now()) @db.Timestamptz(6) @map("mission_started_at")
+  missionTargetX Float? @db.DoublePrecision @map("mission_target_x")
+  missionTargetZ Float? @db.DoublePrecision @map("mission_target_z")
+  playerX Float? @db.DoublePrecision @map("player_x")
+  playerZ Float? @db.DoublePrecision @map("player_z")
+  playerHeading Float @default(0) @db.DoublePrecision @map("player_heading")
+  vehicleType String @default("car") @map("vehicle_type")
+  lastSeenAt DateTime @default(now()) @db.Timestamptz(6) @map("last_seen_at")
+  startedAt DateTime @default(now()) @db.Timestamptz(6) @map("started_at")
+  endedAt DateTime? @db.Timestamptz(6) @map("ended_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt(sort: Desc)], map: "dhaka_game_sessions_user_active_idx")
+  @@map("dhaka_game_sessions")
+  @@schema("social_gaming")
+}
+
+model DhakaGameMissionCompletion {
+  id String @id @default(dbgenerated("gen_random_uuid()::text"))
+  userId String @map("user_id")
+  sessionId String @map("session_id")
+  missionId String @map("mission_id")
+  reward Int
+  completionDay DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date @map("completion_day")
+  completedAt DateTime @default(now()) @db.Timestamptz(6) @map("completed_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session DhakaGameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId, completionDay])
+  @@index([userId, completedAt(sort: Desc)], map: "dhaka_game_missions_user_date_idx")
+  @@map("dhaka_game_mission_completions")
   @@schema("social_gaming")
 }
