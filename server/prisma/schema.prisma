@@ -392,6 +392,7 @@ model DhakaGameSession {
   startedAt DateTime @default(now()) @db.Timestamptz(6) @map("started_at")
   endedAt DateTime? @db.Timestamptz(6) @map("ended_at")
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionCompletions DhakaGameMissionCompletion[]
 
   @@index([userId, startedAt(sort: Desc)], map: "dhaka_game_sessions_user_active_idx")
   @@map("dhaka_game_sessions")
