@@ -1038,11 +1038,8 @@ function requireVoiceStudioAccess(req:any,res:any,next:any) {
     next();
   } catch { return res.status(403).json({error:'Voice Studio access expired. Enter the password again.'}); }
 }
-const voiceCloneLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false,
-  message: { error: 'Voice generation limit reached. Please try again later.' }
-});
-app.post('/api/voice/clone', auth, requireVoiceStudioAccess, voiceCloneLimiter,
+// No app-level daily or hourly voice quota. The external free GPU provider may still enforce its own quota.
+app.post('/api/voice/clone', auth, requireVoiceStudioAccess,
   (req:any,res:any,next:any)=>voiceCloneUpload.single('sample')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid audio sample'});next();}),
   async (req:any,res:any) => {
     const parsed = z.object({
@@ -1063,6 +1060,7 @@ app.post('/api/voice/clone', auth, requireVoiceStudioAccess, voiceCloneLimiter,
       form.append('text', parsed.data.text);
       form.append('language', parsed.data.language);
       form.append('ref_text', parsed.data.ref_text);
+      form.append('consent', parsed.data.consent);
       form.append('user_id', req.user.id);
       const headers:any = {};
       if (engineToken) headers.Authorization = `Bearer ${engineToken}`;
