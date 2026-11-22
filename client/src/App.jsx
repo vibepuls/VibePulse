@@ -13,6 +13,7 @@ import TemplateVideoMaker from './pages/TemplateVideoMaker';
 import DocumentaryStudio from './pages/DocumentaryStudio';
 import AnimationStudio from './pages/AnimationStudio';
 import DhakaDrive from './pages/DhakaDrive3D';
+import VoiceStudio from './pages/VoiceStudio';
 
 export default function App() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/cinematic" element={isAuthenticated ? <ProfessionalVideoEditor /> : <Navigate to="/login" replace />} />
       <Route path="/documentary-studio" element={isAuthenticated ? <DocumentaryStudio /> : <Navigate to="/login" replace />} />
       <Route path="/animation-studio" element={isAuthenticated ? <AnimationStudio /> : <Navigate to="/login" replace />} />
+      <Route path="/voice-studio" element={isAuthenticated ? <VoiceStudio /> : <Navigate to="/login" replace />} />
       <Route path="/dhaka-drive" element={<DhakaDrive />} />
       <Route path="/templates" element={<TemplatesPage />} />
       <Route path="/template-studio" element={<TemplateVideoMaker />} />
