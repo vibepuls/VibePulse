@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import multer from 'multer';
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 
 const app = express();
 // Render runs behind a trusted reverse proxy; enable correct client IP handling for rate limiting.
@@ -999,6 +999,97 @@ app.post('/api/dhaka-game/sessions/:sessionId/finish',auth,async(req:any,res:any
   await prisma.$executeRawUnsafe('INSERT INTO social_gaming.dhaka_game_profiles(user_id,play_seconds) VALUES($1,$2) ON CONFLICT(user_id) DO UPDATE SET play_seconds=social_gaming.dhaka_game_profiles.play_seconds+EXCLUDED.play_seconds,updated_at=NOW()',req.user.id,seconds);
   res.json({finished:true,playSecondsAdded:seconds});
 });
+
+
+/* AI Voice Studio: the model runs in a separately hosted, licensed inference service.
+   Keep model credentials on the API server; never expose them to the browser. */
+const voiceCloneUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['audio/mpeg','audio/mp3','audio/wav','audio/x-wav','audio/mp4','audio/m4a','audio/webm','audio/ogg','audio/flac'];
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Use an MP3, WAV, M4A, WEBM, OGG, or FLAC audio sample.'));
+    cb(null, true);
+  }
+});
+
+const voiceAccessLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'অনেকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন।' }
+});
+app.post('/api/voice/access', auth, voiceAccessLimiter, (req:any,res:any) => {
+  const configuredPassword = process.env.VOICE_STUDIO_ACCESS_PASSWORD;
+  const suppliedPassword = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (!configuredPassword) return res.status(503).json({error:'Voice Studio password is not configured on the server.'});
+  const expected = Buffer.from(configuredPassword);
+  const supplied = Buffer.from(suppliedPassword);
+  const passwordMatches = expected.length === supplied.length && timingSafeEqual(expected, supplied);
+  if (!passwordMatches) return res.status(401).json({error:'পাসওয়ার্ড সঠিক নয়।'});
+  const accessToken = jwt.sign({sub:req.user.id,purpose:'voice-studio'},AUTH_SECRET,{expiresIn:'8h'});
+  res.setHeader('Cache-Control','no-store');
+  return res.json({accessToken,expiresIn:28800});
+});
+function requireVoiceStudioAccess(req:any,res:any,next:any) {
+  const header = req.headers['x-voice-studio-token'];
+  if (typeof header !== 'string' || !header) return res.status(403).json({error:'Voice Studio password required.'});
+  try {
+    const payload = jwt.verify(header,AUTH_SECRET) as any;
+    if (payload.purpose !== 'voice-studio' || payload.sub !== req.user.id) return res.status(403).json({error:'Voice Studio access expired or invalid.'});
+    next();
+  } catch { return res.status(403).json({error:'Voice Studio access expired. Enter the password again.'}); }
+}
+const voiceCloneLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Voice generation limit reached. Please try again later.' }
+});
+app.post('/api/voice/clone', auth, requireVoiceStudioAccess, voiceCloneLimiter,
+  (req:any,res:any,next:any)=>voiceCloneUpload.single('sample')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid audio sample'});next();}),
+  async (req:any,res:any) => {
+    const parsed = z.object({
+      text: z.string().trim().min(1).max(1200),
+      language: z.literal('bn'),
+      consent: z.literal('true'),
+      ref_text: z.string().max(500).optional().default('')
+    }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({error:'Add text, choose a language, and confirm you own or have permission to use this voice.'});
+    if (!parsed.data.ref_text.trim()) return res.status(400).json({error:'স্যাম্পল অডিওতে বলা কথাগুলো লিখুন।'});
+    if (!req.file || !req.file.mimetype.startsWith('audio/')) return res.status(400).json({error:'Upload a valid voice sample.'});
+    const engineUrl = process.env.VOICE_ENGINE_URL?.trim();
+    const engineToken = process.env.VOICE_ENGINE_TOKEN?.trim();
+    if (!engineUrl) return res.status(503).json({error:'Voice AI engine is not configured yet. Add VOICE_ENGINE_URL to the API service environment.'});
+    try {
+      const form = new FormData();
+      form.append('sample', new Blob([new Uint8Array(req.file.buffer)], {type:req.file.mimetype}), req.file.originalname || 'voice-sample');
+      form.append('text', parsed.data.text);
+      form.append('language', parsed.data.language);
+      form.append('ref_text', parsed.data.ref_text);
+      form.append('user_id', req.user.id);
+      const headers:any = {};
+      if (engineToken) headers.Authorization = `Bearer ${engineToken}`;
+      const response = await fetch(engineUrl, {method:'POST',headers,body:form,signal:AbortSignal.timeout(180000)});
+      if (!response.ok) {
+        const detail = (await response.text()).slice(0,500);
+        console.error('Voice engine rejected request:', response.status, detail);
+        return res.status(response.status===429?429:502).json({error:response.status===429?'Voice engine is busy. Try again shortly.':'Voice generation failed in the AI engine.'});
+      }
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.startsWith('audio/')) {
+        console.error('Voice engine returned unexpected content type:',contentType);
+        return res.status(502).json({error:'Voice engine did not return an audio file.'});
+      }
+      const audio = Buffer.from(await response.arrayBuffer());
+      if (!audio.length || audio.length > 25 * 1024 * 1024) return res.status(502).json({error:'Generated audio is empty or too large.'});
+      res.setHeader('Content-Type',contentType);
+      res.setHeader('Content-Length',String(audio.length));
+      res.setHeader('Content-Disposition','attachment; filename="vibepulse-voice.wav"');
+      res.setHeader('Cache-Control','no-store');
+      return res.status(200).send(audio);
+    } catch (error:any) {
+      console.error('Voice generation request failed:',error?.name || error);
+      return res.status(error?.name==='TimeoutError'?504:502).json({error:error?.name==='TimeoutError'?'Voice generation timed out. Please try again.':'Could not reach the voice AI engine.'});
+    }
+  }
+);
 
 app.use((err:any,_req:any,res:any,_next:any)=>{console.error(err);res.status(500).json({error:'Internal server error'});});
 app.listen(PORT,()=>console.log(`VibePulse API listening on ${PORT}`));
