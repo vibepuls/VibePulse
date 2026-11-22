@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, AudioLines, CheckCircle2, Download, FileAudio, Mic, Play, ShieldCheck, Sparkles, Upload, WandSparkles } from 'lucide-react';
 import './VoiceStudio.css';
+import api from '../services/api';
 
 export default function VoiceStudio() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
+  const [generated, setGenerated] = useState('');
   const [text, setText] = useState('');
   const [language, setLanguage] = useState('auto');
   const [consent, setConsent] = useState(false);
@@ -16,6 +18,7 @@ export default function VoiceStudio() {
   const chunks = useRef([]);
 
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  useEffect(() => () => { if (generated) URL.revokeObjectURL(generated); }, [generated]);
 
   const acceptFile = (next) => {
     if (!next) return;
@@ -51,8 +54,31 @@ export default function VoiceStudio() {
     if (!text.trim()) { setStatus('যে লেখাটি ভয়েসে রূপান্তর করতে চান সেটি লিখুন।'); return; }
     if (!consent) { setStatus('কণ্ঠের মালিকানা/অনুমতির বিষয়টি নিশ্চিত করুন।'); return; }
     setBusy(true);
-    setStatus('AI Voice Engine এখনো সার্ভারে সংযুক্ত হয়নি।');
-    setBusy(false);
+    setStatus('আপনার ভয়েস তৈরি করা হচ্ছে…');
+    setGenerated('');
+    try {
+      const form = new FormData();
+      form.append('sample', file);
+      form.append('text', text.trim());
+      form.append('language', language);
+      form.append('consent', 'true');
+      const response = await api.post('/voice/clone', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        responseType: 'blob',
+        timeout: 190000
+      });
+      const audioUrl = URL.createObjectURL(response.data);
+      setGenerated(audioUrl);
+      setStatus('আপনার AI ভয়েস তৈরি হয়েছে। নিচে শুনুন অথবা ডাউনলোড করুন।');
+    } catch (error) {
+      let message = error.response?.data?.error;
+      if (error.response?.data instanceof Blob) {
+        try { message = JSON.parse(await error.response.data.text()).error; } catch {}
+      }
+      setStatus(message || 'ভয়েস তৈরি করা যায়নি। AI সার্ভার চালু আছে কি না দেখুন।');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return <div className="vp-voice-page">
@@ -95,6 +121,11 @@ export default function VoiceStudio() {
           </select>
           <label className="vp-voice-consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)}/><span>আমি নিশ্চিত করছি, আপলোড করা কণ্ঠটি আমার অথবা এটি ব্যবহারের স্পষ্ট অনুমতি আমার আছে।</span></label>
           <button className="vp-voice-generate" onClick={generate} disabled={busy}><WandSparkles size={18}/> {busy ? 'প্রস্তুত হচ্ছে…' : 'Generate AI Voice'}</button>
+          {generated && <div className="vp-voice-result">
+            <div className="vp-voice-result-title"><CheckCircle2 size={17}/> Generated voice</div>
+            <audio controls src={generated}/>
+            <a href={generated} download="vibepulse-voice.wav"><Download size={16}/> Download audio</a>
+          </div>}
           <div className="vp-voice-status"><span/> {status}</div>
         </section>
       </div>
