@@ -9,6 +9,7 @@ export default function VoiceStudio() {
   const [preview, setPreview] = useState('');
   const [generated, setGenerated] = useState('');
   const [text, setText] = useState('');
+  const [sampleTranscript, setSampleTranscript] = useState('');
   const [language, setLanguage] = useState('auto');
   const [consent, setConsent] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -61,6 +62,7 @@ export default function VoiceStudio() {
       form.append('sample', file);
       form.append('text', text.trim());
       form.append('language', language);
+      form.append('ref_text', sampleTranscript.trim());
       form.append('consent', 'true');
       const response = await api.post('/voice/clone', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -109,6 +111,8 @@ export default function VoiceStudio() {
           </button>
           {file && <div className="vp-voice-file"><FileAudio size={18}/><div><b>{file.name}</b><small>{(file.size / 1024 / 1024).toFixed(2)} MB</small></div><CheckCircle2 size={18}/></div>}
           {preview && <audio className="vp-voice-audio" controls src={preview}/>}
+          <label className="vp-voice-field-label" htmlFor="vp-voice-reference-text">স্যাম্পল অডিওতে যা বলা হয়েছে (বিশেষ করে বাংলার জন্য)</label>
+          <textarea id="vp-voice-reference-text" className="vp-voice-reference-text" value={sampleTranscript} onChange={e => setSampleTranscript(e.target.value)} maxLength={500} placeholder="অডিওতে বলা কথাগুলো এখানে লিখুন…"/>
           <div className="vp-voice-security"><ShieldCheck size={17}/><span>শুধু নিজের কণ্ঠ অথবা কণ্ঠের মালিকের স্পষ্ট অনুমতি থাকা অডিও ব্যবহার করুন।</span></div>
         </section>
         <section className="vp-voice-card">
