@@ -1018,11 +1018,9 @@ const voiceAccessLimiter = rateLimit({
   message: { error: 'অনেকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন।' }
 });
 app.post('/api/voice/access', auth, voiceAccessLimiter, (req:any,res:any) => {
-  const ownerUsername = process.env.VOICE_STUDIO_OWNER_USERNAME?.trim().toLowerCase();
   const configuredPassword = process.env.VOICE_STUDIO_ACCESS_PASSWORD;
   const suppliedPassword = typeof req.body?.password === 'string' ? req.body.password : '';
-  if (!ownerUsername || !configuredPassword) return res.status(503).json({error:'Voice Studio owner access is not configured on the server.'});
-  if (req.user.username.toLowerCase() !== ownerUsername) return res.status(403).json({error:'এই পেজটি আপনার অ্যাকাউন্টের জন্য অনুমোদিত নয়।'});
+  if (!configuredPassword) return res.status(503).json({error:'Voice Studio password is not configured on the server.'});
   const expected = Buffer.from(configuredPassword);
   const supplied = Buffer.from(suppliedPassword);
   const passwordMatches = expected.length === supplied.length && timingSafeEqual(expected, supplied);
