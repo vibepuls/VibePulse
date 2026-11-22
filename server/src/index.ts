@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import multer from 'multer';
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 
 const app = express();
 // Render runs behind a trusted reverse proxy; enable correct client IP handling for rate limiting.
@@ -1012,21 +1012,49 @@ const voiceCloneUpload = multer({
     cb(null, true);
   }
 });
+
+const voiceAccessLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'অনেকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন।' }
+});
+app.post('/api/voice/access', auth, voiceAccessLimiter, (req:any,res:any) => {
+  const ownerUsername = process.env.VOICE_STUDIO_OWNER_USERNAME?.trim().toLowerCase();
+  const configuredPassword = process.env.VOICE_STUDIO_ACCESS_PASSWORD;
+  const suppliedPassword = typeof req.body?.password === 'string' ? req.body.password : '';
+  if (!ownerUsername || !configuredPassword) return res.status(503).json({error:'Voice Studio owner access is not configured on the server.'});
+  if (req.user.username.toLowerCase() !== ownerUsername) return res.status(403).json({error:'এই পেজটি আপনার অ্যাকাউন্টের জন্য অনুমোদিত নয়।'});
+  const expected = Buffer.from(configuredPassword);
+  const supplied = Buffer.from(suppliedPassword);
+  const passwordMatches = expected.length === supplied.length && timingSafeEqual(expected, supplied);
+  if (!passwordMatches) return res.status(401).json({error:'পাসওয়ার্ড সঠিক নয়।'});
+  const accessToken = jwt.sign({sub:req.user.id,purpose:'voice-studio'},AUTH_SECRET,{expiresIn:'8h'});
+  res.setHeader('Cache-Control','no-store');
+  return res.json({accessToken,expiresIn:28800});
+});
+function requireVoiceStudioAccess(req:any,res:any,next:any) {
+  const header = req.headers['x-voice-studio-token'];
+  if (typeof header !== 'string' || !header) return res.status(403).json({error:'Voice Studio password required.'});
+  try {
+    const payload = jwt.verify(header,AUTH_SECRET) as any;
+    if (payload.purpose !== 'voice-studio' || payload.sub !== req.user.id) return res.status(403).json({error:'Voice Studio access expired or invalid.'});
+    next();
+  } catch { return res.status(403).json({error:'Voice Studio access expired. Enter the password again.'}); }
+}
 const voiceCloneLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false,
   message: { error: 'Voice generation limit reached. Please try again later.' }
 });
-app.post('/api/voice/clone', auth, voiceCloneLimiter,
+app.post('/api/voice/clone', auth, requireVoiceStudioAccess, voiceCloneLimiter,
   (req:any,res:any,next:any)=>voiceCloneUpload.single('sample')(req,res,(error:any)=>{if(error)return res.status(400).json({error:error.message||'Invalid audio sample'});next();}),
   async (req:any,res:any) => {
     const parsed = z.object({
       text: z.string().trim().min(1).max(1200),
-      language: z.enum(['auto','bn','en']),
+      language: z.literal('bn'),
       consent: z.literal('true'),
       ref_text: z.string().max(500).optional().default('')
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({error:'Add text, choose a language, and confirm you own or have permission to use this voice.'});
-    if (parsed.data.language === 'bn' && !parsed.data.ref_text.trim()) return res.status(400).json({error:'For Bengali voice cloning, add the words spoken in your sample audio.'});
+    if (!parsed.data.ref_text.trim()) return res.status(400).json({error:'স্যাম্পল অডিওতে বলা কথাগুলো লিখুন।'});
     if (!req.file || !req.file.mimetype.startsWith('audio/')) return res.status(400).json({error:'Upload a valid voice sample.'});
     const engineUrl = process.env.VOICE_ENGINE_URL?.trim();
     const engineToken = process.env.VOICE_ENGINE_TOKEN?.trim();
