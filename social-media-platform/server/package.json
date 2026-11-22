@@ -2,7 +2,7 @@
   "name": "vibepulse-render-entry",
   "version": "1.0.0",
   "private": true,
-  "description": "Render entry point that runs the new VibePulse API from the repository server package",
+  "description": "Render entry point for VibePulse API; Prisma schema explicitly preserves Dhaka game profile, session, and mission tables during safe database sync.",
   "scripts": {
     "start": "cd ../../server && npm start",
     "dev": "cd ../../server && npm run dev",
