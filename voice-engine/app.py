@@ -16,28 +16,19 @@ from transformers import AutoModel
 
 MODEL_ID = "ai4bharat/IndicF5"
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
-_model = None
-
-def get_model():
-    global _model
-    if _model is None:
-        token = os.getenv("HF_TOKEN")
-        if not token:
-            raise RuntimeError("Set HF_TOKEN in the Space secrets after accepting the IndicF5 model conditions.")
-        _model = AutoModel.from_pretrained(
-            MODEL_ID,
-            trust_remote_code=True,
-            token=token,
-        )
-    if torch.cuda.is_available():
-        _model = _model.to("cuda")
-    else:
-        raise RuntimeError("This Space did not receive a ZeroGPU allocation.")
-    return _model
+token = os.getenv("HF_TOKEN")
+if not token:
+    raise RuntimeError("Set HF_TOKEN in the Space secrets after accepting the IndicF5 model conditions.")
+# ZeroGPU provides CUDA emulation during startup; load the model onto CUDA here,
+# as recommended by Hugging Face, before GPU-decorated requests are called.
+model = AutoModel.from_pretrained(
+    MODEL_ID,
+    trust_remote_code=True,
+    token=token,
+).to("cuda")
 
 @spaces.GPU(duration=300)
 def synthesize(text: str, sample_path: str, ref_text: str):
-    model = get_model()
     audio = model(text, ref_audio_path=sample_path, ref_text=ref_text)
     audio = np.asarray(audio)
     if audio.dtype == np.int16:
