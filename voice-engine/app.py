@@ -73,7 +73,7 @@ async def clone_voice(
     if not raw or len(raw) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=400, detail="Audio sample must be smaller than 15 MB.")
     with tempfile.TemporaryDirectory() as workdir:
-        source = Path(workdir) / (sample.filename or "reference-audio")
+        source = Path(workdir) / "reference-upload"
         wav_path = Path(workdir) / "reference.wav"
         source.write_bytes(raw)
         # ffmpeg safely normalizes browser recordings (including WEBM/M4A) for the model.
