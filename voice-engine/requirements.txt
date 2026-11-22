@@ -1,0 +1,12 @@
+git+https://github.com/ai4bharat/IndicF5.git
+transformers==4.49.0
+torch==2.8.0
+torchaudio==2.8.0
+spaces
+gradio>=5.0,<6.0
+fastapi
+uvicorn
+python-multipart
+soundfile
+numpy<=1.26.4
+librosa
