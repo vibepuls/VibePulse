@@ -1022,7 +1022,8 @@ app.post('/api/voice/clone', auth, voiceCloneLimiter,
     const parsed = z.object({
       text: z.string().trim().min(1).max(1200),
       language: z.enum(['auto','bn','en']),
-      consent: z.literal('true')
+      consent: z.literal('true'),
+      ref_text: z.string().max(500).optional().default('')
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({error:'Add text, choose a language, and confirm you own or have permission to use this voice.'});
     if (!req.file || !req.file.mimetype.startsWith('audio/')) return res.status(400).json({error:'Upload a valid voice sample.'});
@@ -1034,6 +1035,7 @@ app.post('/api/voice/clone', auth, voiceCloneLimiter,
       form.append('sample', new Blob([new Uint8Array(req.file.buffer)], {type:req.file.mimetype}), req.file.originalname || 'voice-sample');
       form.append('text', parsed.data.text);
       form.append('language', parsed.data.language);
+      form.append('ref_text', parsed.data.ref_text);
       form.append('user_id', req.user.id);
       const headers:any = {};
       if (engineToken) headers.Authorization = `Bearer ${engineToken}`;
