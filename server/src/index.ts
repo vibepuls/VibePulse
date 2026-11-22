@@ -1026,6 +1026,7 @@ app.post('/api/voice/clone', auth, voiceCloneLimiter,
       ref_text: z.string().max(500).optional().default('')
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({error:'Add text, choose a language, and confirm you own or have permission to use this voice.'});
+    if (parsed.data.language === 'bn' && !parsed.data.ref_text.trim()) return res.status(400).json({error:'For Bengali voice cloning, add the words spoken in your sample audio.'});
     if (!req.file || !req.file.mimetype.startsWith('audio/')) return res.status(400).json({error:'Upload a valid voice sample.'});
     const engineUrl = process.env.VOICE_ENGINE_URL?.trim();
     const engineToken = process.env.VOICE_ENGINE_TOKEN?.trim();
